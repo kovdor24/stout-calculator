@@ -49398,6 +49398,7 @@ const app = {
                             // иначе смета и монтажные работы расходятся (см. быстрый режим ниже).
                             const _radQty = (this.state.qtyOverrides && this.state.qtyOverrides[instanceKey] !== undefined)
                                 ? this.state.qtyOverrides[instanceKey] : 1;
+                            let _radIsBottom;
                             {
                                 const _finalSeries = this._getSecRadSeries().find(s => s.arr && s.arr.some(x => x.id === activeItem.id));
                                 // Панели (сталь): Compact — боковое подключение (нет поля bottom
@@ -49407,6 +49408,7 @@ const app = {
                                 // содержит вперемешку оба типа.
                                 const _isPanel = !!(_finalSeries && _finalSeries.isPanel);
                                 const _isBottom = _finalSeries ? (_isPanel ? !!activeItem.bottom : !!_finalSeries.bottom) : true;
+                                _radIsBottom = _isBottom;
                                 if (_isBottom) { totalRadCountBottom += _radQty; if (_isPanel) totalRadCountBottomSteel += _radQty; } else totalRadCountSide += _radQty;
                                 if (!_isPanel) { totalRadCountSectional += _radQty; if (!activeItem.kitIncluded && !_isBottom) radKitColorCounts[this._radKitColorFor(activeItem)] += _radQty; }
                             }
@@ -49433,6 +49435,12 @@ const app = {
                             let locInfo = `<span style="font-size:11px; line-height:1.2;">• <b>${app.spotLabel(r, w, wIdx)}</b>: ${w.noWin ? r.area + " м²" : w.width + "м"} | Требуются: <b>${reqPwr} Вт</b>, подобран: <b>${factPower} Вт</b>, запас: <b style="color:${marginColor};">${margin}%</b></span>`;
 
                             let wDesc = locInfo + "|||" + devInfo;
+                            // Подпись стороны подключения в самом названии строки — чтобы монтажник
+                            // видел её при перепроверке сметы, не открывая каждую подсказку.
+                            activeItem = {
+                                ...activeItem,
+                                name: activeItem.name + (_radIsBottom ? ' (нижнее подключение)' : ' (боковое подключение)')
+                            };
                             addToBill(activeItem, _radQty, wDesc, "3. Приборы отопления");
                             totalRadCount += _radQty;
                             roomFactPowerSum += factPower * _radQty; // учитываем мощность радиатора по помещению
@@ -49547,6 +49555,7 @@ const app = {
                 // Та же поимённая логика бокового/нижнего подключения, что и в detailedRooms —
                 // в режиме "весь дом" один агрегированный радиатор, поэтому весь totalCount
                 // целиком идёт в один из двух счётчиков.
+                let _quickRadIsBottom;
                 {
                     // Ручная замена через свап-модалку (state.swaps[activeItem.id]) применяется
                     // самим addToBill только на отображение/цену конкретной строки — сюда, к
@@ -49567,6 +49576,7 @@ const app = {
                     // (bottom:true у позиции) — см. подробный комментарий в detailedRooms-ветке.
                     const _isPanel = !!(_finalSeries && _finalSeries.isPanel);
                     const _isBottom = _finalSeries ? (_isPanel ? !!_classifyItem.bottom : !!_finalSeries.bottom) : true;
+                    _quickRadIsBottom = _isBottom;
                     if (_isBottom) { totalRadCountBottom += totalCount; if (_isPanel) totalRadCountBottomSteel += totalCount; } else totalRadCountSide += totalCount;
                     if (!_isPanel) { totalRadCountSectional += totalCount; if (!_classifyItem.kitIncluded && !_isBottom) radKitColorCounts[this._radKitColorFor(_classifyItem)] += totalCount; }
                 }
@@ -49581,6 +49591,11 @@ const app = {
                     demandLabel: "Потребность дома"
                 });
 
+                // Подпись стороны подключения — как в detailedRooms, для перепроверки сметы.
+                activeItem = {
+                    ...activeItem,
+                    name: activeItem.name + (_quickRadIsBottom ? ' (нижнее подключение)' : ' (боковое подключение)')
+                };
                 addToBill(activeItem, totalCount, devInfo, "3. Приборы отопления");
             }
 
