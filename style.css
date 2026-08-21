@@ -12258,6 +12258,9 @@ body.lk-docked #profile_modal_overlay .lk-pane {
 
 .lk-rail.is-dragging .lk-rail-grip {
     cursor: grabbing;
+    /* Панель уже тащат — хват обязан остаться на виду, даже если отведённое
+       ему время показа успело выйти */
+    opacity: 1;
 }
 
 /* Панель, прикреплённая сверху: те же плитки, только в ряд. Стоит сразу под
@@ -12445,6 +12448,7 @@ body.lk-grabbing * {
 
 .input-panel.is-dragging .input-panel-grip {
     cursor: grabbing;
+    opacity: 1;
 }
 
 /* На телефоне и планшете стоймя колонки идут друг под другом, и вкладки внизу
@@ -12452,6 +12456,25 @@ body.lk-grabbing * {
 @media screen and (max-width: 768px), screen and (max-width: 1024px) and (orientation: portrait), screen and (orientation: landscape) and (max-height: 500px) {
     .input-panel-grip {
         display: none;
+    }
+}
+
+/* ── Перетаскивание пальцем (планшет: сенсорный экран, мыши нет) ──────────────
+   На сенсорном экране движение пальца по умолчанию достаётся браузеру: он
+   считает протяжку вниз командой «потянуть, чтобы обновить» и перезагружает
+   страницу прямо посреди переноса панели, а обработчику вместо перемещения
+   приходит отмена жеста. Забрать движение себе можно только через
+   touch-action: none — тогда браузер в него не вмешивается, и события доходят
+   до app.initRailDrag / app.initParamsDrag.
+
+   Правило только для устройств без мыши. У мыши touch-action ни на что не
+   влияет, но ограничиваем явно: обычная веб-версия меняться не должна вовсе.
+   На телефоне оба хвата и так спрятаны, так что достаётся оно планшету. */
+@media (hover: none) and (pointer: coarse) {
+
+    .lk-rail-grip,
+    .input-panel-grip {
+        touch-action: none;
     }
 }
 

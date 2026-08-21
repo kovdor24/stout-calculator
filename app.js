@@ -9879,11 +9879,19 @@ const app = {
     // такого щелчка нет — ничего не ломаем и ни у чего не отнимаем нажатие.
     GRIP_CONTROLS: 'input, select, textarea, button, a, label, .switch, .slider, .mode-tab, .lk-rail-item, [onclick], [role="button"]',
 
+    // Устройство без мыши (планшет): наведения там нет вовсе, поэтому щелчок по
+    // свободному месту — единственный способ добраться до хвата, и держать его на
+    // виду надо дольше. Пальцем в узкую полоску целятся не так быстро, как мышью.
+    isTouchOnly: function () {
+        return !!(window.matchMedia && window.matchMedia('(hover: none) and (pointer: coarse)').matches);
+    },
+
     revealGrip: function (host) {
         if (!host) return;
         host.classList.add('grip-shown');
         clearTimeout(host._gripHintTimer);
-        host._gripHintTimer = setTimeout(() => host.classList.remove('grip-shown'), 3500);
+        const hold = this.isTouchOnly() ? 9000 : 3500;
+        host._gripHintTimer = setTimeout(() => host.classList.remove('grip-shown'), hold);
     },
 
     bindGripReveal: function (host) {
