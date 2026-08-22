@@ -170,6 +170,7 @@
     Загрузить план <input type="file" multiple accept="image/*,.pdf,application/pdf" style="display:none" onchange="loadImage(this)">
   </label>
   <button id="b_scale" onclick="setMode('scale')">Масштаб</button>
+  <button id="b_autoscale" onclick="autoScale()" title="Подобрать масштаб по площадям комнат подробного расчёта">Масштаб по расчёту</button>
   <button id="b_autorooms" onclick="autoRooms()" title="Найти все комнаты по стенам и создать зоны по комнатам расчёта: тёплый пол, котельная, санузлы">Распознать комнаты</button>
   <button id="b_room" onclick="setMode('room')">Зона: по клику</button>
   <button id="b_rect" onclick="setMode('rect')">Зона: прямоугольник</button>
@@ -564,12 +565,19 @@ function applyPlanCanvas(c) {
   // имя появится заново после «Сохранить».
   f.imgFile = null;
   f.w = c.width; f.h = c.height; f.pxPerM = 0; f.zones = [];
-  delete imgCache[cur];
   delete imgFailed[cur];
   delete maskCache[cur];
   delete winCache[cur];
-  hint('План загружен. Кликните две точки известного отрезка — режим масштаба уже включён.');
+  // Канвас уже нарисован — кладём его в кэш как есть: и первая отрисовка
+  // быстрее, и карта стен строится сразу, не дожидаясь, пока браузер
+  // раскодирует обратно тот же JPEG.
+  imgCache[cur] = c;
   draw(); renderZones();
+  // Масштаб — единственное число разметки, которого нет ни на чертеже, ни в
+  // расчёте. Комнаты этажа посчитаны — подбираем его по их площадям, и лист
+  // сразу готов к «Распознать комнаты». Не вышло — как раньше, вручную.
+  if (autoScale(true)) { if (mode !== 'select') setMode('select'); return; }
+  hint('План загружен. Кликните две точки известного отрезка — режим масштаба уже включён.');
   // Следующий шаг после загрузки всегда один и тот же, поэтому режим
   // масштаба включаем сами: нажимать «Масштаб» вручную незачем. Проверка
   // на текущий режим обязательна — setMode переключает, и повторный вызов
@@ -1530,6 +1538,173 @@ function pip(p, pts) {  // точка внутри полигона (ray casting
   return inn;
 }
 
+/** Сброс всего, что считалось от масштаба: метки комнат живут на маске, окна
+ *  и двери — в своём кэше. Без этого смена масштаба оставляла бы на этаже
+ *  комнаты и окна, отмеренные по прежнему числу. */
+function resetScaleCaches() {
+  var m = maskCache[cur];
+  if (m) { m.labels = null; m.labCnt = null; m.labEdge = null; m.labMin = null; m.labN = 0; }
+  delete winCache[cur];
+  DOORS = [];
+}
+
+/** Медиана: одна ошибочная комната не должна утащить за собой масштаб. */
+function median(a) {
+  var v = a.slice().sort(function (x, y) { return x - y; });
+  if (!v.length) return 0;
+  return v.length % 2 ? v[(v.length - 1) / 2]
+                      : (v[v.length / 2 - 1] + v[v.length / 2]) / 2;
+}
+
+/** Площади найденных на плане комнат (м²) при пробном масштабе.
+ *  Сегментация сама зависит от масштаба — labelRooms отделяет комнаты по
+ *  проёмам радиусом, заданным в метрах, — поэтому метки сбрасываются на
+ *  каждый прогон, а прежний масштаб возвращается на место. */
+function roomAreasAt(ppmTry) {
+  var f = F(), was = f.pxPerM, out = [];
+  if (!getMask()) return out;
+  f.pxPerM = ppmTry;
+  resetScaleCaches();
+  try { out = enumerateRooms().map(function (r) { return r.m2; }); }
+  catch (e) { console.error('[plan_editor] scale rooms:', e); }
+  f.pxPerM = was;
+  resetScaleCaches();
+  return out;
+}
+
+/** Общий множитель площадей: самое плотное скопление отношений «комната
+ *  расчёта к комнате плана».
+ *
+ *  Пары не сводятся по порядку размера: на плане всегда находятся помещения,
+ *  которых в расчёте нет (коридоры, гардеробные, лоджии), и одно лишнее сбило
+ *  бы весь ряд. Берём ВСЕ отношения: верные ложатся кучно вокруг истинного
+ *  множителя, случайные рассыпаются. Окно шириной ±8% по стороне помещения
+ *  (±17% по площади) с наибольшим числом отношений и даёт ответ. */
+function fitAreaRatio(measured, targets) {
+  var rs = [];
+  measured.forEach(function (a) {
+    if (a > 0) targets.forEach(function (b) { if (b > 0) rs.push(b / a); });
+  });
+  if (rs.length < 2) return null;
+  rs.sort(function (x, y) { return x - y; });
+  var bi = 0, bj = 0;
+  for (var i = 0; i < rs.length; i++) {
+    var hi = rs[i] * 1.17, j = i;
+    while (j + 1 < rs.length && rs[j + 1] <= hi) j++;
+    if (j - i > bj - bi) { bi = i; bj = j; }
+  }
+  return median(rs.slice(bi, bj + 1));
+}
+
+/** Сколько комнат плана сошлись с расчётом при этом множителе — мера доверия
+ *  к масштабу. Комната расчёта занята одной комнатой плана: две одинаковые
+ *  спальни не должны считаться за одно совпадение дважды. */
+function agreeCount(measured, targets, ratio) {
+  var used = {}, ok = 0;
+  measured.forEach(function (a) {
+    var bestJ = -1, bestE = 1;
+    targets.forEach(function (b, j) {
+      if (used[j] || !(b > 0)) return;
+      var e = Math.abs(a * ratio - b) / b;
+      if (e < bestE) { bestE = e; bestJ = j; }
+    });
+    if (bestJ >= 0 && bestE <= 0.12) { used[bestJ] = 1; ok++; }
+  });
+  return ok;
+}
+
+/** Масштаб по площадям комнат расчёта: сколько пикселей плана в метре.
+ *
+ *  Единственное число разметки, которого нет ни на чертеже, ни в расчёте, —
+ *  и без него не работают ни авторазметка комнат, ни расстановка радиаторов.
+ *  Считаем от обратного: помещения на плане уже находятся по стенам, их
+ *  площади в расчёте известны, остаётся подобрать множитель.
+ *
+ *  Одного прогона мало: при заведомо неверном масштабе комнаты слипаются
+ *  через проёмы или рассыпаются на куски. Поэтому идём лесенкой пробных
+ *  масштабов, у каждого меряем согласие с расчётом, а лучший уточняем ещё
+ *  дважды — уже на его собственной сегментации. */
+function guessScale() {
+  var targets = calcRooms.filter(function (r) {
+    return (+r.floor || 1) === cur + 1 && r.area > 0;
+  }).map(function (r) { return r.area; });
+  if (targets.length < 2) return null;
+  var best = null;
+  [40, 70, 110, 170, 260].forEach(function (ppmTry) {
+    var meas = roomAreasAt(ppmTry);
+    var ratio = fitAreaRatio(meas, targets);
+    if (!ratio) return;
+    var ppm = ppmTry / Math.sqrt(ratio), ok = agreeCount(meas, targets, ratio);
+    if (ppm < 10 || ppm > 600) return;
+    if (!best || ok > best.ok) best = { ppm: ppm, ok: ok };
+  });
+  if (!best) return null;
+  for (var k = 0; k < 2; k++) {
+    var meas2 = roomAreasAt(best.ppm);
+    var ratio2 = fitAreaRatio(meas2, targets);
+    if (!ratio2) break;
+    var ppm2 = best.ppm / Math.sqrt(ratio2), ok2 = agreeCount(meas2, targets, ratio2);
+    if (ppm2 < 10 || ppm2 > 600 || ok2 < best.ok) break;
+    var settled = Math.abs(ppm2 - best.ppm) / best.ppm < 0.02;
+    best = { ppm: ppm2, ok: ok2 };
+    if (settled) break;
+  }
+  best.total = targets.length;
+  // Три сошедшиеся комнаты (или все, если их всего две) — граница, ниже
+  // которой это уже не подбор, а совпадение.
+  return best.ok >= Math.min(3, targets.length) ? best : null;
+}
+
+/** Чем проверить подобранный масштаб: ширина дверных проёмов. Величина
+ *  известна каждому монтажнику — 0,8–0,9 м, и разъехавшийся масштаб виден по
+ *  ней сразу, в отличие от площадей, по которым он и подбирался. */
+function doorWidthM() {
+  try { detectWindows(); } catch (e) { return 0; }
+  var f = F();
+  if (!DOORS.length || !f.pxPerM) return 0;
+  return median(DOORS.map(function (d) { return d.w / f.pxPerM; }));
+}
+
+/** Кнопка «Масштаб по расчёту», она же автоподбор при загрузке плана.
+ *  silent — молчать о неудаче: при загрузке плана комнат в расчёте может и
+ *  не быть, ругаться тут не на что. */
+function autoScale(silent) {
+  var g = null;
+  try { g = guessScale(); } catch (e) { console.error('[plan_editor] scale:', e); }
+  if (!g) {
+    if (!silent) hint('Масштаб по расчёту подобрать не удалось. Задайте его кнопкой ' +
+      '«Масштаб»: две точки отрезка с известной длиной. Для подбора нужны хотя бы три ' +
+      'комнаты этажа в подробном расчёте и читаемые стены на подложке.');
+    return false;
+  }
+  // Проверяем не тем, чем подбирали: площади можно свести к чему угодно, если
+  // комнаты в расчёте вообще от другого объекта, а ширина дверного проёма —
+  // величина известная. Вышло полтора метра — подобрался не масштаб, а
+  // совпадение, и такой лучше не ставить вовсе.
+  var f = F(), was = f.pxPerM;
+  f.pxPerM = g.ppm; resetScaleCaches();
+  var dw = doorWidthM();
+  f.pxPerM = was; resetScaleCaches();
+  if (dw && (dw < 0.6 || dw > 1.3)) {
+    if (!silent) hint('Масштаб по расчёту не принят: при нём дверные проёмы плана выходят ' +
+      dw.toFixed(2).replace('.', ',') + ' м вместо обычных 0,8–0,9. Похоже, комнаты в ' +
+      'расчёте не от этого этажа. Задайте масштаб кнопкой «Масштаб».');
+    return false;
+  }
+  // При загрузке отменять нечего: снимок 'plan' уже сделан и масштаб в нём.
+  if (!silent) pushUndo('scale');
+  f.pxPerM = g.ppm;
+  resetScaleCaches();
+  renderZones(); draw(); updateGuide();
+  hint('<span class=ok>Масштаб подобран по площадям комнат расчёта: сошлось ' + g.ok +
+    ' из ' + g.total + '.</span> ' +
+    (dw ? 'Проверьте: дверные проёмы получились ' + dw.toFixed(2).replace('.', ',') +
+      ' м — если это не так, задайте масштаб кнопкой «Масштаб». '
+        : 'Проверьте его кнопкой «Масштаб» по любому известному размеру. ') +
+    'Дальше — «Распознать комнаты».');
+  return true;
+}
+
 /** Какими зонами комната подробного расчёта ложится на план.
  *
  *  Назначение помещения важнее системы: котельная и санузел дают зону своего
@@ -1557,7 +1732,7 @@ function hasBoilerZone() {
  *  Сопоставление по площади (лучшие пары, допуск 25% или 2 м²); без расчёта —
  *  зоны ТП для всех найденных комнат. Уже размеченные комнаты не трогаются. */
 function autoRooms() {
-  if (!F().pxPerM) { alert('Сначала задайте масштаб.'); return; }
+  if (!F().pxPerM) { alert('Сначала задайте масштаб: кнопкой «Масштаб по расчёту» или «Масштаб».'); return; }
   var rooms = [];
   try { rooms = enumerateRooms(); } catch (e) { console.error('[plan_editor] rooms:', e); }
   if (!rooms.length) {
@@ -1622,7 +1797,7 @@ function autoRooms() {
 
 /** Кнопка «Под окна»: расставить радиаторы по найденным окнам */
 function autoRads() {
-  if (!F().pxPerM) { alert('Сначала задайте масштаб.'); return; }
+  if (!F().pxPerM) { alert('Сначала задайте масштаб: кнопкой «Масштаб по расчёту» или «Масштаб».'); return; }
   var wins = floorWindows();
   if (!wins.length) {
     hint('Окна распознать не удалось (нечёткий план?) — расставьте радиаторы кликами.');
@@ -1729,8 +1904,13 @@ function loadImage(inp) {
     });
   });
   if (files.length > 1) chain.then(function () {
-    hint('Загружено файлов: ' + files.length +
-      '. Задайте масштаб на каждом этаже (вкладки сверху).');
+    // Масштаб на каждом этаже подбирается сам; напоминаем только про те,
+    // где не вышло, — иначе подсказка гонит делать уже сделанное.
+    var left = DATA.floors.filter(function (fl) { return fl.img && !fl.pxPerM; }).length;
+    hint('Загружено файлов: ' + files.length + '. ' + (left
+      ? 'Задайте масштаб на этажах, где он не подобрался: ' + left +
+        ' из ' + DATA.floors.length + ' (вкладки сверху).'
+      : 'Масштаб подобран на всех этажах — проверьте его и размечайте комнаты.'));
   });
 }
 
@@ -2432,6 +2612,7 @@ cv.addEventListener('click', function (e) {
       if (m > 0) {
         pushUndo('scale');
         F().pxPerM = d / m;
+        resetScaleCaches();
         hint('<span class=ok>Масштаб задан.</span> Теперь обведите зоны.');
       }
       scalePts = []; scaleCur = null; setMode('select');
@@ -2973,7 +3154,7 @@ function stepTip(s, L) {
   var wcZones = f.zones.filter(function (z) { return z.type === 'wc'; });
   var TXT = {
     plan: 'Загрузите план этажа: фото, скан или PDF. Можно выбрать сразу несколько файлов — каждый станет своим этажом.',
-    scale: 'Задайте масштаб: нажмите «Масштаб», затем кликните две точки отрезка с известной длиной и введите её в метрах. Без масштаба площади зон не посчитать.',
+    scale: 'Масштаб обычно подбирается сам при загрузке плана — по площадям комнат подробного расчёта; кнопка «Масштаб по расчёту» повторяет подбор. Если комнат в расчёте нет или стены на подложке не читаются, задайте вручную: «Масштаб», две точки отрезка с известной длиной и его длина в метрах. Без масштаба площади зон не посчитать.',
     tp: 'Нажмите «Распознать комнаты» — все комнаты найдутся по стенам, а зоны создадутся и подпишутся по комнатам подробного расчёта: тёплый пол, котельная и санузлы сразу своим типом. Поправить можно вручную: «Зона: по клику» внутри комнаты или «Зона: контур». Нет тёплого пола на этаже — переходите к радиаторам.',
     rad: 'Нажмите «Под окна» — радиаторы расставятся по найденным окнам. Лишние убираются кликом по значку, недостающие добавляются кликом в режиме «Радиаторы». Нет радиаторов на этаже — переходите дальше.',
     coll: 'Нажмите «Коллектор» и кликните, где он будет стоять (обычно в котельной). От коллектора на листе «Тёплый пол» нарисуются подводки ко всем петлям, а длины петель посчитаются вместе с ними.',
@@ -2986,7 +3167,7 @@ function stepTip(s, L) {
         wcZones.filter(function (z) { return wcCardOf(z.name); }).length + '.</b>' : ''),
     names: 'Подпишите зоны именами комнат: клик по комнате в списке «Комнаты из расчёта» справа подставит имя первой безымянной зоне.'
   };
-  var BTN = { plan: 'b_upload', scale: 'b_scale', tp: 'b_autorooms', rad: 'b_autorad',
+  var BTN = { plan: 'b_upload', scale: 'b_autoscale', tp: 'b_autorooms', rad: 'b_autorad',
               coll: 'b_coll', boiler: 'ztype', wc: 'ztype', names: 'b_save' };
   var DEMO = { scale: 'scale', tp: 'room', boiler: 'room', wc: 'room' };
   return {
@@ -3127,7 +3308,7 @@ function stepDefs() {
 
   var L = [];
   L.push({ id: 'plan', t: 'План', ok: !!f.img, btn: ['b_upload'] });
-  L.push({ id: 'scale', t: 'Масштаб', ok: !!f.pxPerM, btn: ['b_scale'], mode: 'scale' });
+  L.push({ id: 'scale', t: 'Масштаб', ok: !!f.pxPerM, btn: ['b_autoscale', 'b_scale'], mode: 'scale' });
   L.push({ id: 'tp', t: 'Тёплый пол', ok: hasTp, type: 'tp', mode: 'room',
            btn: ['b_autorooms', 'b_room', 'b_rect', 'b_poly', 'ztype'] });
   L.push({ id: 'rad', t: 'Радиаторы', ok: (f.rads || []).length > 0, mode: 'rad',
