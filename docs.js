@@ -1313,22 +1313,43 @@ const Docs = {
         const ins = this.insuranceSection(d);
         const n = ins ? 4 : 3;
 
-        // Одинаковые сроки сводим в строки таблицы по позициям сметы, а не по
-        // артикулам: клиенту важно, что именно у него стоит.
-        let known = 0, unknown = 0;
-        const rows = list.map(it => {
-            if (!it) return '';
+        // Позиции сводим в группы по сроку и печатаем от большего к меньшему.
+        // Построчно, по одной строке на каждую муфту, талон разрастался на
+        // четырнадцать страниц — такой никто не читает, а сроков в нём всего
+        // четыре-пять. Внутри группы перечисляем названия: клиенту важно, что
+        // именно у него стоит, а артикул он найдёт в спецификации к договору.
+        //
+        // Берём только STOUT и ROMMER: справочник сроков собран по паспортам и
+        // официальной странице этих брендов, и ручаться по нему за котёл чужого
+        // изготовителя нельзя. Про остальное — строка под таблицей.
+        const OWN = ['STOUT', 'ROMMER'];
+        const groups = [];
+        const others = [];
+        list.forEach(it => {
+            if (!it) return;
             const art = String(it.displaySku || it.originalId || it.id || '');
-            if (art.indexOf('custom_collapsed_') === 0) return '';
+            if (art.indexOf('custom_collapsed_') === 0) return;
+            const brand = String(it.brand || '').trim();
+            if (OWN.indexOf(brand.toUpperCase()) < 0) {
+                // В поле бренда у части позиций стоит прочерк — в перечень
+                // изготовителей такое пускать нельзя.
+                const named = /[A-Za-zА-Яа-яЁё0-9]{2}/.test(brand);
+                if (named && others.indexOf(brand) < 0) others.push(brand);
+                return;
+            }
             const w = this.warrantyMonthsFor(it);
-            if (w) known++; else unknown++;
-            return `<tr>
-                <td>${e(it.name || art)}</td>
-                <td class="c">${e(art)}</td>
-                <td class="c">${e(it.brand || '')}</td>
-                <td class="c">${w ? this.monthsWords(w.months) + (w.note ? '<br><span style="font-size:8pt;">' + e(w.note) + '</span>' : '') : 'по паспорту'}</td>
-            </tr>`;
-        }).filter(Boolean).join('');
+            const months = w ? w.months : -1;      // -1 — срок только в паспорте изделия
+            const note = (w && w.note) || '';
+            let g = groups.find(x => x.months === months && x.note === note);
+            if (!g) { g = { months: months, note: note, names: [] }; groups.push(g); }
+            const name = String(it.name || art).trim();
+            if (name && g.names.indexOf(name) < 0) g.names.push(name);
+        });
+        groups.sort((a, b) => b.months - a.months);
+        const rows = groups.map(g => `<tr>
+                <td class="c" style="white-space:nowrap;"><b>${g.months > 0 ? this.monthsWords(g.months) : 'по паспорту'}</b>${g.note ? '<br><span style="font-size:8pt; white-space:normal;">' + e(g.note) + '</span>' : ''}</td>
+                <td>${g.names.map(x => e(x)).join('; ')}</td>
+            </tr>`).join('');
 
         return `<!DOCTYPE html><html lang="ru"><head><meta charset="utf-8">
             <title>Гарантийный талон</title>${this.styles()}</head><body>
@@ -1352,17 +1373,19 @@ const Docs = {
         <p class="n">2.1. Сроки установлены изготовителями оборудования. Паспорта и гарантийные
         документы переданы Заказчику вместе с оборудованием.</p>
         <table>
-            <tr><th>Наименование</th><th>Артикул</th><th>Бренд</th><th>Гарантия</th></tr>
-            ${rows || '<tr><td colspan="4" class="c">Оборудование не выбрано</td></tr>'}
+            <tr><th style="width:22%;">Срок гарантии</th><th>Оборудование STOUT и ROMMER</th></tr>
+            ${rows || '<tr><td colspan="2" class="c">Оборудование STOUT и ROMMER в смете не значится</td></tr>'}
         </table>
+        ${others.length ? `<p class="n">2.2. На оборудование других изготовителей
+        (${others.map(x => e(x)).join(', ')}) действует гарантия его изготовителя; срок указан
+        в паспорте изделия, переданном Заказчику вместе с оборудованием.</p>` : ''}
         <p class="small">Сроки указаны по паспортам изделий и официальной странице гарантии
         изготовителя (${e(this.BRAND_WARRANTY.source)}). Где источники расходятся, приведён
         меньший срок. «По паспорту» означает, что срок смотрите в паспорте изделия: он передан
-        вам вместе с оборудованием.
-        Учтено позиций со сроком: ${known}${unknown ? `, без срока в справочнике: ${unknown}` : ''}.</p>
-        <p class="n">2.2. Гарантийный срок исчисляется с даты продажи оборудования, но не может
-        выходить за пределы срока, установленного изготовителем.</p>
-        <p class="n">2.3. <b>Куда обращаться.</b> По недостаткам оборудования, поставленного
+        вам вместе с оборудованием.</p>
+        <p class="n">2.${others.length ? 3 : 2}. Гарантийный срок исчисляется с даты продажи
+        оборудования, но не может выходить за пределы срока, установленного изготовителем.</p>
+        <p class="n">2.${others.length ? 4 : 3}. <b>Куда обращаться.</b> По недостаткам оборудования, поставленного
         Исполнителем, Заказчик вправе обратиться непосредственно к Исполнителю: работа выполнена из
         его материала, и за качество этого материала он отвечает по правилам об ответственности
         продавца (ст. 704 и 733 Гражданского кодекса РФ, ст. 35 Закона РФ «О защите прав
