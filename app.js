@@ -7530,11 +7530,11 @@ const app = {
                 getInvoiceBtn = `<button class="btn-get-invoice" id="btn_invoice_${item.id}" onclick="event.stopPropagation(); app.sendEstimateInvoiceToManager('${item.id}', this)" title="Заказать счёт у менеджера">📄 Получить счёт</button>`;
             }
 
-            // У сметы, которую уже отправляли, кнопка показывает готовую ссылку, а не
-            // делает новую: переотправка затирает то, что видел клиент (openSharedLink)
-            const shareBtn = sharedInvoiceId
-                ? `<button class="lk-btn-sm" onclick="event.stopPropagation(); app.openSharedLink('${item.id}', '${sharedInvoiceId}')" title="Показать ссылку, которую уже отправляли клиенту">Ссылка клиенту</button>`
-                : `<button class="lk-btn-sm" onclick="event.stopPropagation(); app.cloudRowAction('${item.id}', 'share')" title="Короткая ссылка на смету для клиента">Ссылка клиенту</button>`;
+            // Кнопка всегда идёт через openSharedLink: он сам решает, показать готовую
+            // ссылку или сделать новую. Переотправка затирает то, что видел клиент,
+            // поэтому делать её молча, одним нажатием, нельзя.
+            const shareBtn = `<button class="lk-btn-sm" onclick="event.stopPropagation(); app.openSharedLink('${item.id}', '${sharedInvoiceId || ''}', '${item.calc_id || ''}')" title="${sharedInvoiceId
+                ? 'Показать ссылку, которую уже отправляли клиенту' : 'Короткая ссылка на смету для клиента'}">Ссылка клиенту</button>`;
 
             h += `
                 <tr class="active-row" style="cursor: pointer;" onclick="app.loadSingleEstimate('${item.id}')">
@@ -7589,7 +7589,19 @@ const app = {
      * отправленной сметы кнопка показывает готовую ссылку, а переотправка —
      * отдельным действием и с предупреждением, что прежняя версия пропадёт.
      */
-    openSharedLink: async function (estimateId, shareId) {
+    openSharedLink: async function (estimateId, shareId, calcId) {
+        // Ссылку часто делают уже после сохранения сметы, и её номер в расчёт не
+        // попадает — такая смета и в списке значится «Сохранена». Снимок всё
+        // равно есть: он помечен номером КП. Ищем по нему, иначе кнопка у своей
+        // же отправленной сметы снова предложила бы всё переписать заново.
+        if (!shareId && calcId) {
+            try {
+                const { data } = await supabaseClient.from('shared_invoices')
+                    .select('id, created_at').eq('object_info->>sequence_id', String(calcId))
+                    .order('created_at', { ascending: false }).limit(1);
+                if (data && data.length) shareId = data[0].id;
+            } catch (e) { /* не нашли — ниже сделаем новую ссылку */ }
+        }
         if (!shareId) { this.cloudRowAction(estimateId, 'share'); return; }
         const baseOrigin = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
             ? window.location.origin : 'https://heatcalc.ru';
