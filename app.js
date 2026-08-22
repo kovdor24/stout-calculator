@@ -14687,6 +14687,113 @@ const app = {
      * вкладки, а нужны нам полоски и ломаная, которые в SVG пишутся за
      * полсотни строк и сами подхватывают цвета темы через var(--…).
      */
+    // ── Google Trends: общий счёт для «Аналитики» и дашборда ────────────────
+    // Данные собирает AutoTrends.py (см. его шапку). Здесь только счёт, но
+    // общий: те же проценты показывают таблица категорий, плитки спроса,
+    // «счета против спроса» и дайджест. Разъедься эти четыре места в
+    // формулах — и одна и та же группа показывала бы на дашборде одно, а во
+    // вкладке другое, причём молча.
+
+    // Доли поисковиков в России: примерно две трети Яндекс, треть Google.
+    // Точность здесь недостижима — доля разная по устройствам и тематикам,
+    // а у Google и объёма-то нет. Веса отвечают на вопрос «куда двинулся
+    // рынок целиком», а не «на сколько именно процентов».
+    TRENDS_W_YANDEX: 0.7,
+    TRENDS_W_GOOGLE: 0.3,
+    // Спором считаем разные знаки при заметной величине у ОБОИХ. Пара
+    // «+25 % и −1 %» формально противоположна, но второе число — стояние на
+    // месте, а не падение; по мягкому правилу значок вставал бы у каждой
+    // второй строки и перестал бы что-либо значить.
+    TRENDS_DISPUTE_MIN: 8,
+
+    /**
+     * Изменение ряда [[«2026-07», 63], …] за backMonths месяцев назад.
+     *
+     * База ищется по ключу месяца, а не по смещению в массиве: Wordstat
+     * собирается 3-го числа, Trends 6-го, и на стыке месяца один источник уже
+     * перешагнул границу, а другой нет. По смещению мы бы тихо сравнили
+     * разные пары месяцев и никак об этом не узнали.
+     */
+    trendsDelta: function (series, backMonths) {
+        if (!series || !series.length) return null;
+        const by = {};
+        series.forEach(p => { by[p[0]] = p[1]; });
+        const nowM = series[series.length - 1][0];
+        const [y, m] = String(nowM).split('-').map(Number);
+        const d = new Date(Date.UTC(y, (m - 1) - backMonths, 1));
+        const baseM = d.getUTCFullYear() + '-' + String(d.getUTCMonth() + 1).padStart(2, '0');
+        if (by[baseM] == null || !by[baseM]) return null;
+        return {
+            pct: Math.round((by[nowM] - by[baseM]) / by[baseM] * 100),
+            now: by[nowM], nowM: nowM, base: by[baseM], baseM: baseM
+        };
+    },
+
+    /** Ряд Google по товарной категории. sparse — фразы, где у Google слишком
+     *  мало данных: ряд скачет от нуля, и динамика по нему ничего не значит. */
+    trendsCatDelta: function (catId, backMonths) {
+        const t = (this._analytics && this._analytics.trends) || null;
+        if (!t || ((t.sparse || []).indexOf(catId) >= 0)) return null;
+        return this.trendsDelta((t.cats || {})[catId], backMonths);
+    },
+
+    /** То же для фразы плиток дашборда («монтаж отопления в частном доме»). */
+    trendsPhraseDelta: function (id, backMonths) {
+        const t = (this._analytics && this._analytics.trends) || null;
+        if (!t || ((t.sparse || []).indexOf(id) >= 0)) return null;
+        return this.trendsDelta((t.phrase_series || {})[id], backMonths);
+    },
+
+    /**
+     * Изменение по группе фраз. У Яндекса группу считают, сложив запросы и
+     * только потом взяв процент. С Google так нельзя: у каждой фразы своя
+     * шкала 0–100, и сумма индексов — бессмысленное число. Поэтому усредняем
+     * проценты, а вес фразе даём по её яндексовому объёму: иначе редкая
+     * формулировка тянула бы группу наравне с основной.
+     */
+    trendsGroupDelta: function (ids, weightOf, backMonths) {
+        let sum = 0, w = 0, n = 0;
+        (ids || []).forEach(id => {
+            const d = this.trendsPhraseDelta(id, backMonths);
+            if (!d) return;
+            const wt = Math.max(0, Number(weightOf ? weightOf(id) : 1) || 0) || 1;
+            sum += d.pct * wt; w += wt; n++;
+        });
+        return w ? { pct: Math.round(sum / w), count: n } : null;
+    },
+
+    /**
+     * Свести яндексовый процент с гугловым. Возвращает null, если сводить не
+     * из чего, иначе { pct, dispute } — где dispute значит, что источники
+     * разошлись в направлении и цифре верить нельзя.
+     */
+    trendsMix: function (yPct, gPct) {
+        const hasY = yPct !== null && yPct !== undefined;
+        const hasG = gPct !== null && gPct !== undefined;
+        if (!hasY && !hasG) return null;
+        if (!hasG) return { pct: yPct, dispute: false, only: 'yandex' };
+        if (!hasY) return { pct: gPct, dispute: false, only: 'google' };
+        return {
+            pct: Math.round(yPct * this.TRENDS_W_YANDEX + gPct * this.TRENDS_W_GOOGLE),
+            dispute: (yPct > 0) !== (gPct > 0)
+                && Math.min(Math.abs(yPct), Math.abs(gPct)) >= this.TRENDS_DISPUTE_MIN,
+            only: null
+        };
+    },
+
+    /** Подпись «я +21 · g −11» под сведённой цифрой — одна на все четыре места. */
+    trendsSubHtml: function (yPct, gPct, mix) {
+        const sgn = p => (p > 0 ? '+' : '');
+        const paint = p => (p > 4 ? '#10B981' : (p < -4 ? '#EF4444' : 'var(--text-sec)'));
+        if (!mix || mix.only === 'yandex') return `<small style="color:var(--text-sec);">только Яндекс</small>`;
+        if (mix.only === 'google') return `<small style="color:var(--text-sec);">только Google</small>`;
+        // При споре обе половинки красим их собственным знаком: именно
+        // расхождение и есть то, ради чего подпись нужна.
+        return `<small style="color:var(--text-sec);">`
+            + `<span style="color:${mix.dispute ? paint(yPct) : 'inherit'};">я ${sgn(yPct)}${yPct}</span>`
+            + ` · <span style="color:${mix.dispute ? paint(gPct) : 'inherit'};">g ${sgn(gPct)}${gPct}</span></small>`;
+    },
+
     renderAdminAnalytics: function () {
         const content = document.getElementById('admin_content');
         if (!content) return;
@@ -14833,73 +14940,33 @@ const app = {
         const gCats = (trends && trends.cats) || {};
         const gSparse = new Set((trends && trends.sparse) || []);
         const hasGoogle = Object.keys(gCats).length > 0;
-        // Месяц у двух источников может разойтись: Wordstat собирается 3-го
-        // числа, Trends 6-го, и в стык месяца один уже перешагнул границу, а
-        // другой нет. Поэтому базу ищем по ключу месяца, а не по смещению
-        // в массиве, — иначе тихо сравнили бы разные пары месяцев.
-        const shiftMonth = (key, back) => {
-            const [y, m] = String(key).split('-').map(Number);
-            const d = new Date(Date.UTC(y, (m - 1) - back, 1));
-            return d.getUTCFullYear() + '-' + String(d.getUTCMonth() + 1).padStart(2, '0');
-        };
-        const gDeltaOf = (catId) => {
-            const s = gCats[catId];
-            if (!s || !s.length || gSparse.has(catId)) return null;
-            const by = {};
-            s.forEach(p => { by[p[0]] = p[1]; });
-            const nowM = s[s.length - 1][0];
-            const baseM = shiftMonth(nowM, backMonths);
-            if (by[baseM] == null || !by[baseM]) return null;
-            return {
-                pct: Math.round((by[nowM] - by[baseM]) / by[baseM] * 100),
-                now: by[nowM], nowM: nowM, base: by[baseM], baseM: baseM
-            };
-        };
-        // Доли поисковиков в России: примерно две трети Яндекс, треть Google.
-        // Точность здесь не нужна и недостижима — доля разная по устройствам и
-        // тематикам. Веса отвечают на вопрос «куда двинулся рынок целиком»,
-        // а не «на сколько именно процентов».
-        const W_YANDEX = 0.7, W_GOOGLE = 0.3;
-        // Спором считаем разные знаки при заметной величине у ОБОИХ. Пара
-        // «+25 % и −1 %» формально противоположна, но второе число — стояние
-        // на месте, а не падение; по такому правилу значок вставал бы у
-        // каждой второй строки и перестал бы что-либо значить. На нынешних
-        // данных строгое правило оставляет 7 спорных групп из 30 вместо 12.
-        const DISPUTE_MIN = 8;
+        const gDeltaOf = (catId) => this.trendsCatDelta(catId, backMonths);
+        // Сведённая ячейка: сверху общий процент, под ним исходные. Счёт —
+        // общий с дашбордом (trendsMix), чтобы одна и та же группа не
+        // показывала во вкладке одно, а на плитке другое.
         const marketCell = (catId) => {
             const y = deltaOf(catId), g = gDeltaOf(catId);
-            if (!y && !g) return `<span style="color:var(--text-sec);">—</span>`;
+            const mix = this.trendsMix(y ? y.pct : null, g ? g.pct : null);
+            if (!mix) return `<span style="color:var(--text-sec);">—</span>`;
             const sgn = p => (p > 0 ? '+' : '');
             const paint = p => (p > 4 ? '#10B981' : (p < -4 ? '#EF4444' : 'var(--text-sec)'));
-            // Google молчит — показываем яндексовую цифру как есть, но
-            // подписываем источник: иначе строка выглядит так же, как сведённая
-            // по двум, и это была бы неправда о её надёжности.
-            if (!g) {
-                const why = gSparse.has(catId)
-                    ? 'у Google по этой фразе слишком мало запросов: ряд скачет от нуля'
-                    : 'у Google по этой фразе данных нет';
-                return `<span title="${y.nowM}: ${num(y.now)} против ${y.baseM}: ${num(y.base)}" style="color:${paint(y.pct)}; font-weight:700;">${sgn(y.pct)}${y.pct}%</span>`
-                    + `<br><small style="color:var(--text-sec);" title="${why}">только Яндекс</small>`;
-            }
-            if (!y) {
-                return `<span title="Индекс Google, ${g.nowM}: ${g.now} против ${g.baseM}: ${g.base}" style="color:${paint(g.pct)}; font-weight:700;">${sgn(g.pct)}${g.pct}%</span>`
-                    + `<br><small style="color:var(--text-sec);" title="истории по этой группе в Wordstat пока нет">только Google</small>`;
-            }
-            const pct = Math.round(y.pct * W_YANDEX + g.pct * W_GOOGLE);
-            const dispute = (y.pct > 0) !== (g.pct > 0)
-                && Math.min(Math.abs(y.pct), Math.abs(g.pct)) >= DISPUTE_MIN;
             // При споре цифру не красим: усреднять разнонаправленное можно,
             // выдавать результат за уверенный рост или падение — нет.
-            const color = dispute ? 'var(--text-sec)' : paint(pct);
-            const tip = `Яндекс ${sgn(y.pct)}${y.pct}% (${num(y.now)} против ${num(y.base)} запросов), `
-                + `Google ${sgn(g.pct)}${g.pct}% (индекс ${g.now} против ${g.base}). `
-                + `Сведено с весами ${W_YANDEX * 100}/${W_GOOGLE * 100} по долям поиска в России`
-                + (dispute ? '. Источники расходятся в направлении — цифре верить нельзя' : '');
-            return `<span title="${tip}" style="color:${color}; font-weight:700;">${sgn(pct)}${pct}%`
-                + (dispute ? ` <span style="color:#F97316;" title="источники спорят">⚠</span>` : '') + `</span>`
-                + `<br><small style="color:var(--text-sec);">`
-                + `<span style="color:${dispute ? paint(y.pct) : 'inherit'};">я ${sgn(y.pct)}${y.pct}</span>`
-                + ` · <span style="color:${dispute ? paint(g.pct) : 'inherit'};">g ${sgn(g.pct)}${g.pct}</span></small>`;
+            const color = mix.dispute ? 'var(--text-sec)' : paint(mix.pct);
+            const tip = y && g
+                ? `Яндекс ${sgn(y.pct)}${y.pct}% (${num(y.now)} против ${num(y.base)} запросов), `
+                    + `Google ${sgn(g.pct)}${g.pct}% (индекс ${g.now} против ${g.base}). `
+                    + `Сведено с весами ${this.TRENDS_W_YANDEX * 100}/${this.TRENDS_W_GOOGLE * 100} по долям поиска в России`
+                    + (mix.dispute ? '. Источники расходятся в направлении — цифре верить нельзя' : '')
+                : (y ? `${y.nowM}: ${num(y.now)} против ${y.baseM}: ${num(y.base)}. `
+                        + (gSparse.has(catId)
+                            ? 'У Google по этой фразе слишком мало запросов: ряд скачет от нуля'
+                            : 'У Google по этой фразе данных нет')
+                     : `Индекс Google, ${g.nowM}: ${g.now} против ${g.baseM}: ${g.base}. `
+                        + 'Истории по этой группе в Wordstat пока нет');
+            return `<span title="${tip}" style="color:${color}; font-weight:700;">${sgn(mix.pct)}${mix.pct}%`
+                + (mix.dispute ? ` <span style="color:#F97316;" title="источники спорят">⚠</span>` : '') + `</span>`
+                + `<br>` + this.trendsSubHtml(y ? y.pct : null, g ? g.pct : null, mix);
         };
 
         // Без истории категорий проценты посчитать не из чего, и кнопки базы
@@ -17012,9 +17079,23 @@ const app = {
             const pts = g.points;
             if (!pts.length) return null;
             const nowP = pts[pts.length - 1], baseP = pts[pts.length - 1 - back];
+            const yPct = (baseP && baseP[1]) ? Math.round((nowP[1] - baseP[1]) / baseP[1] * 100) : null;
+            // Та же группа фраз глазами Google. Вес фразе — её яндексовый
+            // объём за последний месяц: у Google складывать нечего, шкала
+            // 0–100 у каждой фразы своя, поэтому усредняются проценты, а не
+            // запросы. Марки (group brands) в Trends не собираются — там
+            // сплошные тёзки, и gPct у них останется null.
+            const lastOf = (id) => {
+                const ser = seriesOf(id);
+                return ser.length ? (Number(ser[ser.length - 1][1]) || 0) : 0;
+            };
+            const gg = group === 'brands' ? null : this.trendsGroupDelta(g.ids, lastOf, back);
+            const gPct = gg ? gg.pct : null;
+            const mix = this.trendsMix(yPct, gPct);
             return {
                 month: nowP[0], now: nowP[1], baseM: baseP ? baseP[0] : null,
-                pct: (baseP && baseP[1]) ? Math.round((nowP[1] - baseP[1]) / baseP[1] * 100) : null,
+                pct: yPct, gPct: gPct, mix: mix,
+                mixPct: mix ? mix.pct : yPct, dispute: !!(mix && mix.dispute),
                 count: g.ids.length, points: pts
             };
         };
@@ -17109,6 +17190,14 @@ const app = {
         };
 
         const kDemand = kpi('demand'), kCalc = kpi('calc'), kEquip = kpi('equipment');
+        // Плитка показывает сведённую цифру, а из чего она сведена — подписью.
+        // Без подписи на плитке стояло бы число, которого нет ни у одного
+        // источника, и проверить его было бы негде.
+        const gSub = (k) => {
+            if (!k || k.gPct === null || k.gPct === undefined || k.pct === null) return '';
+            const sg = (v) => (v > 0 ? '+' : '') + v;
+            return ` · я ${sg(k.pct)}% · g ${sg(k.gPct)}%${k.dispute ? ' ⚠' : ''}`;
+        };
         // Два кольца рядом требуют места на подписи «в тройке 16 из 38». В одну
         // колонку они не встают — там ставим их друг под другом.
         B.own_places = card(head('Наши места по группам', sp('own_places') >= 2
@@ -17121,13 +17210,13 @@ const app = {
                </div>`);
         if (kDemand) B.demand_works = tile('demand_works', 'linear-gradient(135deg,#FBCFE8 0%,#FDBA74 55%,#FCA5A5 100%)',
             'Спрос на монтаж и работы', num(kDemand.now),
-            sp('demand_works') >= 2 ? `${esc(kDemand.month)} · ${kDemand.count} формулировок, ${backLabel}` : `${esc(kDemand.month)}, ${backLabel}`, kDemand.pct);
+            sp('demand_works') >= 2 ? `${esc(kDemand.month)} · ${kDemand.count} формулировок, ${backLabel}${gSub(kDemand)}` : `${esc(kDemand.month)}, ${backLabel}${gSub(kDemand)}`, kDemand.mixPct);
         if (kCalc) B.demand_calc = tile('demand_calc', 'linear-gradient(135deg,#A7F3D0 0%,#7DD3FC 55%,#BFDBFE 100%)',
             'Спрос на подбор и проект', num(kCalc.now),
-            sp('demand_calc') >= 2 ? `${esc(kCalc.month)} · то, что делает калькулятор, ${backLabel}` : `${esc(kCalc.month)}, ${backLabel}`, kCalc.pct);
+            sp('demand_calc') >= 2 ? `${esc(kCalc.month)} · то, что делает калькулятор, ${backLabel}${gSub(kCalc)}` : `${esc(kCalc.month)}, ${backLabel}${gSub(kCalc)}`, kCalc.mixPct);
         if (kEquip) B.demand_equip = tile('demand_equip', 'linear-gradient(135deg,#DDD6FE 0%,#C7D2FE 55%,#BAE6FD 100%)',
             'Спрос на оборудование', num(kEquip.now),
-            sp('demand_equip') >= 2 ? `${esc(kEquip.month)} · ${kEquip.count} формулировок, ${backLabel}` : `${esc(kEquip.month)}, ${backLabel}`, kEquip.pct);
+            sp('demand_equip') >= 2 ? `${esc(kEquip.month)} · ${kEquip.count} формулировок, ${backLabel}${gSub(kEquip)}` : `${esc(kEquip.month)}, ${backLabel}${gSub(kEquip)}`, kEquip.mixPct);
 
         // ── Полоса источников ───────────────────────────────────────────────
         const src = (icon, name, date) => `<div style="display:flex; align-items:center; gap:8px; min-width:0;">
@@ -17573,6 +17662,29 @@ const app = {
                 const a = s[s.length - 1], b = s[s.length - 1 - back];
                 return (b && b[1]) ? Math.round((a[1] - b[1]) / b[1] * 100) : null;
             };
+            // Спрос в этой колонке — сведённый по двум поисковикам, как в
+            // «Аналитике». Значок ⚠ значит, что источники разошлись, и по
+            // такой строке решение о группе принимать нельзя.
+            const demandMix = (id) => {
+                const y = demandPct(id);
+                const g = this.trendsCatDelta(id, back);
+                return this.trendsMix(y, g ? g.pct : null);
+            };
+            const demandCell = (id) => {
+                const mix = demandMix(id);
+                if (!mix) return trend(null);
+                const y = demandPct(id), g = this.trendsCatDelta(id, back);
+                const tip = (y === null ? '' : `Яндекс ${y > 0 ? '+' : ''}${y}%`)
+                    + (g ? `, Google ${g.pct > 0 ? '+' : ''}${g.pct}%` : ', у Google данных нет')
+                    + (mix.dispute ? ' — источники расходятся' : '');
+                // При споре цифру показываем, но серой и со значком: прочерк
+                // читался бы как «данных нет», а они как раз есть — просто
+                // спорят.
+                if (!mix.dispute) return `<span title="${tip}">${trend(mix.pct)}</span>`;
+                return `<span title="${tip}" style="color:var(--text-sec); font-weight:700;">`
+                    + `${mix.pct > 0 ? '↑ +' : (mix.pct < 0 ? '↓ ' : '→ ')}${mix.pct}%`
+                    + ` <span style="color:#F97316;">⚠</span></span>`;
+            };
             const pp = (v) => v === null ? `<span style="color:var(--text-sec);">—</span>`
                 : `<span style="color:${v > 1 ? '#10B981' : (v < -1 ? '#EF4444' : 'var(--text-sec)')}; font-weight:700;">${v > 0 ? '+' : ''}${v} п.п.</span>`;
 
@@ -17599,12 +17711,13 @@ const app = {
                         </div>`}
                         <div style="width:38px; text-align:right; font-size:12.5px; font-weight:700; color:var(--text-main);">${Math.round(r.share)}%</div>
                         <div style="width:62px; text-align:right; font-size:11.5px;">${pp(r.delta)}</div>
-                        ${uNarrow ? '' : `<div style="width:56px; text-align:right; font-size:11.5px;" title="спрос по России, ${backLabel}">${trend(dp)}</div>`}
+                        ${uNarrow ? '' : `<div style="width:56px; text-align:right; font-size:11.5px;" title="спрос по России, ${backLabel}">${demandCell(r.id)}</div>`}
                     </div>`;
                 }).join('')
                 + (uNarrow ? '' : `<div style="font-size:11.5px; color:var(--text-sec); margin-top:10px; line-height:1.6;">
                         ${num(usage.nRecent)} счетов за полгода, ${num(usage.nPrev)} за предыдущие${usage.capped ? ' (обрезано по потолку строк)' : ''}.
-                        Столбцы: доля счетов с группой · сдвиг к прошлому полугодию · спрос ${esc(backLabel)}.
+                        Столбцы: доля счетов с группой · сдвиг к прошлому полугодию · спрос ${esc(backLabel)}, Яндекс и Google вместе.
+                        ⚠ значит, что поисковики разошлись в направлении."
                         ${usage.unknownShare > 0 ? `Вне карты групп ${usage.unknownShare}% строк — своё и распознанное оборудование.` : ''}
                    </div>`);
             }
@@ -18460,7 +18573,15 @@ const app = {
         }
 
         const kDem = kpi('demand');
-        if (kDem) digest.push({ tone: toneOf(kDem.pct), html: `Спрос на монтаж, ${esc(kDem.month)}: <b>${num(kDem.now)}</b>${pctWord(kDem.pct)} ${esc(backLabel)}` });
+        if (kDem) {
+            // Тон строки — по сведённой цифре, но при споре источников он
+            // всегда 'flat': красить спорное в зелёное значило бы утверждать
+            // то, чего мы не знаем.
+            const dispPart = (kDem.gPct === null || kDem.gPct === undefined || kDem.pct === null) ? ''
+                : ` <small style="color:var(--text-sec);">я ${kDem.pct > 0 ? '+' : ''}${kDem.pct}% · g ${kDem.gPct > 0 ? '+' : ''}${kDem.gPct}%${kDem.dispute ? ' ⚠ расходятся' : ''}</small>`;
+            digest.push({ tone: kDem.dispute ? 'flat' : toneOf(kDem.mixPct),
+                html: `Спрос на монтаж, ${esc(kDem.month)}: <b>${num(kDem.now)}</b>${pctWord(kDem.mixPct)} ${esc(backLabel)}${dispPart}` });
+        }
 
         // Движение мест: вошли в тройку или выпали к прошлому месяцу. Кольца
         // «Наши места» показывают только «сейчас», а решение принимают по
