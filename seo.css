@@ -235,6 +235,35 @@ td strong { color: var(--primary); }
 .cta:hover { opacity: 0.9; text-decoration: none; }
 .cta small { display: block; font-weight: 500; font-size: 13px; opacity: 0.85; margin-top: 3px; }
 
+/* ── Графики ─────────────────────────────────────────────────────── */
+
+/* Рисуются прямо в разметке как inline SVG: ни одного запроса к серверу,
+   цвета берутся из тех же переменных, поэтому график сам переключается
+   вместе с темой. Данные — из справочников проекта, не из головы. */
+
+.chart {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px 20px;
+    margin: 0 0 12px;
+}
+.chart svg { display: block; width: 100%; height: auto; font-family: inherit; }
+.chart-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-main);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    margin: 0 0 14px;
+}
+.chart + .note { margin-top: -2px; }
+
+@media (max-width: 600px) {
+    .chart { padding: 14px; }
+    .chart-title { font-size: 12px; margin-bottom: 10px; }
+}
+
 /* ── Врезки ──────────────────────────────────────────────────────── */
 
 .callout {
