@@ -91,18 +91,95 @@ const Docs = {
         }
     },
 
+    // Печатать сегодняшними ценами вместо тех, что ушли клиенту. По умолчанию нет:
+    // договор должен повторять то, о чём стороны договорились, а не то, что стоит
+    // сегодня. Твёрдая цена по договору от подорожания каталога не меняется
+    // (п. 6 ст. 709 ГК РФ) — значит и бумага меняться не должна.
+    _useTodayPrices: false,
+
+    // Слепок цен на момент отправки клиенту (app.capturePriceSnapshot). Нужен там,
+    // где снимка отправленной сметы нет: печать и Excel его не создают, а состав
+    // калькулятор пересобирает по сегодняшнему каталогу.
+    priceSnap: function () {
+        if (this._ctx && this._ctx.snap) return null;   // у заказа свой снимок, полнее
+        const s = app.state.priceSnapshot;
+        return (s && s.prices) ? s : null;
+    },
+
+    // Подстановка цен из слепка. Позиции, которых в слепке нет (появились в смете
+    // после отправки), остаются с сегодняшней ценой — придумывать им старую нельзя.
+    withSnapPrices: function (list, isWorks) {
+        const snap = this.priceSnap();
+        if (!snap || this._useTodayPrices) return list;
+        const src = (isWorks ? snap.works : snap.prices) || {};
+        return list.map(it => {
+            if (!it) return it;
+            const key = isWorks ? String(it.name || '') : String(it.originalId || it.id || '');
+            const p = src[key];
+            if (p === undefined) return it;
+            const q = Number(it.q) || 1;
+            return Object.assign({}, it, { price: p, sum: p * q });
+        });
+    },
+
     // Состав документов: из снимка, если открыт заказ, иначе из текущего расчёта
     eqList: function () {
         const snap = this._ctx && this._ctx.snap;
         if (snap) return (snap.items && snap.items.equipment) || [];
-        return app.currentEquipmentList || [];
+        return this.withSnapPrices(app.currentEquipmentList || [], false);
     },
 
     worksList: function () {
         const snap = this._ctx && this._ctx.snap;
         if (snap) return (snap.items && snap.items.works) || [];
-        return app.currentWorksList || [];
+        return this.withSnapPrices(app.currentWorksList || [], true);
     },
+
+    // Насколько сегодняшние цены разошлись с теми, что ушли клиенту
+    priceDrift: function () {
+        const snap = this.priceSnap();
+        if (!snap) return null;
+        const was = Number(snap.eqSum) || 0;
+        const now = Number(app.lastEqSum) || 0;
+        if (!was || !now) return null;
+        const diff = now - was;
+        if (Math.abs(diff) < 1) return null;
+        return { was: was, now: now, diff: diff, pct: diff / was * 100, at: snap.at };
+    },
+
+    setPriceMode: function (today) {
+        this._useTodayPrices = !!today;
+        const box = document.getElementById('docs_price_mode');
+        if (box) box.innerHTML = this.priceModeHtml();
+    },
+
+    // Выбор цен показываем только когда есть из чего выбирать: цены разошлись
+    priceModeHtml: function () {
+        const drift = this.priceDrift();
+        if (!drift) return '';
+        const num = n => Math.round(Math.abs(n)).toLocaleString('ru-RU');
+        const when = drift.at ? new Date(drift.at).toLocaleDateString('ru-RU') : '';
+        const up = drift.diff > 0;
+        const on = (mode) => this._useTodayPrices === mode;
+        const btn = (mode, label) => '<button type="button" onclick="Docs.setPriceMode(' + mode + ')"'
+            + ' style="flex:1 1 150px; font:inherit; font-size:12px; font-weight:700; padding:7px 10px;'
+            + ' border-radius:8px; cursor:pointer; border:1px solid ' + (on(mode) ? 'var(--primary)' : 'var(--border)') + ';'
+            + ' background:' + (on(mode) ? 'var(--primary)' : 'transparent') + ';'
+            + ' color:' + (on(mode) ? '#fff' : 'var(--text-main)') + ';">' + label + '</button>';
+        return '<div style="border:1px solid var(--border); border-radius:10px; padding:10px 12px; margin:10px 0;">'
+            + '<div style="font-size:12px; color:var(--text-main); margin-bottom:6px;">Оборудование с '
+            + (when ? 'даты отправки клиенту (' + when + ')' : 'момента отправки')
+            + (up ? ' подорожало' : ' подешевело') + ' на <b>' + num(drift.diff) + ' ₽</b> ('
+            + (up ? '+' : '−') + Math.abs(drift.pct).toFixed(1).replace('.', ',') + '%).</div>'
+            + '<div style="display:flex; gap:6px; flex-wrap:wrap;">'
+            + btn(false, 'Цены как у клиента — ' + num(drift.was) + ' ₽')
+            + btn(true, 'Сегодняшние — ' + num(drift.now) + ' ₽')
+            + '</div>'
+            + '<div style="font-size:10.5px; color:var(--text-sec); margin-top:6px;">'
+            + 'По умолчанию в документы идут цены, о которых договорились: твёрдая цена '
+            + 'от подорожания каталога не меняется (п. 6 ст. 709 ГК РФ).</div></div>';
+    },
+
 
     /**
      * Документы к отправленной смете. Вызывается из карточки раздела «Заказы и счета»:
@@ -254,11 +331,12 @@ const Docs = {
     },
 
     sums: function () {
-        const snap = this._ctx && this._ctx.snap;
-        if (snap) {
-            const sum = (list) => (list || []).reduce((a, i) => a + (Number(i && i.sum) || 0), 0);
-            const eq = sum(this.eqList());
-            const works = sum(this.worksList());
+        // Считаем по тем же спискам, что уходят в приложения. Иначе договор жил бы
+        // своей жизнью: в спецификации цены клиента, а в пункте про цену — сегодняшние.
+        const bySum = (list) => (list || []).reduce((a, i) => a + (Number(i && i.sum) || 0), 0);
+        if ((this._ctx && this._ctx.snap) || (this.priceSnap() && !this._useTodayPrices)) {
+            const eq = bySum(this.eqList());
+            const works = bySum(this.worksList());
             return { eq: eq, works: works, total: eq + works };
         }
         const eq = Number(app.lastEqSum) || 0;
@@ -310,6 +388,8 @@ const Docs = {
                     ${inp('clientPassport', 'Паспорт: серия, номер, кем и когда выдан')}
                     ${inp('clientAddress', 'Адрес регистрации')}
                 </div>
+
+                <div id="docs_price_mode">${this.priceModeHtml()}</div>
 
                 <div style="font-size:12px; font-weight:700; color:var(--text-main); margin:10px 0 6px;">Условия</div>
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:0 12px;">
@@ -432,7 +512,8 @@ const Docs = {
         wrap.classList.remove('active');
         setTimeout(() => {
             wrap.remove();
-            this._ctx = null;   // дальше снова обслуживаем открытый расчёт
+            this._ctx = null;               // дальше снова обслуживаем открытый расчёт
+            this._useTodayPrices = false;   // и печатаем согласованными ценами
             if (app.syncModalOverlayClass) app.syncModalOverlayClass();
         }, 300);
     },
@@ -661,6 +742,7 @@ const Docs = {
             <h1>Приложение № 1 к Договору № ${e(d.number) || '____'} от ${this.dateRu(d.date)}</h1>
             <h1 style="margin-bottom:5mm;">СПЕЦИФИКАЦИЯ ОБОРУДОВАНИЯ И МАТЕРИАЛОВ</h1>
             <p class="n">Объект: ${e(d.objectAddress)}</p>
+            ${this.priceDateNote()}
             <table>
                 <tr><th>№</th><th>Наименование</th><th>Артикул</th><th>Бренд</th><th>Ед.</th>
                     <th class="num">Кол-во</th><th class="num">Цена</th><th class="num">Сумма</th></tr>
@@ -674,6 +756,15 @@ const Docs = {
                 <div><div class="line"></div><span class="small">Заказчик</span></div>
             </div>
         </div>`;
+    },
+
+    // На какую дату цены в приложении. Молчим, когда выбирать не из чего.
+    priceDateNote: function () {
+        const dr = this.priceDrift();
+        if (!dr) return '';
+        return '<p class="small">Цены ' + (this._useTodayPrices
+            ? 'на ' + this.dateRu(new Date().toISOString().slice(0, 10)) + ' (пересчитаны)'
+            : 'на дату отправки заказчику, ' + this.dateRu(String(dr.at).slice(0, 10)).replace(/\.$/, '')) + '.</p>';
     },
 
     // Приложение № 2 — работы

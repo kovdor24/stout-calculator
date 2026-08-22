@@ -4645,7 +4645,51 @@ const app = {
      */
     logPrintedEvent: function () {
         const shareId = this.state.shared_invoice_id;
+        this.capturePriceSnapshot();
         this.logInvoiceEvent('printed', shareId ? { shared_invoice_id: shareId } : null);
+    },
+
+    /**
+     * Слепок цен на момент, когда смета ушла клиенту.
+     *
+     * Зачем. Сохранённая смета хранит настройки объекта и итоговые суммы, а список
+     * позиций собирается заново по текущему каталогу. Для калькулятора это правильно
+     * — человек хочет видеть, что почём сегодня. Но документы так делать нельзя:
+     * монтажник отправил клиенту файл в июне, начал работу, а в августе печатает
+     * договор — и цены в нём молча оказываются августовскими, хотя стороны
+     * договаривались о июньских. Твёрдая цена по договору при этом не меняется
+     * (п. 6 ст. 709 ГК РФ), так что бумага противоречила бы сделке.
+     *
+     * Храним компактно: артикул → цена. На смете из 88 позиций это около двух
+     * килобайт, тогда как полный список тянет на двадцать.
+     *
+     * Снимаем только в момент отправки клиенту (печать, Excel, ссылка), а не при
+     * каждом автосохранении: пока смета в работе, цены должны быть свежими.
+     */
+    capturePriceSnapshot: function () {
+        try {
+            const prices = {};
+            (this.currentEquipmentList || []).forEach(it => {
+                const art = String((it && (it.originalId || it.id)) || '');
+                if (!art || art.indexOf('custom_collapsed_') === 0) return;
+                if (typeof it.price === 'number' && it.price > 0) prices[art] = it.price;
+            });
+            const works = {};
+            (this.currentWorksList || []).forEach(w => {
+                if (w && w.name && typeof w.price === 'number') works[w.name] = w.price;
+            });
+            if (!Object.keys(prices).length && !Object.keys(works).length) return;
+            this.state.priceSnapshot = {
+                at: new Date().toISOString(),
+                eqSum: this.lastEqSum || 0,
+                worksSum: this.lastWorksSum || 0,
+                prices: prices,
+                works: works
+            };
+            this.saveState();
+        } catch (e) {
+            console.warn('[capturePriceSnapshot]', e);
+        }
     },
 
     // Смета собрана распознаванием, а не подбором по параметрам объекта: хотя бы одна
@@ -30477,6 +30521,7 @@ const app = {
                 shareId = data.id;
                 this.state.shared_invoice_id = shareId;
                 this.saveState();
+                this.capturePriceSnapshot();
                 this.logInvoiceEvent('sent', { shared_invoice_id: shareId });
                 GRM.trackAction('invoice', shareId);  // геймификация: +15 XP + значки счетов (запрос счёта у дистрибьютора)
 
