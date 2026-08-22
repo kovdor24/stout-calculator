@@ -4715,6 +4715,12 @@ const app = {
                 at: new Date().toISOString(),
                 eqSum: this.lastEqSum || 0,
                 worksSum: this.lastWorksSum || 0,
+                // Цены в слепке уже со скидкой (наценкой) монтажника — в смете они
+                // такие же. Без этих двух чисел сверка сравнивала бы уценённую
+                // цену с прайсовой и объявляла подорожанием ровно ту скидку,
+                // которую монтажник дал сам.
+                eqDiscount: this.state.eqDiscount || 0,
+                worksDiscount: this.state.worksDiscount || 0,
                 prices: prices,
                 qty: qty,
                 names: names,
@@ -7524,6 +7530,12 @@ const app = {
                 getInvoiceBtn = `<button class="btn-get-invoice" id="btn_invoice_${item.id}" onclick="event.stopPropagation(); app.sendEstimateInvoiceToManager('${item.id}', this)" title="Заказать счёт у менеджера">📄 Получить счёт</button>`;
             }
 
+            // Кнопка всегда идёт через openSharedLink: он сам решает, показать готовую
+            // ссылку или сделать новую. Переотправка затирает то, что видел клиент,
+            // поэтому делать её молча, одним нажатием, нельзя.
+            const shareBtn = `<button class="lk-btn-sm" onclick="event.stopPropagation(); app.openSharedLink('${item.id}', '${sharedInvoiceId || ''}', '${item.calc_id || ''}')" title="${sharedInvoiceId
+                ? 'Показать ссылку, которую уже отправляли клиенту' : 'Короткая ссылка на смету для клиента'}">Ссылка клиенту</button>`;
+
             h += `
                 <tr class="active-row" style="cursor: pointer;" onclick="app.loadSingleEstimate('${item.id}')">
                     <td style="font-weight:600;">${item.project_name}</td>
@@ -7535,7 +7547,7 @@ const app = {
                             ${getInvoiceBtn}
                             <button class="lk-btn-sm" onclick="event.stopPropagation(); app.cloudRowAction('${item.id}', 'open')" title="Открыть расчёт в калькуляторе">Открыть</button>
                             <button class="lk-btn-sm" onclick="event.stopPropagation(); Reprice.open('${item.id}')" title="Сравнить цены сметы с сегодняшними">Цены</button>
-                            <button class="lk-btn-sm" onclick="event.stopPropagation(); app.cloudRowAction('${item.id}', 'share')" title="Короткая ссылка на смету для клиента">Ссылка клиенту</button>
+                            ${shareBtn}
                             <button class="lk-btn-sm" onclick="event.stopPropagation(); app.cloudRowAction('${item.id}', 'download')" title="Скачать смету: PDF или Excel">Скачать</button>
                             ${canDelete ? `
                                 <button class="delete-icon-btn" onclick="event.stopPropagation(); app.deleteEstimate('${item.id}', event)" title="Удалить смету">
@@ -7564,6 +7576,106 @@ const app = {
             // Меню с выбором PDF или Excel — тот же, что под сметой
             this.toggleDownloadMenu();
         }
+    },
+
+    /**
+     * Ссылка клиенту у сметы, которую уже отправляли.
+     *
+     * Раньше кнопка звала shareInvoice, а тот пересобирает снимок сметы и кладёт
+     * его в shared_invoices ПОВЕРХ прежнего, по тому же адресу. Монтажник
+     * открывал ссылку, чтобы посмотреть, что ушло клиенту в июне, и этим же
+     * нажатием июнь стирал: в снимке оказывались сегодняшняя дата и сегодняшние
+     * цены, а клиент по своей ссылке видел уже другую смету. Теперь у
+     * отправленной сметы кнопка показывает готовую ссылку, а переотправка —
+     * отдельным действием и с предупреждением, что прежняя версия пропадёт.
+     */
+    openSharedLink: async function (estimateId, shareId, calcId) {
+        // Ссылку часто делают уже после сохранения сметы, и её номер в расчёт не
+        // попадает — такая смета и в списке значится «Сохранена». Снимок всё
+        // равно есть: он помечен номером КП. Ищем по нему, иначе кнопка у своей
+        // же отправленной сметы снова предложила бы всё переписать заново.
+        if (!shareId && calcId) {
+            try {
+                const { data } = await supabaseClient.from('shared_invoices')
+                    .select('id, created_at').eq('object_info->>sequence_id', String(calcId))
+                    .order('created_at', { ascending: false }).limit(1);
+                if (data && data.length) shareId = data[0].id;
+            } catch (e) { /* не нашли — ниже сделаем новую ссылку */ }
+        }
+        if (!shareId) { this.cloudRowAction(estimateId, 'share'); return; }
+        const baseOrigin = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+            ? window.location.origin : 'https://heatcalc.ru';
+        const url = `${baseOrigin}/invoice.html?id=${shareId}`;
+
+        let sent = '', eq = 0, wk = 0;
+        try {
+            const { data } = await supabaseClient.from('shared_invoices')
+                .select('created_at, totals').eq('id', shareId).maybeSingle();
+            if (data) {
+                sent = data.created_at ? new Date(data.created_at).toLocaleDateString('ru-RU') : '';
+                eq = Number(data.totals && data.totals.equipment) || 0;
+                wk = Number(data.totals && data.totals.works) || 0;
+            }
+        } catch (e) { /* не достучались — покажем хотя бы саму ссылку */ }
+
+        const num = n => Math.round(Math.abs(n)).toLocaleString('ru-RU');
+        const esc = t => String(t == null ? '' : t).replace(/</g, '&lt;');
+        const sums = (eq || wk)
+            ? `<div style="font-size:12.5px; color:var(--text-sec); margin-top:4px;">
+                   Оборудование ${num(eq)} ₽${wk ? `, монтаж ${num(wk)} ₽` : ''} — те суммы, что видит клиент.
+               </div>` : '';
+
+        this.showPlainModal('Ссылка клиенту',
+            `<div style="border:1px solid var(--border); border-radius:10px; padding:12px 14px; margin-bottom:12px;">
+                <div style="font-size:14px; font-weight:700; color:var(--text-main);">
+                    Смета отправлена${sent ? ' ' + esc(sent) : ''}
+                </div>
+                ${sums}
+                <div style="margin-top:8px; font-size:12px; word-break:break-all; color:var(--primary);">${esc(url)}</div>
+             </div>
+             <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                <button type="button" class="custom-modal-btn" style="flex:1 1 160px; width:auto;"
+                    onclick="window.open('${esc(url)}', '_blank')">Открыть</button>
+                <button type="button" class="custom-modal-btn" style="flex:1 1 160px; width:auto;"
+                    onclick="app.copyToClipboard('${esc(url)}').then(() => app.showInAppNotification('Скопировано', 'Ссылка в буфере обмена', '🔗'))">
+                    Скопировать</button>
+             </div>
+             <p style="font-size:11px; color:var(--text-sec); margin-top:12px; line-height:1.5;">
+                По этой ссылке клиент видит смету такой, какой её отправили: состав, цены и дата того дня.
+                Открыть её можно сколько угодно раз — ничего не изменится.
+             </p>
+             <button type="button" class="custom-modal-btn" style="margin-top:6px; background:transparent; color:var(--text-sec); border:1px solid var(--border);"
+                onclick="app.resendSharedLink('${esc(estimateId)}')">
+                Отправить заново по сегодняшним ценам</button>
+             <p style="font-size:11px; color:var(--text-sec); margin-top:6px; line-height:1.5;">
+                Переотправка перезапишет ссылку: клиент увидит сегодняшние цены, а прежняя версия сметы пропадёт.
+             </p>`);
+    },
+
+    // Переотправка из окна ссылки — то же, что кнопка «Ссылка клиенту» у сметы,
+    // которую ещё не отправляли, но со спросом: старый снимок будет затёрт.
+    resendSharedLink: async function (estimateId) {
+        // Окно ссылки закрываем до вопроса: два наложенных модальных окна делят
+        // одну подложку, и подтверждение выходило бы под уже открытым.
+        this.closePlainModal();
+        if (!await this.confirm('Отправить смету заново?\n\nЦены пересчитаются по сегодняшнему каталогу, '
+            + 'и клиент по своей ссылке увидит уже новую сумму. Прежняя версия сметы не сохранится.')) return;
+        this.cloudRowAction(estimateId, 'share');
+    },
+
+    /**
+     * Открыть сохранённую смету, сбросив скидку и наценку. Из окна сверки цен:
+     * когда каталог подорожал, монтажник решает, оставить ли прежнюю уступку
+     * клиенту или закрыть ею подорожание. Трогаем только открытый расчёт —
+     * в облаке смета остаётся прежней, пока её не сохранят.
+     */
+    loadEstimateWithoutDiscount: async function (estimateId) {
+        await this.loadSingleEstimate(estimateId);
+        this.state.eqDiscount = 0;
+        this.state.worksDiscount = 0;
+        this.saveState();
+        this.syncUI();
+        this.render();
     },
 
     closeCloudListModal: function () {
@@ -7837,9 +7949,11 @@ const app = {
         const num = n => Math.round(Math.abs(n)).toLocaleString('ru-RU');
         const up = diff > 0;
         const when = saved.at ? new Date(saved.at).toLocaleDateString('ru-RU') : '';
-        // Снимок отправленной клиенту сметы есть не всегда — построчный разбор
-        // предлагаем только там, где его есть с чем сравнивать.
-        const canDetail = !!this.state.shared_invoice_id;
+        // Разбор — то же окно, что кнопка «Цены» в «Моих объектах» (reprice.js).
+        // Оно само выбирает, с чем сравнивать: слепок цен той сметы, снимок
+        // отправленной клиенту или, если ни того ни другого нет, даты цен каталога.
+        this._repriceSaved = saved;
+        const canDetail = typeof Reprice !== 'undefined' && !!this._loadedEstimateId;
 
         host.innerHTML = `
             <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:8px 14px;
@@ -7871,79 +7985,23 @@ const app = {
     },
 
     /**
-     * Построчно: что подорожало с момента, когда смету отправили клиенту.
+     * «Что изменилось» под плашкой — то же окно, что кнопка «Цены» в «Моих
+     * объектах» (reprice.js). Своего разбора здесь нет намеренно: правил
+     * сравнения набралось много — суффиксы артикулов, цена за бухту против цены
+     * за метр, позиции, которых в каталоге уже нет, — и держать их в двух местах
+     * значит однажды поправить только одно.
      *
-     * Сравнивать есть с чем только у отправленных смет: в shared_invoices лежит
-     * снимок позиций с ценами того дня. У просто сохранённой сметы таких цен нет
-     * нигде — в базе только итоговые суммы, поэтому для неё плашка остаётся без
-     * кнопки разбора.
+     * Состав открытой сметы передаём с собой: слепок цен есть только у смет,
+     * которые отправляли клиенту или печатали, а у просто сохранённой объяснить
+     * разницу можно лишь по датам цен в каталоге — и для этого нужен её состав.
      */
-    showRepriceDetails: async function () {
-        const shareId = this.state.shared_invoice_id;
-        if (!shareId) return;
-        let snap = null;
-        try {
-            const { data, error } = await supabaseClient.from('shared_invoices')
-                .select('created_at, eq:items->equipment').eq('id', shareId).maybeSingle();
-            if (error) throw error;
-            snap = data;
-        } catch (e) {
-            this.alert('Не удалось получить отправленную клиенту смету. Попробуйте позже.', 'Что изменилось');
-            return;
-        }
-        if (!snap || !Array.isArray(snap.eq) || !snap.eq.length) {
-            this.alert('Отправленной клиенту сметы не нашлось — сравнивать не с чем.', 'Что изменилось');
-            return;
-        }
-
-        const price = this.catalogPriceIndex();
-        const rows = [];
-        let skipped = 0, oldAll = 0, newAll = 0;
-        snap.eq.forEach(it => {
-            if (!it) return;
-            const art = String(it.originalId || it.id || '');
-            // Свёрнутые комплекты — подытог раздела, а не позиция каталога
-            if (!art || art.indexOf('custom_collapsed_') === 0) { skipped++; return; }
-            const was = Number(it.price) || 0;
-            const now = price[art];
-            if (!was || now === undefined) { skipped++; return; }
-            const q = Number(it.q) || Number(it.qty) || 1;
-            oldAll += was * q; newAll += now * q;
-            if (Math.round(was) === Math.round(now)) return;
-            rows.push({ name: it.name || art, art, was, now, q, diff: (now - was) * q });
+    showRepriceDetails: function () {
+        if (typeof Reprice === 'undefined' || !this._loadedEstimateId) return;
+        const saved = this._repriceSaved || {};
+        Reprice.open(this._loadedEstimateId, {
+            bill: this.currentEquipmentList || [],
+            savedAt: saved.at
         });
-
-        const num = n => Math.round(Math.abs(n)).toLocaleString('ru-RU');
-        const esc = s => String(s == null ? '' : s).replace(/</g, '&lt;');
-        const when = snap.created_at ? new Date(snap.created_at).toLocaleDateString('ru-RU') : '';
-        if (!rows.length) {
-            this.alert(`Цены позиций не изменились с ${when || 'момента отправки'}. Разница в сумме, если она есть, — от правок в самой смете.`, 'Что изменилось');
-            return;
-        }
-        rows.sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff));
-
-        const list = rows.map(r => `
-            <div style="display:flex; align-items:center; gap:10px; padding:7px 0; border-bottom:1px solid var(--border);">
-                <div style="min-width:0; flex:1;">
-                    <b style="font-size:12.5px; color:var(--text-main);">${esc(r.name)}</b>
-                    <br><small style="color:var(--text-sec);">${esc(r.art)} · ${num(r.was)} → ${num(r.now)} ₽${r.q > 1 ? ` × ${num(r.q)}` : ''}</small>
-                </div>
-                <b style="flex:0 0 auto; font-size:12.5px; color:${r.diff > 0 ? '#EF4444' : '#10B981'};">
-                    ${r.diff > 0 ? '+' : '−'}${num(r.diff)} ₽</b>
-            </div>`).join('');
-
-        const total = newAll - oldAll;
-        this.showPlainModal('Что изменилось с ' + (when || 'отправки клиенту'),
-            `<p style="font-size:12.5px; color:var(--text-sec); margin:0 0 10px;">
-                Сравниваются цены той сметы, что ушла клиенту, с сегодняшними.
-                Изменилось ${rows.length} ${this.plural(rows.length, 'позиция', 'позиции', 'позиций')}
-                из ${snap.eq.length - skipped}${skipped ? `, ещё ${skipped} не из каталога — их не сравнить` : ''}.
-             </p>`
-            + list
-            + `<div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0 0; font-size:13px;">
-                <b style="color:var(--text-main);">Итого по оборудованию</b>
-                <b style="color:${total > 0 ? '#EF4444' : '#10B981'};">${total > 0 ? '+' : '−'}${num(total)} ₽</b>
-               </div>`);
     },
 
     /**
@@ -8016,6 +8074,8 @@ const app = {
             // старого объекта возвращало бы шапку к тому, что было тогда (а у смет,
             // сохранённых до заполнения реквизитов, — к ТЕРЕМ).
             delete loadedState.customCompany;
+            // Какая смета сейчас на экране — для разбора «Что изменилось» под плашкой
+            this._loadedEstimateId = id;
             this.state = { ...this.state, ...loadedState };
             this.migrateSnowPipeSwap();
             this.migrateBoilerSectionTitles();
@@ -9270,6 +9330,31 @@ const app = {
         };
         (typeof CATALOG_PRICE_ROOTS !== 'undefined' ? CATALOG_PRICE_ROOTS : [catalog]).forEach(walk);
         this._catAvailIdx = idx;
+        return idx;
+    },
+
+    /**
+     * Артикул → дата, которой в каталоге помечена цена (price_date). Тем же
+     * обходом, что цены и наличие. По ней видно, какие позиции прайс трогал
+     * уже после того, как смету сохранили, — единственная зацепка для смет,
+     * у которых цен того дня не осталось (см. showRepriceByDates).
+     */
+    catalogPriceDateIndex: function () {
+        if (this._catPriceDateIdx) return this._catPriceDateIdx;
+        const idx = {};
+        if (typeof catalog === 'undefined' || !catalog) return idx;
+        const seen = new Set();
+        const walk = (node) => {
+            if (!node || typeof node !== 'object' || seen.has(node)) return;
+            seen.add(node);
+            if (typeof node.id === 'string' && node.price_date) {
+                if (idx[node.id] === undefined) idx[node.id] = node.price_date;
+                if (typeof node.article === 'string' && idx[node.article] === undefined) idx[node.article] = node.price_date;
+            }
+            for (const k in node) walk(node[k]);
+        };
+        (typeof CATALOG_PRICE_ROOTS !== 'undefined' ? CATALOG_PRICE_ROOTS : [catalog]).forEach(walk);
+        this._catPriceDateIdx = idx;
         return idx;
     },
 
