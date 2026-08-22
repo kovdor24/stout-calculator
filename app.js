@@ -3198,7 +3198,11 @@ const app = {
             if (!this._paramsPanelScale) {
                 // Считаем от запомненного верха колонки, а не от нынешнего: масштаб
                 // должен зависеть только от высоты окна.
-                const availForScale = (window.innerHeight - this._paramsPanelRefTop - 8) / k;
+                // Пара пикселей запаса: рамки и округления масштабу не подчиняются,
+                // и без них колонка вставала ровно в край, показывая прокрутку на
+                // два пикселя — на пустом экране это выглядит так, будто внизу что-то
+                // осталось.
+                const availForScale = (window.innerHeight - this._paramsPanelRefTop - 8) / k - 4;
                 let s = 1;
                 if (ref > availForScale) s = Math.max(this._paramsPanelMinScale, availForScale / ref);
                 this._paramsPanelScale = Math.min(1, Math.round(s * 1000) / 1000);
