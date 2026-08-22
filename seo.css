@@ -1,56 +1,50 @@
 /* Оформление контентных страниц HeatCalc: города, смета, статьи.
  *
- * Один файл на все 23 страницы. Раньше эти же правила лежали инлайном
- * в каждой из них — правка стиля означала 23 одинаковые правки, и они
- * успели разъехаться. Теперь стиль правится здесь.
+ * Один файл на все 23 страницы — правка стиля делается здесь, а не в каждой.
  *
- * Тема переключается атрибутом data-theme на <html>: "dark" или "light".
- * Ставит его инлайн-скрипт в <head> каждой страницы — до первой отрисовки,
- * иначе при загрузке моргает белым. Тёмная тема выбрана по умолчанию,
- * светлая включается днём (с 7 до 19) или вручную кнопкой в шапке.
+ * Палитра, шрифт, радиусы и кривые анимации взяты из style.css калькулятора,
+ * чтобы статьи не выглядели чужим сайтом. Имена переменных те же намеренно:
+ * если в калькуляторе поменяют цвет, здесь будет видно, что менять.
  *
- * Сетка кратна 4 px, углы скруглены (кнопки 20, карточки 25), теней нет.
+ * Тёмная тема — общий флаг с калькулятором: localStorage['stout_save'].darkMode.
+ * Переключил на статье — переключилось и в калькуляторе, и наоборот. Тот же
+ * приём уже используется на странице рейтинга. Класс dark-mode вешается
+ * на <html> инлайн-скриптом в <head> (в калькуляторе он на <body>, но там
+ * скрипт работает после загрузки; здесь класс нужен до первой отрисовки,
+ * иначе тёмная страница моргает белым, а <body> в этот момент ещё нет).
  */
 
 :root {
-    /* Ночная тема — основная */
-    --bg: #000000;
-    --surface: #141414;
-    --card: #17181C;
-    --text: #FFFFFF;
-    --text-soft: #C8C9CC;
-    --muted: #717277;
-    --border: #2A2D31;
-    --border-strong: #3E4146;
-    --accent: #E2BF78;
-    --accent-ink: #0A0A0A;
-    --accent-2: #9E9EFF;
+    --primary: #2563EB;
+    --primary-light: #EFF6FF;
+    --bg: #F3F4F6;
+    --surface: #FFFFFF;
+    --surface-light: #F9FAFB;
+    --text-main: #111827;
+    --text-sec: #6B7280;
+    --border: #E5E7EB;
+    --radius: 12px;
 
-    --radius-btn: 20px;
-    --radius-card: 25px;
-    --measure: 720px;
+    --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+    --dur-fast: 150ms;
+    --dur-base: 250ms;
 
-    --dur: 0.15s;
-    --ease: ease-in-out;
-
-    color-scheme: dark;
-}
-
-:root[data-theme="light"] {
-    --bg: #FFFFFF;
-    --surface: #F5F5F2;
-    --card: #F5F5F2;
-    --text: #101114;
-    --text-soft: #35373C;
-    --muted: #6B6C70;
-    --border: #E5E5E1;
-    --border-strong: #D2D2CD;
-    /* На белом фоне песочный #E2BF78 нечитаем — берём тот же оттенок темнее */
-    --accent: #8A6A1F;
-    --accent-ink: #FFFFFF;
-    --accent-2: #4B4BC8;
+    --measure: 760px;
 
     color-scheme: light;
+}
+
+html.dark-mode {
+    --bg: #000000;
+    --surface: #121212;
+    --surface-light: #1E1E1E;
+    --text-main: #F3F4F6;
+    --text-sec: #9CA3AF;
+    --border: #1E1E1E;
+    --primary: #6366F1;
+    --primary-light: rgba(99, 102, 241, 0.15);
+
+    color-scheme: dark;
 }
 
 * { box-sizing: border-box; }
@@ -60,13 +54,12 @@ html { -webkit-text-size-adjust: 100%; }
 body {
     margin: 0;
     background: var(--bg);
-    color: var(--text-soft);
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue',
-                 Arial, 'Noto Sans', sans-serif;
+    color: var(--text-main);
+    font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
     font-size: 16px;
     line-height: 1.65;
-    letter-spacing: 0.1px;
-    transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+    transition: background var(--dur-fast) var(--ease-out),
+                color var(--dur-fast) var(--ease-out);
 }
 
 .wrap { max-width: var(--measure); margin: 0 auto; padding: 0 20px; }
@@ -74,9 +67,10 @@ body {
 /* ── Шапка ───────────────────────────────────────────────────────── */
 
 header.top {
+    background: var(--surface);
     border-bottom: 1px solid var(--border);
-    padding: 16px 0;
-    margin-bottom: 40px;
+    padding: 14px 0;
+    margin-bottom: 32px;
 }
 
 header.top .wrap {
@@ -87,107 +81,109 @@ header.top .wrap {
 }
 
 .logo {
-    font-weight: 700;
-    font-size: 17px;
-    color: var(--text);
+    font-weight: 800;
+    font-size: 18px;
+    color: var(--text-main);
     text-decoration: none;
-    letter-spacing: -0.2px;
+    letter-spacing: -0.02em;
 }
-.logo span { color: var(--accent); }
+.logo span { color: var(--primary); }
 
 .head-actions { display: flex; align-items: center; gap: 8px; }
 
 .head-link {
     font-size: 14px;
-    font-weight: 500;
-    color: var(--text);
+    font-weight: 600;
+    color: #fff;
+    background: var(--primary);
     text-decoration: none;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-btn);
-    padding: 6px 14px;
+    border-radius: var(--radius);
+    padding: 8px 14px;
     white-space: nowrap;
-    transition: border-color var(--dur) var(--ease), color var(--dur) var(--ease);
+    transition: opacity var(--dur-fast) var(--ease-out);
 }
-.head-link:hover { border-color: var(--border-strong); color: var(--accent); }
+.head-link:hover { opacity: 0.88; }
 
 .theme-toggle {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 34px;
-    height: 34px;
+    width: 36px;
+    height: 36px;
     flex: none;
     padding: 0;
-    background: var(--surface);
+    background: var(--surface-light);
     border: 1px solid var(--border);
-    border-radius: var(--radius-btn);
-    color: var(--muted);
+    border-radius: var(--radius);
+    color: var(--text-sec);
     cursor: pointer;
-    font-size: 15px;
     line-height: 1;
-    transition: border-color var(--dur) var(--ease), color var(--dur) var(--ease);
+    transition: color var(--dur-fast) var(--ease-out),
+                border-color var(--dur-fast) var(--ease-out);
 }
-.theme-toggle:hover { border-color: var(--border-strong); color: var(--accent); }
+.theme-toggle:hover { color: var(--primary); border-color: var(--primary); }
 .theme-toggle .i-sun { display: none; }
 .theme-toggle .i-moon { display: block; }
-:root[data-theme="light"] .theme-toggle .i-sun { display: block; }
-:root[data-theme="light"] .theme-toggle .i-moon { display: none; }
+html.dark-mode .theme-toggle .i-sun { display: block; }
+html.dark-mode .theme-toggle .i-moon { display: none; }
 
 /* ── Текст ───────────────────────────────────────────────────────── */
 
-.crumbs { font-size: 13px; color: var(--muted); margin-bottom: 24px; }
-.crumbs a { color: var(--muted); text-decoration: none; }
-.crumbs a:hover { color: var(--accent); }
+.crumbs { font-size: 13px; color: var(--text-sec); margin-bottom: 20px; }
+.crumbs a { color: var(--text-sec); text-decoration: none; }
+.crumbs a:hover { color: var(--primary); }
 
 h1 {
-    font-size: 30px;
-    line-height: 1.2;
-    font-weight: 700;
-    color: var(--text);
-    letter-spacing: -0.5px;
-    margin: 0 0 20px;
+    font-size: 28px;
+    line-height: 1.22;
+    font-weight: 800;
+    color: var(--text-main);
+    letter-spacing: -0.02em;
+    margin: 0 0 18px;
 }
 
 h2 {
-    font-size: 22px;
-    line-height: 1.25;
-    font-weight: 700;
-    color: var(--text);
-    letter-spacing: -0.3px;
-    margin: 40px 0 16px;
+    font-size: 20px;
+    line-height: 1.3;
+    font-weight: 800;
+    color: var(--text-main);
+    letter-spacing: -0.02em;
+    margin: 36px 0 14px;
 }
 
+/* Как в калькуляторе: мелкий заголовок капителью, разрядка вместо кегля */
 h3 {
-    font-size: 18px;
-    line-height: 1.3;
-    font-weight: 700;
-    color: var(--text);
-    margin: 24px 0 8px;
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--text-main);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    margin: 28px 0 10px;
 }
 
 p { margin: 0 0 16px; }
 
-a { color: var(--accent); text-decoration: none; border-bottom: 1px solid transparent; transition: border-color var(--dur) var(--ease); }
-a:hover { border-bottom-color: var(--accent); }
+a { color: var(--primary); text-decoration: none; }
+a:hover { text-decoration: underline; }
 
-strong, b { color: var(--text); font-weight: 600; }
+strong, b { color: var(--text-main); font-weight: 700; }
 
-.lead { font-size: 18px; line-height: 1.55; color: var(--text); margin-bottom: 24px; }
+.lead { font-size: 18px; line-height: 1.55; color: var(--text-main); margin-bottom: 22px; }
 
-ul, ol { margin: 0 0 16px; padding-left: 20px; }
+ul, ol { margin: 0 0 16px; padding-left: 22px; }
 li { margin-bottom: 8px; }
-li::marker { color: var(--muted); }
+li::marker { color: var(--text-sec); }
 
-.note { font-size: 14px; line-height: 1.55; color: var(--muted); margin: 0 0 24px; }
+.note { font-size: 13px; line-height: 1.55; color: var(--text-sec); margin: 0 0 22px; }
 
 /* ── Таблицы ─────────────────────────────────────────────────────── */
 
 .table-scroll {
     overflow-x: auto;
     margin: 0 0 12px;
+    background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: var(--radius-card);
+    border-radius: var(--radius);
 }
 
 table {
@@ -199,71 +195,69 @@ table {
 
 th, td {
     text-align: left;
-    padding: 12px 16px;
+    padding: 11px 14px;
     border-bottom: 1px solid var(--border);
     vertical-align: top;
 }
 tr:last-child td { border-bottom: none; }
 
 th {
-    font-weight: 600;
+    font-weight: 700;
     font-size: 12px;
-    letter-spacing: 0.4px;
+    letter-spacing: 0.03em;
     text-transform: uppercase;
-    color: var(--muted);
-    background: var(--surface);
+    color: var(--text-sec);
+    background: var(--surface-light);
     white-space: nowrap;
 }
 
-td { color: var(--text-soft); }
-td.num { white-space: nowrap; font-variant-numeric: tabular-nums; color: var(--text); }
-td.minus { color: var(--accent-2); font-weight: 600; }
-td strong { color: var(--accent); }
+td { color: var(--text-main); }
+td.num { white-space: nowrap; font-variant-numeric: tabular-nums; }
+td.minus { color: #DC2626; font-weight: 700; }
+html.dark-mode td.minus { color: #F87171; }
+td strong { color: var(--primary); }
 
 /* ── Кнопка-призыв ───────────────────────────────────────────────── */
 
 .cta {
     display: block;
-    background: var(--accent);
-    color: var(--accent-ink);
+    background: var(--primary);
+    color: #fff;
     text-decoration: none;
     text-align: center;
-    font-weight: 600;
+    font-weight: 700;
     font-size: 16px;
-    padding: 16px 24px;
-    border-radius: var(--radius-btn);
-    margin: 32px 0;
-    border: none;
-    transition: opacity var(--dur) var(--ease);
+    padding: 15px 24px;
+    border-radius: var(--radius);
+    margin: 28px 0;
+    transition: opacity var(--dur-fast) var(--ease-out);
 }
-.cta:hover { opacity: 0.88; border-bottom-color: transparent; }
-.cta small { display: block; font-weight: 400; font-size: 13px; opacity: 0.75; margin-top: 4px; }
+.cta:hover { opacity: 0.9; text-decoration: none; }
+.cta small { display: block; font-weight: 500; font-size: 13px; opacity: 0.85; margin-top: 3px; }
 
 /* ── Врезки ──────────────────────────────────────────────────────── */
 
 .callout {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-left: 3px solid var(--accent);
-    border-radius: 8px var(--radius-card) var(--radius-card) 8px;
-    padding: 16px 20px;
-    margin: 0 0 24px;
+    background: var(--primary-light);
+    border-left: 3px solid var(--primary);
+    border-radius: 0 var(--radius) var(--radius) 0;
+    padding: 14px 18px;
+    margin: 0 0 22px;
     font-size: 15px;
 }
 .callout p:last-child { margin-bottom: 0; }
 
 .formula {
-    background: var(--card);
+    background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: var(--radius-card);
-    padding: 20px;
-    margin: 0 0 24px;
+    border-radius: var(--radius);
+    padding: 18px 20px;
+    margin: 0 0 22px;
     font-size: 15px;
-    color: var(--text-soft);
 }
 .formula p { margin: 0 0 12px; }
 .formula p:last-child { margin-bottom: 0; }
-.formula b { color: var(--accent); font-weight: 600; }
+.formula b { color: var(--primary); }
 
 /* ── Вопрос-ответ ────────────────────────────────────────────────── */
 
@@ -271,63 +265,64 @@ details { border-bottom: 1px solid var(--border); }
 
 details summary {
     cursor: pointer;
-    font-weight: 600;
+    font-weight: 700;
     font-size: 16px;
-    color: var(--text);
-    padding: 16px 0;
+    color: var(--text-main);
+    padding: 15px 0;
     list-style: none;
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
     gap: 16px;
-    transition: color var(--dur) var(--ease);
+    transition: color var(--dur-fast) var(--ease-out);
 }
-details summary:hover { color: var(--accent); }
+details summary:hover { color: var(--primary); }
 details summary::-webkit-details-marker { display: none; }
 details summary::after {
     content: '+';
-    color: var(--accent);
+    color: var(--primary);
     font-size: 20px;
-    font-weight: 400;
-    line-height: 1.4;
+    font-weight: 500;
+    line-height: 1.3;
     flex: none;
 }
 details[open] summary::after { content: '−'; }
-details .answer { padding: 0 0 20px; font-size: 15px; }
+details .answer { padding: 0 0 18px; font-size: 15px; color: var(--text-main); }
 details .answer p:last-child { margin-bottom: 0; }
 
 /* ── Список городов на странице /goroda/ ─────────────────────────── */
 
-.city-list { list-style: none; padding: 0; margin: 0 0 24px; }
+.city-list { list-style: none; padding: 0; margin: 0 0 22px; }
 .city-list li {
+    background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: var(--radius-card);
-    padding: 16px 20px;
+    border-radius: var(--radius);
+    padding: 14px 18px;
     margin-bottom: 8px;
-    transition: border-color var(--dur) var(--ease);
+    transition: border-color var(--dur-fast) var(--ease-out);
 }
-.city-list li:hover { border-color: var(--border-strong); }
-.city-list a { font-weight: 600; font-size: 16px; color: var(--text); }
-.city-list a:hover { color: var(--accent); border-bottom-color: transparent; }
-.city-list .fact { font-size: 14px; color: var(--muted); margin-top: 4px; }
+.city-list li:hover { border-color: var(--primary); }
+.city-list a { font-weight: 700; font-size: 16px; }
+.city-list .fact { font-size: 14px; color: var(--text-sec); margin-top: 3px; }
 
 /* ── Подвал ──────────────────────────────────────────────────────── */
 
 footer.bottom {
+    background: var(--surface);
     border-top: 1px solid var(--border);
-    margin-top: 56px;
-    padding: 24px 0 48px;
+    margin-top: 48px;
+    padding: 22px 0 40px;
     font-size: 13px;
-    color: var(--muted);
+    color: var(--text-sec);
 }
-footer.bottom a { color: var(--muted); margin-right: 16px; display: inline-block; }
-footer.bottom a:hover { color: var(--accent); border-bottom-color: transparent; }
-footer.bottom p { margin: 0 0 12px; }
+footer.bottom a { color: var(--text-sec); margin-right: 16px; display: inline-block; }
+footer.bottom a:hover { color: var(--primary); }
+footer.bottom p { margin: 0 0 10px; }
 footer.bottom p:last-child { margin-bottom: 0; }
 
 /* ── Доступность ─────────────────────────────────────────────────── */
 
-:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; border-radius: 4px; }
 
 @media (prefers-reduced-motion: reduce) {
     * { transition: none !important; }
@@ -336,12 +331,10 @@ footer.bottom p:last-child { margin-bottom: 0; }
 /* ── Узкие экраны ────────────────────────────────────────────────── */
 
 @media (max-width: 600px) {
-    body { font-size: 16px; }
     .wrap { padding: 0 16px; }
-    header.top { margin-bottom: 28px; }
-    h1 { font-size: 25px; }
-    h2 { font-size: 20px; margin: 32px 0 12px; }
-    h3 { font-size: 17px; }
+    header.top { margin-bottom: 24px; }
+    h1 { font-size: 24px; }
+    h2 { font-size: 18px; margin: 30px 0 12px; }
     .lead { font-size: 17px; }
     .head-link { display: none; }
     th, td { padding: 10px 12px; }
@@ -355,4 +348,5 @@ footer.bottom p:last-child { margin-bottom: 0; }
     body { background: #fff; color: #000; }
     .cta, .theme-toggle, .head-link { display: none; }
     a { color: #000; }
+    header.top, footer.bottom { background: none; }
 }
