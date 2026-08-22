@@ -7837,9 +7837,12 @@ const app = {
         const num = n => Math.round(Math.abs(n)).toLocaleString('ru-RU');
         const up = diff > 0;
         const when = saved.at ? new Date(saved.at).toLocaleDateString('ru-RU') : '';
-        // Снимок отправленной клиенту сметы есть не всегда — построчный разбор
-        // предлагаем только там, где его есть с чем сравнивать.
-        const canDetail = !!this.state.shared_invoice_id;
+        // Разбор предлагаем везде, где его есть с чем сравнивать: снимок цен,
+        // записанный вместе со сметой, снимок отправленной клиенту сметы или —
+        // у смет постарше — даты обновления цен в самом каталоге.
+        this._repriceSaved = saved;
+        const canDetail = !!((this._savedPriceSnap && this._savedPriceSnap.length)
+            || this.state.shared_invoice_id || saved.at);
 
         host.innerHTML = `
             <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:8px 14px;
@@ -7871,53 +7874,82 @@ const app = {
     },
 
     /**
-     * Построчно: что подорожало с момента, когда смету отправили клиенту.
+     * Построчно: что подорожало с того дня, каким смету запомнили.
      *
-     * Сравнивать есть с чем только у отправленных смет: в shared_invoices лежит
-     * снимок позиций с ценами того дня. У просто сохранённой сметы таких цен нет
-     * нигде — в базе только итоговые суммы, поэтому для неё плашка остаётся без
-     * кнопки разбора.
+     * Источника три, в порядке точности:
+     *  1. снимок цен, записанный вместе со сметой (buildPriceSnapshot) — он из
+     *     той же отрисовки, что дала записанную сумму, поэтому «было → стало»
+     *     сходится с плашкой копейка в копейку;
+     *  2. снимок позиций отправленной клиенту сметы (shared_invoices) — у смет,
+     *     сохранённых до появления первого;
+     *  3. даты обновления цен в каталоге — для всего остального. Старых цен у
+     *     такой сметы нет нигде, но видно, какие позиции трогал прайс уже после
+     *     сохранения: это ответ на «почему», пусть и без «сколько».
      */
     showRepriceDetails: async function () {
-        const shareId = this.state.shared_invoice_id;
-        if (!shareId) return;
-        let snap = null;
-        try {
-            const { data, error } = await supabaseClient.from('shared_invoices')
-                .select('created_at, eq:items->equipment').eq('id', shareId).maybeSingle();
-            if (error) throw error;
-            snap = data;
-        } catch (e) {
-            this.alert('Не удалось получить отправленную клиенту смету. Попробуйте позже.', 'Что изменилось');
-            return;
-        }
-        if (!snap || !Array.isArray(snap.eq) || !snap.eq.length) {
-            this.alert('Отправленной клиенту сметы не нашлось — сравнивать не с чем.', 'Что изменилось');
+        const saved = this._repriceSaved || {};
+        const snap = this._savedPriceSnap;
+        if (snap && snap.length) {
+            this.renderRepriceDiff(
+                snap.map(r => ({ id: r.a, price: r.p, q: r.q, name: r.n })),
+                saved.at, 'сохранения');
             return;
         }
 
+        const shareId = this.state.shared_invoice_id;
+        if (shareId) {
+            let row = null;
+            try {
+                const { data, error } = await supabaseClient.from('shared_invoices')
+                    .select('created_at, eq:items->equipment').eq('id', shareId).maybeSingle();
+                if (error) throw error;
+                row = data;
+            } catch (e) {
+                this.alert('Не удалось получить отправленную клиенту смету. Попробуйте позже.', 'Что изменилось');
+                return;
+            }
+            if (row && Array.isArray(row.eq) && row.eq.length) {
+                this.renderRepriceDiff(
+                    row.eq.map(it => it ? { id: it.originalId || it.id, price: it.price, q: it.q || it.qty, name: it.name } : null),
+                    row.created_at, 'отправки клиенту');
+                return;
+            }
+        }
+
+        this.showRepriceByDates();
+    },
+
+    /**
+     * Окно «было → стало». items — позиции с ценами того дня:
+     * { id, price, q, name? }. Имени у позиций каталога в снимке сметы нет —
+     * оно удвоило бы вес записи, — поэтому берём его из каталога; своё и
+     * распознанное оборудование несёт имя с собой, в каталоге его нет.
+     */
+    renderRepriceDiff: function (items, whenIso, what) {
         const price = this.catalogPriceIndex();
         const rows = [];
-        let skipped = 0, oldAll = 0, newAll = 0;
-        snap.eq.forEach(it => {
+        let skipped = 0, counted = 0, oldAll = 0, newAll = 0;
+        (items || []).forEach(it => {
             if (!it) return;
-            const art = String(it.originalId || it.id || '');
+            const art = String(it.id || '');
             // Свёрнутые комплекты — подытог раздела, а не позиция каталога
             if (!art || art.indexOf('custom_collapsed_') === 0) { skipped++; return; }
             const was = Number(it.price) || 0;
             const now = price[art];
             if (!was || now === undefined) { skipped++; return; }
-            const q = Number(it.q) || Number(it.qty) || 1;
+            const q = Number(it.q) || 1;
+            counted++;
             oldAll += was * q; newAll += now * q;
             if (Math.round(was) === Math.round(now)) return;
-            rows.push({ name: it.name || art, art, was, now, q, diff: (now - was) * q });
+            const cat = it.name ? null : this.resolveCatalogItem(art);
+            rows.push({ name: it.name || (cat && cat.name) || art, art, was, now, q, diff: (now - was) * q });
         });
 
         const num = n => Math.round(Math.abs(n)).toLocaleString('ru-RU');
         const esc = s => String(s == null ? '' : s).replace(/</g, '&lt;');
-        const when = snap.created_at ? new Date(snap.created_at).toLocaleDateString('ru-RU') : '';
+        const when = whenIso ? new Date(whenIso).toLocaleDateString('ru-RU') : '';
         if (!rows.length) {
-            this.alert(`Цены позиций не изменились с ${when || 'момента отправки'}. Разница в сумме, если она есть, — от правок в самой смете.`, 'Что изменилось');
+            this.alert(`Цены позиций не изменились с ${when || 'момента ' + what}. Разница в сумме, если она есть, — от правок в самой смете.`, 'Что изменилось');
             return;
         }
         rows.sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff));
@@ -7933,16 +7965,81 @@ const app = {
             </div>`).join('');
 
         const total = newAll - oldAll;
-        this.showPlainModal('Что изменилось с ' + (when || 'отправки клиенту'),
+        this.showPlainModal('Что изменилось с ' + (when || what),
             `<p style="font-size:12.5px; color:var(--text-sec); margin:0 0 10px;">
-                Сравниваются цены той сметы, что ушла клиенту, с сегодняшними.
+                Сравниваются цены сметы на момент ${what} с сегодняшними.
                 Изменилось ${rows.length} ${this.plural(rows.length, 'позиция', 'позиции', 'позиций')}
-                из ${snap.eq.length - skipped}${skipped ? `, ещё ${skipped} не из каталога — их не сравнить` : ''}.
+                из ${counted}${skipped ? `, ещё ${skipped} не из каталога — их не сравнить` : ''}.
              </p>`
             + list
             + `<div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0 0; font-size:13px;">
                 <b style="color:var(--text-main);">Итого по оборудованию</b>
                 <b style="color:${total > 0 ? '#EF4444' : '#10B981'};">${total > 0 ? '+' : '−'}${num(total)} ₽</b>
+               </div>`);
+    },
+
+    /**
+     * Объяснение для смет, сохранённых до того, как калькулятор начал писать
+     * снимок цен. Цен того дня у такой сметы нет нигде — в базе только итоговые
+     * суммы, — но у каждой позиции каталога есть дата, которой помечена её цена.
+     * Показываем строки, чью цену прайс обновил уже после сохранения: разница
+     * набежала на них. Саму разницу не называем, её взять неоткуда, — только
+     * сегодняшнюю стоимость этих строк.
+     */
+    showRepriceByDates: function () {
+        const saved = this._repriceSaved || {};
+        const at = saved.at ? new Date(saved.at) : null;
+        if (!at || isNaN(at.getTime())) {
+            this.alert('У этой сметы не сохранились ни цены того дня, ни его дата — сравнивать не с чем.', 'Что изменилось');
+            return;
+        }
+
+        const dates = this.catalogPriceDateIndex();
+        const rows = [];
+        let sumAll = 0, dated = 0;
+        (this.currentEquipmentList || []).forEach(i => {
+            // Снятые галочкой опции не входят в сумму оборудования — не входят и сюда
+            if (i.isOpt) return;
+            const art = String(i.originalId || i.id || '');
+            const d = art && dates[art];
+            if (!d) return;
+            dated++;
+            const t = new Date(d);
+            if (isNaN(t.getTime()) || t.getTime() <= at.getTime()) return;
+            const sum = Number(i.sum) || (Number(i.price) || 0) * (Number(i.q) || 1);
+            sumAll += sum;
+            rows.push({ name: i.name || art, art, at: t, sum, price: Number(i.price) || 0, q: Number(i.q) || 1 });
+        });
+
+        const num = n => Math.round(Math.abs(n)).toLocaleString('ru-RU');
+        const esc = s => String(s == null ? '' : s).replace(/</g, '&lt;');
+        const when = at.toLocaleDateString('ru-RU');
+        if (!rows.length) {
+            this.alert(`Цены позиций этой сметы каталог не обновлял с ${when}. Значит, сумма изменилась не из-за прайса, а из-за правок в самой смете — или из-за позиций, которых в каталоге больше нет.`, 'Что изменилось');
+            return;
+        }
+        rows.sort((a, b) => b.sum - a.sum);
+
+        const list = rows.map(r => `
+            <div style="display:flex; align-items:center; gap:10px; padding:7px 0; border-bottom:1px solid var(--border);">
+                <div style="min-width:0; flex:1;">
+                    <b style="font-size:12.5px; color:var(--text-main);">${esc(r.name)}</b>
+                    <br><small style="color:var(--text-sec);">${esc(r.art)} · цена от ${r.at.toLocaleDateString('ru-RU')} · ${num(r.price)} ₽${r.q > 1 ? ` × ${num(r.q)}` : ''}</small>
+                </div>
+                <b style="flex:0 0 auto; font-size:12.5px; color:var(--text-main);">${num(r.sum)} ₽</b>
+            </div>`).join('');
+
+        this.showPlainModal('Что изменилось с ' + when,
+            `<p style="font-size:12.5px; color:var(--text-sec); margin:0 0 10px;">
+                Цены того дня у этой сметы не записаны — калькулятор начал их сохранять позже,
+                поэтому «было → стало» по каждой строке показать не выйдет.
+                Зато видно, у каких позиций прайс обновил цену уже после ${when}: разница набежала на них.
+                Таких ${rows.length} ${this.plural(rows.length, 'позиция', 'позиции', 'позиций')} из ${dated}.
+             </p>`
+            + list
+            + `<div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0 0; font-size:13px;">
+                <b style="color:var(--text-main);">Сегодня эти позиции стоят</b>
+                <b style="color:var(--text-main);">${num(sumAll)} ₽</b>
                </div>`);
     },
 
@@ -8016,6 +8113,11 @@ const app = {
             // старого объекта возвращало бы шапку к тому, что было тогда (а у смет,
             // сохранённых до заполнения реквизитов, — к ТЕРЕМ).
             delete loadedState.customCompany;
+            // Снимок цен на момент сохранения — для разбора «Что изменилось».
+            // В state не оставляем: он пересобирается при каждом сохранении заново
+            // (stateForCloud), а в localStorage это лишний вес.
+            this._savedPriceSnap = Array.isArray(loadedState.priceSnap) ? loadedState.priceSnap : null;
+            delete loadedState.priceSnap;
             this.state = { ...this.state, ...loadedState };
             this.migrateSnowPipeSwap();
             this.migrateBoilerSectionTitles();
@@ -9270,6 +9372,31 @@ const app = {
         };
         (typeof CATALOG_PRICE_ROOTS !== 'undefined' ? CATALOG_PRICE_ROOTS : [catalog]).forEach(walk);
         this._catAvailIdx = idx;
+        return idx;
+    },
+
+    /**
+     * Артикул → дата, которой в каталоге помечена цена (price_date). Тем же
+     * обходом, что цены и наличие. По ней видно, какие позиции прайс трогал
+     * уже после того, как смету сохранили, — единственная зацепка для смет,
+     * у которых цен того дня не осталось (см. showRepriceByDates).
+     */
+    catalogPriceDateIndex: function () {
+        if (this._catPriceDateIdx) return this._catPriceDateIdx;
+        const idx = {};
+        if (typeof catalog === 'undefined' || !catalog) return idx;
+        const seen = new Set();
+        const walk = (node) => {
+            if (!node || typeof node !== 'object' || seen.has(node)) return;
+            seen.add(node);
+            if (typeof node.id === 'string' && node.price_date) {
+                if (idx[node.id] === undefined) idx[node.id] = node.price_date;
+                if (typeof node.article === 'string' && idx[node.article] === undefined) idx[node.article] = node.price_date;
+            }
+            for (const k in node) walk(node[k]);
+        };
+        (typeof CATALOG_PRICE_ROOTS !== 'undefined' ? CATALOG_PRICE_ROOTS : [catalog]).forEach(walk);
+        this._catPriceDateIdx = idx;
         return idx;
     },
 
@@ -10744,10 +10871,43 @@ const app = {
         // localStorage не резиновый.
         delete this.state.customCompany;
     },
+    /**
+     * Снимок цен позиций сметы: [{ a: артикул, p: цена, q: количество }].
+     *
+     * Сохранённая смета хранит только настройки объекта — список позиций
+     * калькулятор собирает заново по сегодняшнему каталогу. Значит, открытая
+     * через месяц смета УЖЕ пересчитана, а чем именно набежала разница, сказать
+     * нечем: в базе лежат одни итоговые суммы. Снимок и есть недостающее «было».
+     *
+     * Имя пишем только позициям вне каталога (своё, распознанное): остальным его
+     * достаёт resolveCatalogItem при показе, а в записи это лишние килобайты на
+     * каждое сохранение — их потом возить в каждом запросе к смете.
+     */
+    buildPriceSnapshot: function () {
+        const list = this.currentEquipmentList || [];
+        if (!list.length) return null;
+        const price = this.catalogPriceIndex();
+        const out = [];
+        list.forEach(i => {
+            // Снятые галочкой опции не входят в записанную сумму — не входят и сюда
+            if (i.isOpt) return;
+            const art = String(i.originalId || i.id || '');
+            const p = Number(i.price) || 0;
+            if (!art || !p) return;
+            const row = { a: art, p: Math.round(p), q: Number(i.q) || 1 };
+            if (price[art] === undefined) row.n = String(i.name || '').slice(0, 80);
+            out.push(row);
+        });
+        return out.length ? out : null;
+    },
     // Состояние для отправки в облако: к обычному расчёту добавляем реквизиты автора,
-    // чтобы сохранённая смета несла свою шапку (админский предпросмотр, печать).
+    // чтобы сохранённая смета несла свою шапку (админский предпросмотр, печать), и
+    // снимок цен — чтобы через месяц можно было показать, что именно подорожало.
     stateForCloud: function (base) {
-        return Object.assign({}, base || this.state, { customCompany: this.companyDetails() });
+        return Object.assign({}, base || this.state, {
+            customCompany: this.companyDetails(),
+            priceSnap: this.buildPriceSnapshot()
+        });
     },
     // Заполняет поля раздела «Реквизиты компании». Вызывается при открытии кабинета и
     // ещё раз, когда настройки доехали из облака (вход с нового устройства).
