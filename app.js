@@ -4672,11 +4672,17 @@ const app = {
      */
     capturePriceSnapshot: function () {
         try {
-            const prices = {};
+            const prices = {}, qty = {}, names = {};
             (this.currentEquipmentList || []).forEach(it => {
                 const art = String((it && (it.originalId || it.id)) || '');
                 if (!art || art.indexOf('custom_collapsed_') === 0) return;
-                if (typeof it.price === 'number' && it.price > 0) prices[art] = it.price;
+                if (typeof it.price === 'number' && it.price > 0) {
+                    prices[art] = it.price;
+                    // Количество и название — чтобы сверка цен показывала не голый
+                    // артикул, а строку сметы: «Радиатор Space 11 секций, 4 шт»
+                    qty[art] = Number(it.q) || 1;
+                    if (it.name) names[art] = String(it.name).slice(0, 90);
+                }
             });
             const works = {};
             (this.currentWorksList || []).forEach(w => {
@@ -4688,6 +4694,8 @@ const app = {
                 eqSum: this.lastEqSum || 0,
                 worksSum: this.lastWorksSum || 0,
                 prices: prices,
+                qty: qty,
+                names: names,
                 works: works
             };
             this.saveState();
@@ -7504,6 +7512,7 @@ const app = {
                         <div style="display:flex; justify-content:flex-end; gap:8px; align-items: center;">
                             ${getInvoiceBtn}
                             <button class="lk-btn-sm" onclick="event.stopPropagation(); app.cloudRowAction('${item.id}', 'open')" title="Открыть расчёт в калькуляторе">Открыть</button>
+                            <button class="lk-btn-sm" onclick="event.stopPropagation(); Reprice.open('${item.id}')" title="Сравнить цены сметы с сегодняшними">Цены</button>
                             <button class="lk-btn-sm" onclick="event.stopPropagation(); app.cloudRowAction('${item.id}', 'share')" title="Короткая ссылка на смету для клиента">Ссылка клиенту</button>
                             <button class="lk-btn-sm" onclick="event.stopPropagation(); app.cloudRowAction('${item.id}', 'download')" title="Скачать смету: PDF или Excel">Скачать</button>
                             ${canDelete ? `
