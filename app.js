@@ -14697,7 +14697,7 @@ const app = {
 
         if (!this.ensureAnalyticsData(wrap)) return;
 
-        const { brands, wordstat, pulse, gas } = this._analytics;
+        const { brands, wordstat, pulse, gas, trends } = this._analytics;
         if (!brands && !wordstat && !gas) {
             wrap.innerHTML = `<div style="padding:30px 0; text-align:center; color:var(--text-sec);">
                 Данных пока нет. Их собирает GitHub Actions → Wordstat Analytics: сначала режим <b>brands</b>, затем <b>monthly</b>.
@@ -14824,6 +14824,84 @@ const app = {
             return `<span title="${d.nowM}: ${num(d.now)} против ${d.baseM}: ${num(d.base)}" style="color:${color}; font-weight:700;">${sign}${d.pct}%</span>`;
         };
 
+        // ── Тот же спрос, но по Google ──────────────────────────────────────
+        // Абсолютной частоты у Google нет ни в одном открытом источнике
+        // (см. шапку AutoTrends.py), поэтому здесь только динамика — и только
+        // как проверка яндексовой: расходятся ли два источника в направлении.
+        // Столбец появляется сам, когда файл собран, — до первого прогона
+        // Actions его в таблице нет.
+        const gCats = (trends && trends.cats) || {};
+        const gSparse = new Set((trends && trends.sparse) || []);
+        const hasGoogle = Object.keys(gCats).length > 0;
+        // Месяц у двух источников может разойтись: Wordstat собирается 3-го
+        // числа, Trends 6-го, и в стык месяца один уже перешагнул границу, а
+        // другой нет. Поэтому базу ищем по ключу месяца, а не по смещению
+        // в массиве, — иначе тихо сравнили бы разные пары месяцев.
+        const shiftMonth = (key, back) => {
+            const [y, m] = String(key).split('-').map(Number);
+            const d = new Date(Date.UTC(y, (m - 1) - back, 1));
+            return d.getUTCFullYear() + '-' + String(d.getUTCMonth() + 1).padStart(2, '0');
+        };
+        const gDeltaOf = (catId) => {
+            const s = gCats[catId];
+            if (!s || !s.length || gSparse.has(catId)) return null;
+            const by = {};
+            s.forEach(p => { by[p[0]] = p[1]; });
+            const nowM = s[s.length - 1][0];
+            const baseM = shiftMonth(nowM, backMonths);
+            if (by[baseM] == null || !by[baseM]) return null;
+            return {
+                pct: Math.round((by[nowM] - by[baseM]) / by[baseM] * 100),
+                now: by[nowM], nowM: nowM, base: by[baseM], baseM: baseM
+            };
+        };
+        // Доли поисковиков в России: примерно две трети Яндекс, треть Google.
+        // Точность здесь не нужна и недостижима — доля разная по устройствам и
+        // тематикам. Веса отвечают на вопрос «куда двинулся рынок целиком»,
+        // а не «на сколько именно процентов».
+        const W_YANDEX = 0.7, W_GOOGLE = 0.3;
+        // Спором считаем разные знаки при заметной величине у ОБОИХ. Пара
+        // «+25 % и −1 %» формально противоположна, но второе число — стояние
+        // на месте, а не падение; по такому правилу значок вставал бы у
+        // каждой второй строки и перестал бы что-либо значить. На нынешних
+        // данных строгое правило оставляет 7 спорных групп из 30 вместо 12.
+        const DISPUTE_MIN = 8;
+        const marketCell = (catId) => {
+            const y = deltaOf(catId), g = gDeltaOf(catId);
+            if (!y && !g) return `<span style="color:var(--text-sec);">—</span>`;
+            const sgn = p => (p > 0 ? '+' : '');
+            const paint = p => (p > 4 ? '#10B981' : (p < -4 ? '#EF4444' : 'var(--text-sec)'));
+            // Google молчит — показываем яндексовую цифру как есть, но
+            // подписываем источник: иначе строка выглядит так же, как сведённая
+            // по двум, и это была бы неправда о её надёжности.
+            if (!g) {
+                const why = gSparse.has(catId)
+                    ? 'у Google по этой фразе слишком мало запросов: ряд скачет от нуля'
+                    : 'у Google по этой фразе данных нет';
+                return `<span title="${y.nowM}: ${num(y.now)} против ${y.baseM}: ${num(y.base)}" style="color:${paint(y.pct)}; font-weight:700;">${sgn(y.pct)}${y.pct}%</span>`
+                    + `<br><small style="color:var(--text-sec);" title="${why}">только Яндекс</small>`;
+            }
+            if (!y) {
+                return `<span title="Индекс Google, ${g.nowM}: ${g.now} против ${g.baseM}: ${g.base}" style="color:${paint(g.pct)}; font-weight:700;">${sgn(g.pct)}${g.pct}%</span>`
+                    + `<br><small style="color:var(--text-sec);" title="истории по этой группе в Wordstat пока нет">только Google</small>`;
+            }
+            const pct = Math.round(y.pct * W_YANDEX + g.pct * W_GOOGLE);
+            const dispute = (y.pct > 0) !== (g.pct > 0)
+                && Math.min(Math.abs(y.pct), Math.abs(g.pct)) >= DISPUTE_MIN;
+            // При споре цифру не красим: усреднять разнонаправленное можно,
+            // выдавать результат за уверенный рост или падение — нет.
+            const color = dispute ? 'var(--text-sec)' : paint(pct);
+            const tip = `Яндекс ${sgn(y.pct)}${y.pct}% (${num(y.now)} против ${num(y.base)} запросов), `
+                + `Google ${sgn(g.pct)}${g.pct}% (индекс ${g.now} против ${g.base}). `
+                + `Сведено с весами ${W_YANDEX * 100}/${W_GOOGLE * 100} по долям поиска в России`
+                + (dispute ? '. Источники расходятся в направлении — цифре верить нельзя' : '');
+            return `<span title="${tip}" style="color:${color}; font-weight:700;">${sgn(pct)}${pct}%`
+                + (dispute ? ` <span style="color:#F97316;" title="источники спорят">⚠</span>` : '') + `</span>`
+                + `<br><small style="color:var(--text-sec);">`
+                + `<span style="color:${dispute ? paint(y.pct) : 'inherit'};">я ${sgn(y.pct)}${y.pct}</span>`
+                + ` · <span style="color:${dispute ? paint(g.pct) : 'inherit'};">g ${sgn(g.pct)}${g.pct}</span></small>`;
+        };
+
         // Без истории категорий проценты посчитать не из чего, и кнопки базы
         // сравнения нажимались бы вхолостую — молча, будто интерфейс сломан.
         // Поэтому либо кнопки, либо прямое объяснение, почему их нет.
@@ -14848,7 +14926,8 @@ const app = {
                 <h4 style="margin:0; color:var(--text-main);">Наши места по категориям${region ? ` — ${esc(region)}` : ''}</h4>
                 ${hasHistory
                     ? `<span style="font-size:12px; color:var(--text-sec); margin-left:6px;">спрос к:</span>
-                       ${cmpBtn(1, 'прошлому месяцу')}${cmpBtn(3, 'кварталу')}${cmpBtn(12, 'году назад')}`
+                       ${cmpBtn(1, 'прошлому месяцу')}${cmpBtn(3, 'кварталу')}${cmpBtn(12, 'году назад')}
+                       ${hasGoogle ? `<span style="font-size:12px; color:var(--text-sec);" title="Абсолютных чисел Google не отдаёт ни в одном открытом источнике, только относительный индекс. Поэтому сводится не объём запросов, а изменение — с весами 70/30 по долям поиска в России.">· Яндекс и Google сведены вместе</span>` : ''}`
                     : `<span style="font-size:12px; color:#F97316; margin-left:6px;">История по категориям ещё не собрана — запустите Actions → Wordstat Analytics → brands. Тогда появятся проценты изменения и графики по каждой группе.</span>`}
               </div>
             ${ownFilter ? `<div style="font-size:12px; color:${this.brandChartColor(ownFilter.brand)}; margin:0 0 6px;">
@@ -14861,7 +14940,9 @@ const app = {
             <div style="overflow-x:auto;"><table class="inv-table">
                 <thead><tr>
                     <th>Группа прайса</th><th>Лидер спроса</th>
-                    <th style="text-align:center; width:80px;">Спрос</th>
+                    <th style="text-align:center; width:96px;" title="${hasGoogle
+                        ? 'Спрос по двум поисковикам сразу: сверху сведённое изменение, под ним исходные — «я» Яндекс, «g» Google. Значок ⚠ значит, что источники разошлись в направлении.'
+                        : 'Изменение числа запросов в Яндексе'}">${hasGoogle ? 'Рынок' : 'Спрос'}</th>
                     ${ownHeader('stout', 'STOUT')}
                     ${ownHeader('rommer', 'ROMMER')}
                 </tr></thead><tbody>`;
@@ -14890,7 +14971,7 @@ const app = {
                       onclick="app.setAnalyticsCategory('${esc(r.id)}')">
                 <td><b style="${open ? 'color:var(--primary);' : ''}">${open ? '▾ ' : ''}${esc(r.title)}</b>${sub}</td>
                 <td>${lead}</td>
-                <td style="text-align:center;">${deltaCell(deltaOf(r.id))}</td>
+                <td style="text-align:center; line-height:1.35;">${hasGoogle ? marketCell(r.id) : deltaCell(deltaOf(r.id))}</td>
                 <td style="text-align:center;">${r.ownIn.includes('stout') || r.stout ? badge(r.stout, r.ownCount.stout, r.brandTotal) : '<span style="color:var(--text-sec);" title="нет позиций в группе">·</span>'}</td>
                 <td style="text-align:center;">${r.ownIn.includes('rommer') || r.rommer ? badge(r.rommer, r.ownCount.rommer, r.brandTotal) : '<span style="color:var(--text-sec);" title="нет позиций в группе">·</span>'}</td>
             </tr>`;
@@ -15948,12 +16029,13 @@ const app = {
                     return null;
                 }
             })();
-            const [brands, wordstat, pulse, gas, companies, prices] = await Promise.all([
-                get('wordstat_brands'), get('wordstat'), get('wordstat_pulse'), get('gas'), get('companies'), get('prices')
+            const [brands, wordstat, pulse, gas, companies, prices, trends] = await Promise.all([
+                get('wordstat_brands'), get('wordstat'), get('wordstat_pulse'), get('gas'), get('companies'), get('prices'),
+                get('google_trends')
             ]);
             this._analyticsTerms = await terms;
             this._chartBrands = await chartBrands;
-            this._analytics = { brands, wordstat, pulse, gas, companies, prices };
+            this._analytics = { brands, wordstat, pulse, gas, companies, prices, trends };
             this._loadingAnalytics = false;
             if (this.OWNER_ONLY_TABS.indexOf(this._adminTab) >= 0) this.renderAdminMain();
         })();
@@ -16853,7 +16935,7 @@ const app = {
      */
     dashBuildBlocks: function () {
         const B = {};
-        const { brands, wordstat, pulse, gas, prices } = this._analytics;
+        const { brands, wordstat, pulse, gas, prices, trends } = this._analytics;
 
         const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
         const num = n => Number(n || 0).toLocaleString('ru-RU');
@@ -17064,6 +17146,7 @@ const app = {
                     ${src('🏷️', 'Марки в запросах', brands && brands.updated)}
                     ${src('📅', 'Недельный пульс', pulse && pulse.updated)}
                     ${src('🔥', 'Догазификация', gas && gas.updated)}
+                    ${src('🌐', 'Google Trends', trends && trends.updated)}
                 </div>
             </div>`);
 
@@ -19706,6 +19789,19 @@ const app = {
             // общей кривой — сравнивается форма, а не абсолютные величины.
             const chartSeries = [{ name: r.phrase, points: pts }];
             Object.keys(curves).forEach(brand => chartSeries.push({ name: brand, points: curves[brand] }));
+            // Та же фраза глазами Google — второй линией. Приводить её к
+            // яндексовому масштабу не нужно: ownScale нормирует каждый ряд по
+            // своему максимуму, а именно это здесь и требуется — у Google не
+            // запросы, а индекс 0–100, и общей с показами шкалы у них нет.
+            // Совпадает или расходится форма сезона — вопрос, на который
+            // линия отвечает; «насколько выше» — вопрос, которого тут нет.
+            const gAll = (this._analytics && this._analytics.trends) || null;
+            const gPts = ((gAll && gAll.cats) || {})[r.id];
+            const gSkip = ((gAll && gAll.sparse) || []).indexOf(r.id) >= 0;
+            if (gPts && gPts.length > 1 && !gSkip) {
+                const cut = months > 0 ? gPts.slice(-months) : gPts;
+                if (cut.length > 1) chartSeries.push({ name: 'Google (индекс)', points: cut });
+            }
             // Масштаб графика — своими кнопками прямо здесь. Кнопки «12 месяцев
             // / 3 года / всё» есть и ниже, у блока «Спрос по месяцам», но до них
             // от раскрытой категории надо доскроллить всю таблицу, и было
