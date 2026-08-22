@@ -9555,36 +9555,37 @@ body.dark-mode .empty-state-row td {
 
     /* Левая панель настроек в экран не помещалась никогда — у неё своя прокрутка.
        Но её потолок (125vh - 60px) не учитывал шапку сайта, и панель свисала ниже
-       экрана, сама вызывая прокрутку страницы. На пустом экране опускаем потолок
-       на высоту шапки с отступами. */
-    body.empty-fit-panel .input-panel,
-    body.empty-fit-panel .input-panel.fast-mode {
+       экрана, сама вызывая прокрутку страницы. Опускаем потолок на высоту шапки с
+       отступами; точное число под живую высоту шапки ставит app.js. */
+    .input-panel,
+    .input-panel.fast-mode {
         max-height: calc(125vh - 130px);
         padding: 12px 14px;
     }
 
-    /* Правила колонки настроек висят на своём классе empty-fit-panel: она ужимается
-       и в подробном режиме, где настроек ещё больше, а empty-fit (растянутый лист,
-       спрятанный подвал) остаётся только у быстрого.
-       Почти 40 % высоты колонки настроек — это отступы между блоками. На пустом
-       экране снимаем их до минимума, чтобы список настроек помещался целиком без
-       уменьшения текста. Что не поместилось после этого, доберёт масштабом
-       syncEmptyFitPanelScale() в app.js. */
-    body.empty-fit-panel .input-panel > h3,
-    body.empty-fit-panel .input-panel > h4 {
+    /* Почти 40 % высоты колонки настроек — это отступы между блоками. Снимаем их
+       до минимума, чтобы список настроек помещался целиком без уменьшения текста.
+       Что не поместилось после этого, доберёт масштабом fitParamsPanel() в app.js.
+       Раньше эти правила висели на классе body.empty-fit-panel, то есть работали
+       только на нетронутом расчёте: стоило задать площадь — отступы возвращались,
+       и колонка на глазах меняла вёрстку. Теперь они постоянные: колонка выглядит
+       одинаково и на пустом объекте, и на заполненном, а новые параметры только
+       удлиняют её вниз. */
+    .input-panel > h3,
+    .input-panel > h4 {
         margin-top: 8px;
         margin-bottom: 4px;
     }
 
-    body.empty-fit-panel .input-panel > h3:first-child {
+    .input-panel > h3:first-child {
         margin-top: 0;
     }
 
-    body.empty-fit-panel .input-panel > .control-item {
+    .input-panel > .control-item {
         margin-bottom: 8px;
     }
 
-    body.empty-fit-panel .input-panel > .toggle-item {
+    .input-panel > .toggle-item {
         margin-top: 8px;
         margin-bottom: 8px;
         padding-top: 8px;
