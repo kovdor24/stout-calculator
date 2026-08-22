@@ -34,7 +34,12 @@ const Docs = {
         dateStart: '',
         dateEnd: '',
         prepay: 50,
-        warrantyMonths: 24,
+        // 12 месяцев — обычный для монтажа срок. Двух лет он не отменяет: по п. 2
+        // ст. 737 ГК РФ заказчик и после гарантии вправе предъявить требования в
+        // течение двух лет со дня приёмки (по зданиям — пяти), только доказывать,
+        // что недостаток возник до сдачи, придётся уже ему. Ставить 24 месяца
+        // значит добровольно держать это бремя на себе весь срок.
+        warrantyMonths: 12,
         offerDays: 5,
         materialsBy: 'contractor',   // чьи материалы: contractor | client
         priceKind: 'firm',           // firm — твёрдая, approx — приблизительная
@@ -85,13 +90,45 @@ const Docs = {
     },
 
     /**
-     * Город подписания. По умолчанию — город монтажника из личного кабинета,
-     * но если в расчёте город выбрали руками (объект в другом городе), берём его:
-     * договор подписывают там, где объект.
+     * Город подписания. По умолчанию — город монтажника из анкеты личного
+     * кабинета, но если для объекта выбирали свой город, берём его: договор
+     * подписывают там, где объект.
+     *
+     * Города в реквизитах компании нет и не было — там название, сайт, адрес,
+     * банк и логотип. Свой город монтажник указывает в анкете (tgUser.city), она
+     * же дублирует его в localStorage. Прежний вариант читал несуществующее поле
+     * реквизитов, поэтому графа так и оставалась пустой.
      */
     defaultCity: function () {
-        const picked = app.state.selectedCity && String(app.state.selectedCity.name || '').trim();
-        if (picked) return picked;
+        // В снимке и в расчёте на месте города может стоять название зоны
+        // («Центр», «Сибирь») — это когда город не выбирали. В графу «Город
+        // подписания» такое не годится, поэтому сверяем со справочником.
+        const known = (name) => {
+            const n = String(name == null ? '' : name).trim();
+            if (!n) return '';
+            if (typeof CITIES_DB === 'undefined') return n;
+            const norm = t => String(t).toLowerCase().replace(/ё/g, 'е').trim();
+            return CITIES_DB.some(c => norm(c.name) === norm(n)) ? n : '';
+        };
+
+        const snap = this._ctx && this._ctx.snap;
+        if (snap) {
+            // Заказ из кабинета: расчёт, из которого он вырос, давно закрыт —
+            // город объекта берём из снимка, ушедшего клиенту.
+            const fromSnap = known((snap.object_info || {}).region);
+            if (fromSnap) return fromSnap;
+        } else if (app.state.selectedCity) {
+            const picked = String(app.state.selectedCity.name || '').trim();
+            if (picked) return picked;
+        }
+
+        const prof = app.state.tgUser || app.state.user || {};
+        const own = String(prof.city || '').trim();
+        if (own) return own;
+        try {
+            const saved = (localStorage.getItem('user_city') || '').trim();
+            if (saved && saved !== 'Не указан') return saved;
+        } catch (e) { /* приватный режим */ }
         return (app.companyDetails() || {}).city || '';
     },
 
