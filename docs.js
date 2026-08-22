@@ -484,6 +484,10 @@ const Docs = {
         const f = (k) => this.esc(d[k]);
         const old = document.getElementById('docs_modal_overlay');
         if (old) old.remove();
+        // Блока «какими ценами печатать» может не быть вовсе: он появляется, только
+        // если цены каталога с момента отправки разошлись. Пустую рамку и пояснение
+        // к несуществующему переключателю не рисуем.
+        const priceMode = this.priceModeHtml();
         const wrap = document.createElement('div');
         wrap.id = 'docs_modal_overlay';
         wrap.className = 'custom-modal-overlay';
@@ -500,10 +504,10 @@ const Docs = {
                 <span class="auth-modal-close" onclick="Docs.close()" style="top:6px; right:8px; padding:10px 14px;">&times;</span>
                 <div class="custom-modal-title" style="font-size:18px; margin-bottom:4px;">
                     Документы к смете
-                    <button type="button" id="docs_help_btn" onclick="Docs.helpToggle()" title="Пояснения к полям"
-                        style="float:right; font:inherit; font-size:11.5px; font-weight:600; padding:4px 10px;
-                               border:1px solid var(--border); border-radius:8px; background:var(--surface);
-                               color:var(--text-sec); cursor:pointer;">🎓 Подсказки</button>
+                    <button type="button" id="docs_help_btn" onclick="Docs.helpToggle()" title="Показать пояснения к полям"
+                        style="float:right; margin-right:34px; font:inherit; font-size:11.5px; font-weight:600;
+                               padding:4px 10px; border:1px solid var(--border); border-radius:8px;
+                               background:var(--surface); color:var(--text-sec); cursor:pointer;">🎓 Подсказки</button>
                 </div>
                 <div class="custom-modal-text" style="margin-bottom:14px;">
                     Договор бытового подряда, спецификация, смета работ и акт сдачи-приёмки.
@@ -512,15 +516,16 @@ const Docs = {
                         : 'Заполните данные один раз — они сохранятся вместе с расчётом.'}
                 </div>
 
-                <div id="docs_grid_main" style="display:grid; grid-template-columns:1fr 1fr; gap:0 12px;">
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:0 12px;">
                     ${inp('number', 'Номер договора')}
                     ${inp('date', 'Дата договора', 'date')}
                     ${inp('city', 'Город подписания')}
                     ${inp('objectAddress', 'Адрес объекта')}
                 </div>
+                ${this.hint('main')}
 
                 <div style="font-size:12px; font-weight:700; color:var(--text-main); margin:10px 0 6px;">Заказчик</div>
-                <div id="docs_grid_client" style="display:grid; grid-template-columns:1fr 1fr; gap:0 12px;">
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:0 12px;">
                     ${inp('clientName', 'ФИО полностью', 'text', 'placeholder="Иванов Иван Иванович"')}
                     ${inp('clientPhone', 'Телефон', 'tel',
                         'inputmode="tel" maxlength="18" placeholder="+7 (___) ___-__-__" oninput="Docs.onPhoneInput(this, event)"')}
@@ -528,11 +533,12 @@ const Docs = {
                         'placeholder="4509 123456, выдан ОВД ... 12.03.2015"')}
                     ${inp('clientAddress', 'Адрес регистрации')}
                 </div>
+                ${this.hint('client')}
 
-                <div id="docs_price_mode">${this.priceModeHtml()}</div>
+                ${priceMode ? `<div id="docs_price_mode">${priceMode}</div>${this.hint('priceMode')}` : ''}
 
                 <div style="font-size:12px; font-weight:700; color:var(--text-main); margin:10px 0 6px;">Условия</div>
-                <div id="docs_grid_terms" style="display:grid; grid-template-columns:1fr 1fr; gap:0 12px;">
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:0 12px;">
                     ${inp('dateStart', 'Начало работ', 'date')}
                     ${inp('dateEnd', 'Окончание работ', 'date', 'onchange="Docs.onDateEndChange(this.value)"')}
                     ${inp('prepay', 'Аванс, %', 'number', 'min="0" max="100"')}
@@ -540,8 +546,9 @@ const Docs = {
                     ${inp('offerDays', 'Цена действительна, дней', 'number', 'min="0"')}
                     ${inp('signer', 'Кто подписывает (ФИО)')}
                 </div>
+                ${this.hint('terms')}
 
-                <div id="docs_grid_kind" style="display:grid; grid-template-columns:1fr 1fr; gap:0 12px; margin-top:6px;">
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:0 12px; margin-top:6px;">
                     <label style="display:block;">
                         <span style="display:block; font-size:11.5px; color:var(--text-sec); margin-bottom:3px;">Цена</span>
                         <select id="doc_priceKind" style="width:100%; padding:8px 10px; border:1px solid var(--border); border-radius:8px; background:var(--bg); color:var(--text-main); font:inherit; font-size:13px;">
@@ -565,9 +572,10 @@ const Docs = {
                         </select>
                     </label>
                 </div>
+                ${this.hint('kind')}
 
                 <div style="font-size:12px; font-weight:700; color:var(--text-main); margin:10px 0 6px;">Испытания и скрытые работы</div>
-                <div id="docs_grid_tech" style="display:grid; grid-template-columns:1fr 1fr; gap:0 12px;">
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:0 12px;">
                     <label style="display:block; margin-bottom:8px;">
                         <span style="display:block; font-size:11.5px; color:var(--text-sec); margin-bottom:3px;">Какую систему испытывали</span>
                         <select id="doc_techSystem" onchange="Docs.onSystemChange(this.value)"
@@ -587,19 +595,22 @@ const Docs = {
                     ${this.esc(hint.rule)}. Если изготовитель трубы требует другого — ставьте его значения,
                     они главнее общего правила.
                 </p>
-                <div id="docs_grid_hidden" style="display:grid; grid-template-columns:1fr 1fr; gap:0 12px;">
+                ${this.hint('tech')}
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:0 12px;">
                     ${inp('hiddenFrom', 'Скрытые работы: с', 'date')}
                     ${inp('hiddenTo', 'Скрытые работы: по', 'date')}
                 </div>
                 ${inp('hiddenWorks', 'Что скрывается (если пусто — стандартная формулировка)', 'text',
                     'placeholder="трубы тёплого пола под стяжкой, разводка отопления в штробах"')}
+                ${this.hint('hidden')}
                 <p style="font-size:11px; line-height:1.5; color:var(--text-sec); margin:12px 0 0;">
                     Шаблоны составлены по § 2 главы 37 ГК РФ (бытовой подряд) и закону «О защите прав
                     потребителей». Это типовые формы: стороны вправе изменить любой пункт.
                     Перед регулярным применением покажите документы своему юристу.
                 </p>
 
-                <div id="docs_actions" style="display:flex; flex-wrap:wrap; gap:8px; margin-top:14px;">
+                ${this.hint('actions')}
+                <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:14px;">
                     <button type="button" class="custom-modal-btn" style="flex:1 1 180px; width:auto;"
                         onclick="Docs.print('contract')">Договор с приложениями</button>
                     <button type="button" class="custom-modal-btn" style="flex:1 1 140px; width:auto;"
@@ -624,7 +635,8 @@ const Docs = {
         setTimeout(() => {
             wrap.classList.add('active');
             if (app.syncModalOverlayClass) app.syncModalOverlayClass();
-            if (this.helpDue()) this.helpStart(true);
+            this.helpCss();
+            if (this.helpDue()) this.helpStart(true); else this.helpBtnLabel(false);
         }, 20);
     },
 
@@ -687,97 +699,56 @@ const Docs = {
         return this.data();
     },
 
-    // ---------- режим обучения по форме ----------
+    // ---------- пояснения к полям ----------
     //
     // Договор человек заполняет впервые, а поля названы по закону, а не
     // по-житейски. «Цена твёрдая или приблизительная» решает, можно ли будет
     // потребовать доплату; акт скрытых работ — единственное, чем после заливки
     // стяжки доказать, что под ней уложено; сроки начала и окончания вообще
-    // существенное условие, без них договор оспаривают целиком. Поэтому первые
-    // три открытия окна ведём человека по разделам и объясняем каждый.
+    // существенное условие, без них договор оспаривают целиком.
     //
-    // Карточка подсказки приклеена к низу экрана, а не вставлена в поток под
-    // разделом: в потоке она раздвигала форму и закрывала собой те самые поля,
-    // про которые рассказывала. Снизу она никуда не уезжает при прокрутке, а
-    // нужный раздел подсвечивается рамкой и сам подводится под неё.
+    // Поэтому первые три открытия окна под каждым блоком стоит короткое
+    // пояснение — что сюда вводить и зачем. Пробовали вести человека карточкой
+    // по шагам, но она либо раздвигала форму, либо висела поверх неё и закрывала
+    // ровно те поля, про которые рассказывала. Строка под блоком не закрывает
+    // ничего и стоит там, где человек и смотрит.
 
-    HELP_SEEN: 'docs_help_seen',   // сколько раз обучение уже показывали
-    HELP_OFF: 'docs_help_off',     // человек выключил подсказки сам
+    HELP_SEEN: 'docs_help_seen',   // сколько раз пояснения уже показывали
+    HELP_OFF: 'docs_help_off',     // человек выключил их сам
     HELP_TIMES: 3,
 
-    HELP_STEPS: [
-        {
-            sel: null,
-            title: 'Зачем это окно',
-            text: 'Здесь из готовой сметы собираются бумаги: договор бытового подряда с приложениями, '
-                + 'акт сдачи-приёмки, гарантийный талон и четыре технических акта. Состав оборудования и '
-                + 'работ уже посчитан, реквизиты — в настройках аккаунта; руками остаётся заполнить данные '
-                + 'заказчика и сроки. Введённое сохраняется вместе с расчётом, второй раз вводить не придётся.'
-        },
-        {
-            sel: '#docs_grid_main',
-            title: 'Номер, дата, город и объект',
-            text: 'Номер подставлен из номера сметы — так документы и смета остаются одной историей. '
-                + 'Город подписания берётся из вашего личного кабинета, а если в расчёте выбран другой город, '
-                + 'то из расчёта. Адрес объекта — это предмет договора: где именно выполняются работы. Без него '
-                + 'документ не имеет силы, поэтому печать без адреса не даётся.'
-        },
-        {
-            sel: '#docs_grid_client',
-            title: 'Данные заказчика',
-            text: 'ФИО полностью и паспорт нужны, чтобы в договоре было видно, с кем он заключён: по одной фамилии '
-                + 'в суде человека не опознать. Телефон поле раскладывает само в +7 (999) 999-99-99 — по нему потом '
-                + 'вызывают на приёмку, и он же подтверждает, что заказчика извещали о готовности работ.'
-        },
-        {
-            sel: '#docs_price_mode',
-            title: 'Какими ценами печатать',
-            text: 'По умолчанию в бумагах стоят цены, которые видел клиент, а не сегодняшние. Каталог за месяц '
-                + 'мог уехать, но твёрдая цена по договору от подорожания не меняется — документ должен повторять '
-                + 'то, о чём стороны договорились. Переключатель нужен только если цену пересогласовали.'
-        },
-        {
-            sel: '#docs_grid_terms',
-            title: 'Сроки и деньги',
-            text: 'Начало и окончание работ — существенное условие: без них договор можно оспорить целиком, а просрочку '
-                + 'считают именно от этих дат. Начало подставлено днём, когда смета ушла клиенту. Аванс и гарантия на '
-                + 'работы — ваши обязательства, срок гарантии вы назначаете сами. «Цена действительна, дней» — сколько '
-                + 'вы держите цену: по её истечении смету можно пересчитать без объяснений.'
-        },
-        {
-            sel: '#docs_grid_kind',
-            title: 'Цена, материалы, кто исполнитель',
-            text: 'Твёрдая цена — доплаты не будет, даже если работы окажется больше: это ваш риск, и закон считает '
-                + 'цену твёрдой по умолчанию. Приблизительная позволяет пересчитать, но только предупредив заказчика '
-                + 'заранее и отдельным соглашением. «Материалы» — чьё оборудование по смете. «Кто исполнитель» меняет '
-                + 'текст договора: у самозанятого добавляется пункт про чек по налогу на профессиональный доход.'
-        },
-        {
-            sel: '#docs_grid_tech',
-            title: 'Испытания',
-            text: 'Опрессовку принимают по СП 73.13330.2016; давления и выдержка подставлены по выбранной системе. '
-                + 'Если изготовитель трубы требует другого — ставьте его цифры, они главнее общего правила. Дата '
-                + 'испытания подставляется из окончания работ: систему сдают в один день.'
-        },
-        {
-            sel: '#docs_grid_hidden',
-            title: 'Скрытые работы',
-            text: 'Самый ценный акт для монтажника: как только залита стяжка или зашит короб, доказать, что там '
-                + 'уложено, больше нечем. Даты — период, когда работы выполнялись; «по» подставляется из окончания '
-                + 'работ. Строку «что скрывается» можно оставить пустой — встанет стандартная формулировка, — но '
-                + 'своими словами всегда точнее: труба, узел, участок.'
-        },
-        {
-            sel: '#docs_actions',
-            title: 'Что печатать',
-            text: '«Договор с приложениями» — сам договор, спецификация оборудования и смета работ одним файлом. '
-                + '«Акт сдачи-приёмки» подписывают после окончания работ, «Гарантийный талон» отдают заказчику. '
-                + 'Ниже — четыре технических акта: опрессовка, скрытые работы, промывка и прогрев. Документ '
-                + 'открывается в новой вкладке и сразу уходит на печать — оттуда же его можно сохранить в PDF.'
-        }
-    ],
+    HINTS: {
+        main: 'Номер и дата — по ним документ потом ищут; номер подставлен из номера сметы. '
+            + 'Город подписания берётся из вашей анкеты, а если у объекта свой город — из расчёта. '
+            + 'Адрес объекта обязателен: это предмет договора, без него бумага не имеет силы.',
+        client: 'ФИО полностью и паспорт нужны, чтобы было видно, с кем заключён договор: по одной фамилии '
+            + 'человека не опознать. Телефон поле раскладывает само — по нему вызывают на приёмку.',
+        priceMode: 'В бумагах стоят цены, которые видел клиент, а не сегодняшние: твёрдая цена по договору '
+            + 'от подорожания каталога не меняется. Переключать нужно, только если цену пересогласовали.',
+        terms: 'Начало и окончание работ — существенное условие: без них договор можно оспорить целиком, '
+            + 'а просрочку считают от этих дат. Начало подставлено днём, когда смета ушла клиенту. '
+            + '«Цена действительна, дней» — сколько вы держите цену, дальше смету можно пересчитать.',
+        kind: 'Твёрдая цена — доплаты не будет, даже если работы окажется больше: закон и так считает цену '
+            + 'твёрдой по умолчанию. Приблизительная позволяет пересчитать, но предупредив заказчика заранее '
+            + 'и отдельным соглашением. У самозанятого в договор добавляется пункт про чек по НПД.',
+        tech: 'Опрессовку принимают по СП 73.13330.2016, давления подставлены по выбранной системе. '
+            + 'Дата испытания берётся из окончания работ — систему сдают в один день.',
+        hidden: 'Самый ценный акт для монтажника: как только залита стяжка или зашит короб, доказать, что '
+            + 'там уложено, больше нечем. «По» подставляется из окончания работ. Строку «что скрывается» '
+            + 'можно оставить пустой — встанет стандартная формулировка, но своими словами точнее.',
+        actions: 'Договор печатается сразу со спецификацией и сметой работ. Акт сдачи-приёмки подписывают '
+            + 'после окончания работ, гарантийный талон отдают заказчику. Ниже — четыре технических акта. '
+            + 'Документ открывается в новой вкладке и сразу уходит на печать, оттуда же сохраняется в PDF.'
+    },
 
-    // Показывать ли обучение при открытии окна
+    // Разметка пояснения под блоком формы
+    hint: function (key) {
+        const text = this.HINTS[key];
+        if (!text) return '';
+        return `<p class="docs-hint">${this.esc(text)}</p>`;
+    },
+
+    // Показывать ли пояснения при открытии окна
     helpDue: function () {
         try {
             if (localStorage.getItem(this.HELP_OFF) === '1') return false;
@@ -786,111 +757,39 @@ const Docs = {
     },
 
     helpStart: function (auto) {
-        if (!document.getElementById('docs_modal_overlay')) return;
+        const wrap = document.getElementById('docs_modal_overlay');
+        if (!wrap) return;
         this.helpCss();
+        wrap.classList.add('docs-hints-on');
+        this.helpBtnLabel(true);
         if (auto) {
             try {
                 const n = (parseInt(localStorage.getItem(this.HELP_SEEN), 10) || 0) + 1;
                 localStorage.setItem(this.HELP_SEEN, String(n));
-            } catch (e) { /* приватный режим — просто покажем ещё раз */ }
+            } catch (e) { /* приватный режим — покажем ещё раз */ }
         }
-        this.helpGo(0);
     },
 
-    // forever — человек сказал «больше не показывать»; при обычном завершении
-    // счётчик открытий сам доведёт дело до конца
-    helpStop: function (forever) {
-        if (forever) { try { localStorage.setItem(this.HELP_OFF, '1'); } catch (e) { } }
-        const card = document.getElementById('docs_help_card');
-        if (card) card.remove();
-        const lit = document.querySelector('.docs-help-target');
-        if (lit) lit.classList.remove('docs-help-target');
+    helpStop: function () {
         const wrap = document.getElementById('docs_modal_overlay');
-        if (wrap) wrap.classList.remove('docs-help-on');
-        const spacer = document.getElementById('docs_help_spacer');
-        if (spacer) spacer.remove();
+        if (wrap) wrap.classList.remove('docs-hints-on');
+        this.helpBtnLabel(false);
+        try { localStorage.setItem(this.HELP_OFF, '1'); } catch (e) { }
     },
 
-    // Кнопка в заголовке окна: включает подсказки заново или выключает совсем
     helpToggle: function () {
-        if (document.getElementById('docs_help_card')) { this.helpStop(true); return; }
+        const wrap = document.getElementById('docs_modal_overlay');
+        if (!wrap) return;
+        if (wrap.classList.contains('docs-hints-on')) { this.helpStop(); return; }
         try { localStorage.removeItem(this.HELP_OFF); } catch (e) { }
         this.helpStart(false);
     },
 
-    helpGo: function (i) {
-        const steps = this.HELP_STEPS;
-        if (i < 0 || i >= steps.length) { this.helpStop(false); return; }
-        const step = steps[i];
-        this.helpStop(false);
-
-        const card = document.createElement('div');
-        card.id = 'docs_help_card';
-        card.className = 'docs-help-card';
-        const last = i === steps.length - 1;
-        card.innerHTML = `
-            <div class="docs-help-top">
-                <span class="docs-help-num">Подсказка ${i + 1} из ${steps.length}</span>
-                <button type="button" class="docs-help-x" title="Скрыть подсказки"
-                    onclick="Docs.helpStop(true)">&times;</button>
-            </div>
-            <div class="docs-help-title">${this.esc(step.title)}</div>
-            <div class="docs-help-text">${this.esc(step.text)}</div>
-            <div class="docs-help-btns">
-                ${i > 0 ? `<button type="button" class="docs-help-btn" onclick="Docs.helpGo(${i - 1})">Назад</button>` : ''}
-                <button type="button" class="docs-help-btn primary" onclick="Docs.helpGo(${i + 1})">
-                    ${last ? 'Понятно' : 'Дальше'}</button>
-                <button type="button" class="docs-help-btn plain" onclick="Docs.helpStop(true)">Больше не показывать</button>
-            </div>`;
-
-        const wrap = document.getElementById('docs_modal_overlay');
-        if (!wrap) return;
-        wrap.classList.add('docs-help-on');
-        wrap.appendChild(card);
-
-        // Запас снизу, чтобы последний экран формы можно было докрутить из-под
-        // карточки. Именно распоркой, а не отступом окна: нижний padding у
-        // прокручиваемого блока в область прокрутки не попадает, и кнопки печати
-        // так и оставались бы под карточкой.
-        const modal = wrap.querySelector('.custom-modal');
-        if (modal && !document.getElementById('docs_help_spacer')) {
-            const spacer = document.createElement('div');
-            spacer.id = 'docs_help_spacer';
-            spacer.style.height = '46vh';
-            spacer.setAttribute('aria-hidden', 'true');
-            modal.appendChild(spacer);
-        }
-
-        const target = step.sel ? document.querySelector(step.sel) : null;
-        if (target) {
-            target.classList.add('docs-help-target');
-            this.helpScrollTo(target);
-        } else {
-            const modal = wrap.querySelector('.custom-modal');
-            if (modal) try { modal.scrollIntoView({ block: 'start' }); } catch (e) { }
-        }
-    },
-
-    /**
-     * Подвести раздел под свободную часть экрана — ту, что выше карточки.
-     * Штатный scrollIntoView({block:'center'}) считает по всему окну и загонял
-     * нижнюю половину подсвеченного блока под карточку.
-     */
-    helpScrollTo: function (el) {
-        const card = document.getElementById('docs_help_card');
-        const free = card ? card.getBoundingClientRect().top : window.innerHeight;
-        let sc = el.parentElement;
-        while (sc && sc !== document.body) {
-            const st = getComputedStyle(sc);
-            if (/(auto|scroll)/.test(st.overflowY) && sc.scrollHeight > sc.clientHeight + 2) break;
-            sc = sc.parentElement;
-        }
-        const r = el.getBoundingClientRect();
-        const want = Math.max(16, (free - r.height) / 2);
-        const delta = r.top - want;
-        if (Math.abs(delta) < 2) return;
-        if (sc && sc !== document.body) sc.scrollTop += delta;
-        else window.scrollBy(0, delta);
+    helpBtnLabel: function (on) {
+        const btn = document.getElementById('docs_help_btn');
+        if (!btn) return;
+        btn.textContent = on ? '🎓 Скрыть подсказки' : '🎓 Подсказки';
+        btn.title = on ? 'Убрать пояснения к полям' : 'Показать пояснения к полям';
     },
 
     helpCss: function () {
@@ -898,42 +797,21 @@ const Docs = {
         const st = document.createElement('style');
         st.id = 'docs_help_css';
         st.textContent = `
-            .docs-help-target {
-                outline: 2px solid var(--primary);
-                outline-offset: 6px;
-                border-radius: 10px;
+            .docs-hint {
+                display: none;
+                font-size: 11.5px;
+                line-height: 1.45;
+                color: var(--text-sec);
+                background: var(--primary-light);
+                border-left: 2px solid var(--primary);
+                border-radius: 0 8px 8px 0;
+                padding: 7px 10px;
+                margin: 0 0 12px;
             }
-            .docs-help-card {
-                position: fixed;
-                left: 50%;
-                bottom: 12px;
-                transform: translateX(-50%);
-                width: min(620px, calc(100vw - 24px));
-                max-height: 42vh;
-                overflow-y: auto;
-                background: var(--surface);
-                border: 1px solid var(--primary);
-                border-radius: 12px;
-                padding: 12px 14px;
-                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
-                z-index: 10;
+
+            #docs_modal_overlay.docs-hints-on .docs-hint {
+                display: block;
             }
-            .docs-help-top { display: flex; align-items: center; justify-content: space-between; }
-            .docs-help-num { font-size: 11px; font-weight: 700; color: var(--primary); letter-spacing: .3px; }
-            .docs-help-x {
-                font: inherit; font-size: 18px; line-height: 1; padding: 0 4px;
-                border: none; background: transparent; color: var(--text-sec); cursor: pointer;
-            }
-            .docs-help-title { font-size: 13px; font-weight: 700; color: var(--text-main); margin: 4px 0 4px; }
-            .docs-help-text { font-size: 12px; line-height: 1.5; color: var(--text-main); }
-            .docs-help-btns { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
-            .docs-help-btn {
-                font: inherit; font-size: 12px; font-weight: 600; padding: 6px 14px;
-                border: 1px solid var(--border); border-radius: 8px;
-                background: var(--surface); color: var(--text-main); cursor: pointer;
-            }
-            .docs-help-btn.primary { background: var(--primary); border-color: var(--primary); color: #fff; }
-            .docs-help-btn.plain { border-color: transparent; background: transparent; color: var(--text-sec); }
         `;
         document.head.appendChild(st);
     },
