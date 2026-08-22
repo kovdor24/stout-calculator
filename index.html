@@ -175,7 +175,7 @@
     <script src="app.js?v=6.76" defer></script>
     <script src="tour.js?v=2.1" defer></script>
     <!-- Выгрузка сметы в Excel: читает уже готовую печатную вёрстку (#print_bin) -->
-    <script src="docs.js?v=1.1" defer></script>
+    <script src="docs.js?v=1.3" defer></script>
     <script src="excel_export.js?v=1.0" defer></script>
     <!-- Принципиальная схема котельной под переключателем «Схема». Тот же
          векторный композитор, что рисует лист схемы в проекте, поэтому нужен
@@ -1812,14 +1812,6 @@
                         <line x1="8" y1="13" x2="16" y2="13"></line>
                         <line x1="8" y1="17" x2="16" y2="17"></line>
                     </svg>Проект</button>
-                <button id="btn_docs_trigger" class="btn-secondary-action btn-base" data-tip="Договор бытового подряда, спецификация, смета работ и акт сдачи-приёмки" onclick="Docs.open()"><svg width="18"
-                        height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M9 12h6"></path>
-                        <path d="M9 16h6"></path>
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                        <polyline points="14 2 14 8 20 8"></polyline>
-                    </svg>Документы</button>
             </div>
 
             <div class="print-disclaimer" style="display: none; margin-top: 40px; page-break-inside: avoid;">

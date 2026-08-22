@@ -42,14 +42,37 @@ const Docs = {
         signer: ''
     },
 
+    // Чей расчёт обслуживаем. null — открытый сейчас в калькуляторе; иначе
+    // { calcId, snap } — снимок сметы, ушедшей клиенту.
+    //
+    // Снимок важнее текущего расчёта: договор должен повторять то, что клиент видел
+    // и с чем согласился, а калькулятор пересобирает смету по сегодняшнему каталогу
+    // и к моменту подписания показал бы другие цифры.
+    _ctx: null,
+
+    // Ключ хранения данных договора. У открытой сметы они лежат в самом расчёте и
+    // уезжают с ним в облако; у заказа из кабинета — отдельной записью по номеру
+    // расчёта, чтобы не затирать то, над чем человек работает прямо сейчас.
+    storeKey: function () {
+        return this._ctx ? ('docs_contract_' + this._ctx.calcId) : null;
+    },
+
+    read: function () {
+        const key = this.storeKey();
+        if (!key) return app.state.contract || {};
+        try { return JSON.parse(localStorage.getItem(key) || '{}'); } catch (e) { return {}; }
+    },
+
     data: function () {
         const st = app.state;
-        if (!st.contract) st.contract = {};
-        const d = Object.assign({}, this.DEFAULTS, st.contract);
+        const d = Object.assign({}, this.DEFAULTS, this.read());
+        const snap = this._ctx && this._ctx.snap;
         // Подставляем то, что можно взять из расчёта, не перетирая введённое руками
         if (!d.date) d.date = new Date().toISOString().slice(0, 10);
-        if (!d.number && st.calc_id) d.number = String(st.calc_id);
-        if (!d.objectAddress && st.projectName) d.objectAddress = st.projectName;
+        const num = this._ctx ? this._ctx.calcId : st.calc_id;
+        if (!d.number && num) d.number = String(num);
+        const name = snap ? ((snap.object_info || {}).projectName || '') : st.projectName;
+        if (!d.objectAddress && name) d.objectAddress = name;
         if (!d.city) {
             const c = (app.companyDetails() || {}).city;
             if (c) d.city = c;
@@ -58,8 +81,60 @@ const Docs = {
     },
 
     save: function (patch) {
-        app.state.contract = Object.assign({}, this.data(), patch || {});
-        app.saveState();
+        const next = Object.assign({}, this.data(), patch || {});
+        const key = this.storeKey();
+        if (key) {
+            try { localStorage.setItem(key, JSON.stringify(next)); } catch (e) { }
+        } else {
+            app.state.contract = next;
+            app.saveState();
+        }
+    },
+
+    // Состав документов: из снимка, если открыт заказ, иначе из текущего расчёта
+    eqList: function () {
+        const snap = this._ctx && this._ctx.snap;
+        if (snap) return (snap.items && snap.items.equipment) || [];
+        return app.currentEquipmentList || [];
+    },
+
+    worksList: function () {
+        const snap = this._ctx && this._ctx.snap;
+        if (snap) return (snap.items && snap.items.works) || [];
+        return app.currentWorksList || [];
+    },
+
+    /**
+     * Документы к отправленной смете. Вызывается из карточки раздела «Заказы и счета»:
+     * до отправки, печати или запроса счёта договор подписывать не с чем.
+     */
+    openForOrder: async function (calcId, shareId) {
+        this._ctx = null;
+        if (!shareId) {
+            // Снимка нет: смету не отправляли клиенту, а просто распечатали или
+            // запросили по ней счёт. Состав в облаке не хранится — но если этот же
+            // расчёт сейчас открыт в калькуляторе, собрать документы есть из чего.
+            if (String(app.state.calc_id || '') === String(calcId)) { this.open(); return; }
+            app.alert('Состав этой сметы в облаке не сохранён — так бывает, когда смету не отправляли клиенту. '
+                + 'Откройте её в калькуляторе, и документы соберутся из открытого расчёта.', 'Документы');
+            return;
+        }
+        let snap = null;
+        try {
+            const { data, error } = await supabaseClient.from('shared_invoices')
+                .select('created_at, items, object_info, totals').eq('id', shareId).maybeSingle();
+            if (error) throw error;
+            snap = data;
+        } catch (e) {
+            app.alert('Не удалось получить отправленную клиенту смету. Попробуйте позже.', 'Документы');
+            return;
+        }
+        if (!snap || !snap.items) {
+            app.alert('Отправленной клиенту сметы не нашлось — собирать документы не из чего.', 'Документы');
+            return;
+        }
+        this._ctx = { calcId: String(calcId), snap: snap };
+        this.open();
     },
 
     // ---------- вспомогательное ----------
@@ -141,6 +216,17 @@ const Docs = {
 
     // Из чего состоит объект — для предмета договора
     subject: function () {
+        // У снимка настроек объекта нет — что монтировали, видно по разделам сметы
+        if (this._ctx && this._ctx.snap) {
+            const txt = this.eqList().concat(this.worksList())
+                .map(i => String((i && (i.sectionTitle || i.group)) || '')).join(' ').toLowerCase();
+            const parts = [];
+            if (/отоплен|радиатор|котёл|котел|тёплый пол|теплый пол/.test(txt)) parts.push('системы отопления');
+            if (/водоснабж/.test(txt)) parts.push('системы водоснабжения');
+            if (/канализац/.test(txt)) parts.push('системы канализации');
+            if (/вентиляц/.test(txt)) parts.push('системы вентиляции');
+            return parts.length ? parts.join(', ') : 'инженерных систем';
+        }
         const st = app.state;
         const parts = [];
         if ((st.systems || []).length) parts.push('системы отопления');
@@ -152,6 +238,13 @@ const Docs = {
     },
 
     sums: function () {
+        const snap = this._ctx && this._ctx.snap;
+        if (snap) {
+            const sum = (list) => (list || []).reduce((a, i) => a + (Number(i && i.sum) || 0), 0);
+            const eq = sum(this.eqList());
+            const works = sum(this.worksList());
+            return { eq: eq, works: works, total: eq + works };
+        }
         const eq = Number(app.lastEqSum) || 0;
         const works = Number(app.lastWorksSum) || 0;
         return { eq: eq, works: works, total: eq + works };
@@ -182,7 +275,9 @@ const Docs = {
                 <div class="custom-modal-title" style="font-size:18px; margin-bottom:4px;">Документы к смете</div>
                 <div class="custom-modal-text" style="margin-bottom:14px;">
                     Договор бытового подряда, спецификация, смета работ и акт сдачи-приёмки.
-                    Заполните данные один раз — они сохранятся вместе с расчётом.
+                    ${this._ctx
+                        ? 'Состав и цены взяты из сметы № ' + this.esc(this._ctx.calcId) + ', отправленной клиенту.'
+                        : 'Заполните данные один раз — они сохранятся вместе с расчётом.'}
                 </div>
 
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:0 12px;">
@@ -312,7 +407,11 @@ const Docs = {
         const wrap = document.getElementById('docs_modal_overlay');
         if (!wrap) return;
         wrap.classList.remove('active');
-        setTimeout(() => { wrap.remove(); if (app.syncModalOverlayClass) app.syncModalOverlayClass(); }, 300);
+        setTimeout(() => {
+            wrap.remove();
+            this._ctx = null;   // дальше снова обслуживаем открытый расчёт
+            if (app.syncModalOverlayClass) app.syncModalOverlayClass();
+        }, 300);
     },
 
     // Собирает введённое из формы в расчёт
@@ -521,7 +620,7 @@ const Docs = {
     // Приложение № 1 — оборудование
     buildSpec: function (d, c) {
         const e = this.esc.bind(this);
-        const list = app.currentEquipmentList || [];
+        const list = this.eqList();
         const s = this.sums();
         const rows = list.map((it, i) => `
             <tr>
@@ -556,7 +655,7 @@ const Docs = {
     // Приложение № 2 — работы
     buildWorks: function (d, c) {
         const e = this.esc.bind(this);
-        const list = app.currentWorksList || [];
+        const list = this.worksList();
         const s = this.sums();
         const rows = list.map((it, i) => `
             <tr>

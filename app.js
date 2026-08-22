@@ -8942,6 +8942,10 @@ const app = {
         cards.forEach(g => {
             const meta = EVENT_META[g.statusEv.event] || { label: g.statusEv.event, color: '#94A3B8' };
             const loc = localByCalc[g.calcId];
+            // Снимок сметы, ушедшей клиенту: по нему собираются документы. Его номер
+            // положен в meta события «отправлено» (см. logInvoiceEvent('sent')).
+            const shareEv = g.list.find(ev => ev.meta && ev.meta.shared_invoice_id);
+            const shareId = shareEv ? String(shareEv.meta.shared_invoice_id) : '';
             const sums = loc ? `Оборудование: <b>${(loc.inv.eqSum || 0).toLocaleString('ru-RU')} ₽</b>${loc.inv.worksSum > 0 ? ` | Монтаж: <b>${(loc.inv.worksSum || 0).toLocaleString('ru-RU')} ₽</b>` : ''}` : '';
 
             const historyRows = g.list.map(ev => {
@@ -8962,7 +8966,10 @@ const app = {
                         <div style="font-size:11px; color:var(--text-sec); font-weight:500;">№ расчёта: ${esc(g.calcId)}${g.last ? ` · ${fmt(g.last.created_at)}` : ''}</div>
                         ${sums ? `<div style="font-size:11.5px; color:var(--text-sec); border-top:1px dashed var(--border); padding-top:6px;">${sums}</div>` : ''}
                         ${historyRows ? `<details style="margin-top:2px;"><summary style="cursor:pointer; font-size:11.5px; color:var(--text-sec);">История статусов (${g.list.length})</summary><div style="margin-top:6px;">${historyRows}</div></details>` : ''}
-                        ${loc ? `<button class="btn-subscribe" onclick="app.loadRequestedEstimate(${loc.index})" style="width:100%; height:32px; font-size:11.5px; margin-top:4px; padding:0;">Открыть смету</button>` : ''}
+                        <div style="display:flex; gap:6px; margin-top:4px;">
+                            ${loc ? `<button class="btn-subscribe" onclick="app.loadRequestedEstimate(${loc.index})" style="flex:1; height:32px; font-size:11.5px; margin:0; padding:0;">Открыть смету</button>` : ''}
+                            <button class="btn-subscribe" onclick="Docs.openForOrder('${esc(g.calcId)}', '${shareId || ''}')" style="flex:1; height:32px; font-size:11.5px; margin:0; padding:0; background:var(--surface-light); color:var(--text-main); border:1px solid var(--border);">📄 Документы</button>
+                        </div>
                      </div>`;
         });
 
