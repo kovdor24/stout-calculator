@@ -42402,13 +42402,6 @@ const app = {
         // Синхронизация Автоматики котельной. Саму сводку наполняет render(),
         // здесь только галочка и скрытие панели при выключении.
         if (document.getElementById('chk_boiler_auto')) document.getElementById('chk_boiler_auto').checked = this.state.boilerAuto;
-        // Верхняя пунктирная линия — только в подробном режиме. В быстром над
-        // блоком стоят одни вкладки топлива, и черта прижалась бы к ним.
-        const _autoItem = document.getElementById('blk_boiler_auto_item');
-        if (_autoItem) {
-            _autoItem.style.borderTop = this.state.detailedRooms ? '1px dashed var(--border)' : '';
-            _autoItem.style.paddingTop = this.state.detailedRooms ? '16px' : '';
-        }
         // Серая рамка со всем хозяйством контроллера — как у блока «Горячая
         // вода (Бойлер)». Пустой её показывать нельзя, см. updateBoilerAutoBox.
         this.updateBoilerAutoBox();
