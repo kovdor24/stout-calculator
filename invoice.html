@@ -370,6 +370,11 @@
             padding: 5px 12px !important;
         }
 
+        /* Прокрутка таблицы вбок нужна только на узких экранах: на широком
+           карточка упирается в свои 1000 px и таблица помещается целиком. При
+           дробном масштабе браузера (125 %, 150 %) доли пикселя в колонках
+           складывались в лишний пиксель — и внизу сметы появлялся ползунок,
+           которому нечего прокручивать. См. правило для широких экранов ниже. */
         .table-responsive {
             width: 100%;
             overflow-x: auto;
@@ -565,6 +570,12 @@
             color: var(--text-sec);
             font-size: 14px;
             line-height: 1.5;
+        }
+
+        @media screen and (min-width: 1040px) {
+            .table-responsive {
+                overflow-x: hidden;
+            }
         }
 
         /* Floating Action Buttons */
@@ -2061,8 +2072,15 @@
             color: white;
         }
 
+        /* Спрятана через display:none, а не visibility:hidden, намеренно.
+           Невидимая подсказка всё равно занимает место в разметке, а шириной она
+           до 420 px и висит по центру своей иконки — у правых колонок её край
+           вылезал за таблицу. Таблица лежит в ящике с overflow-x:auto, поэтому
+           внизу появлялся горизонтальный ползунок на пустом месте: прокручивать
+           было нечего, кроме спрятанных подсказок. На телефоне это давало лишние
+           33 px прокрутки под каждой таблицей. */
         .tooltip-content {
-            visibility: hidden;
+            display: none;
             position: absolute;
             z-index: 9999999 !important;
             bottom: 135%;
@@ -2088,7 +2106,7 @@
         }
 
         .tooltip-wrapper:hover .tooltip-content {
-            visibility: visible;
+            display: block;
             opacity: 1;
         }
 
@@ -2112,7 +2130,10 @@
                 bottom: auto;
                 top: 135%;
                 min-width: 220px;
-                max-width: min(300px, calc(100vw - 32px));
+                /* 72 px — поля страницы и карточки с обеих сторон плюс рамка
+                   ящика с таблицей. По ширине экрана (100vw - 32px) подсказка
+                   оказывалась шире самой таблицы и снова тянула прокрутку. */
+                max-width: min(300px, calc(100vw - 72px));
             }
 
             .tooltip-content::after {
@@ -2168,20 +2189,51 @@
             color: var(--text-main);
         }
 
-        /* Кнопка переключения темы — первая в столбике круглых кнопок, чтобы
-           её добавление не сдвинуло привычные «Подтвердить» и «Печать». */
-        .fab-theme {
-            width: 44px;
-            height: 44px;
-            align-self: flex-end;
+        /* Кнопка переключения темы. Правый верхний угол, а не столбик круглых
+           кнопок внизу: там живут действия по самому предложению (подтвердить,
+           напечатать, прислать замечания), а тема — про то, как смотреть, и её
+           ищут наверху, как в самом калькуляторе. */
+        .theme-fab {
+            position: fixed;
+            top: 14px;
+            right: 14px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             background-color: var(--surface);
             color: var(--text-sec);
             border: 1px solid var(--border);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+            cursor: pointer;
+            outline: none;
+            transition: color 0.2s ease, background-color 0.2s ease;
+            z-index: 1001;
         }
 
-        .fab-theme:hover {
+        .theme-fab:hover {
             background-color: var(--soft);
             color: var(--primary);
+        }
+
+        /* На телефоне карточка занимает весь экран, и кнопка ложится на её верхний
+           правый угол — там стоит ссылка на сайт компании. Отодвигаем ссылку, а не
+           кнопку: угол экрана — самое привычное для неё место.
+           Запрос со «screen» намеренно: обычный (max-width: 768px) в этом файле
+           действует и на печать — ширина A4 с полями укладывается в 768px. */
+        @media screen and (max-width: 768px) {
+            .theme-fab {
+                top: 8px;
+                right: 8px;
+                width: 36px;
+                height: 36px;
+            }
+
+            .header-top {
+                padding-right: 40px;
+            }
         }
 
         /* Печать и PDF всегда светлые: документ уходит на бумагу и клиенту в почту. */
@@ -2228,6 +2280,10 @@
 
 <body>
 
+    <!-- Theme Toggle (auto / day / night) -->
+    <button class="theme-fab no-print" id="btn_theme" onclick="cycleInvoiceTheme()"
+        title="Тема: авто (тёмная с 20:00 до 8:00)"></button>
+
     <!-- Dynamic Preloader -->
     <div id="preloader" class="no-print">
         <div class="spinner"></div>
@@ -2236,9 +2292,6 @@
 
     <!-- Floating Action Buttons -->
     <div class="fab-container no-print">
-        <!-- Theme Toggle (auto / day / night) -->
-        <button class="fab-btn fab-theme" id="btn_theme" onclick="cycleInvoiceTheme()"
-            title="Тема: авто (тёмная с 20:00 до 8:00)"></button>
         <!-- Confirm Button (Green checkmark) -->
         <button class="fab-btn fab-confirm" onclick="confirmInvoice()" title="Подтвердить КП">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
