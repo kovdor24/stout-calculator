@@ -4715,6 +4715,12 @@ const app = {
                 at: new Date().toISOString(),
                 eqSum: this.lastEqSum || 0,
                 worksSum: this.lastWorksSum || 0,
+                // Цены в слепке уже со скидкой (наценкой) монтажника — в смете они
+                // такие же. Без этих двух чисел сверка сравнивала бы уценённую
+                // цену с прайсовой и объявляла подорожанием ровно ту скидку,
+                // которую монтажник дал сам.
+                eqDiscount: this.state.eqDiscount || 0,
+                worksDiscount: this.state.worksDiscount || 0,
                 prices: prices,
                 qty: qty,
                 names: names,
@@ -7524,6 +7530,12 @@ const app = {
                 getInvoiceBtn = `<button class="btn-get-invoice" id="btn_invoice_${item.id}" onclick="event.stopPropagation(); app.sendEstimateInvoiceToManager('${item.id}', this)" title="Заказать счёт у менеджера">📄 Получить счёт</button>`;
             }
 
+            // У сметы, которую уже отправляли, кнопка показывает готовую ссылку, а не
+            // делает новую: переотправка затирает то, что видел клиент (openSharedLink)
+            const shareBtn = sharedInvoiceId
+                ? `<button class="lk-btn-sm" onclick="event.stopPropagation(); app.openSharedLink('${item.id}', '${sharedInvoiceId}')" title="Показать ссылку, которую уже отправляли клиенту">Ссылка клиенту</button>`
+                : `<button class="lk-btn-sm" onclick="event.stopPropagation(); app.cloudRowAction('${item.id}', 'share')" title="Короткая ссылка на смету для клиента">Ссылка клиенту</button>`;
+
             h += `
                 <tr class="active-row" style="cursor: pointer;" onclick="app.loadSingleEstimate('${item.id}')">
                     <td style="font-weight:600;">${item.project_name}</td>
@@ -7535,7 +7547,7 @@ const app = {
                             ${getInvoiceBtn}
                             <button class="lk-btn-sm" onclick="event.stopPropagation(); app.cloudRowAction('${item.id}', 'open')" title="Открыть расчёт в калькуляторе">Открыть</button>
                             <button class="lk-btn-sm" onclick="event.stopPropagation(); Reprice.open('${item.id}')" title="Сравнить цены сметы с сегодняшними">Цены</button>
-                            <button class="lk-btn-sm" onclick="event.stopPropagation(); app.cloudRowAction('${item.id}', 'share')" title="Короткая ссылка на смету для клиента">Ссылка клиенту</button>
+                            ${shareBtn}
                             <button class="lk-btn-sm" onclick="event.stopPropagation(); app.cloudRowAction('${item.id}', 'download')" title="Скачать смету: PDF или Excel">Скачать</button>
                             ${canDelete ? `
                                 <button class="delete-icon-btn" onclick="event.stopPropagation(); app.deleteEstimate('${item.id}', event)" title="Удалить смету">
@@ -7564,6 +7576,94 @@ const app = {
             // Меню с выбором PDF или Excel — тот же, что под сметой
             this.toggleDownloadMenu();
         }
+    },
+
+    /**
+     * Ссылка клиенту у сметы, которую уже отправляли.
+     *
+     * Раньше кнопка звала shareInvoice, а тот пересобирает снимок сметы и кладёт
+     * его в shared_invoices ПОВЕРХ прежнего, по тому же адресу. Монтажник
+     * открывал ссылку, чтобы посмотреть, что ушло клиенту в июне, и этим же
+     * нажатием июнь стирал: в снимке оказывались сегодняшняя дата и сегодняшние
+     * цены, а клиент по своей ссылке видел уже другую смету. Теперь у
+     * отправленной сметы кнопка показывает готовую ссылку, а переотправка —
+     * отдельным действием и с предупреждением, что прежняя версия пропадёт.
+     */
+    openSharedLink: async function (estimateId, shareId) {
+        if (!shareId) { this.cloudRowAction(estimateId, 'share'); return; }
+        const baseOrigin = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+            ? window.location.origin : 'https://heatcalc.ru';
+        const url = `${baseOrigin}/invoice.html?id=${shareId}`;
+
+        let sent = '', eq = 0, wk = 0;
+        try {
+            const { data } = await supabaseClient.from('shared_invoices')
+                .select('created_at, totals').eq('id', shareId).maybeSingle();
+            if (data) {
+                sent = data.created_at ? new Date(data.created_at).toLocaleDateString('ru-RU') : '';
+                eq = Number(data.totals && data.totals.equipment) || 0;
+                wk = Number(data.totals && data.totals.works) || 0;
+            }
+        } catch (e) { /* не достучались — покажем хотя бы саму ссылку */ }
+
+        const num = n => Math.round(Math.abs(n)).toLocaleString('ru-RU');
+        const esc = t => String(t == null ? '' : t).replace(/</g, '&lt;');
+        const sums = (eq || wk)
+            ? `<div style="font-size:12.5px; color:var(--text-sec); margin-top:4px;">
+                   Оборудование ${num(eq)} ₽${wk ? `, монтаж ${num(wk)} ₽` : ''} — те суммы, что видит клиент.
+               </div>` : '';
+
+        this.showPlainModal('Ссылка клиенту',
+            `<div style="border:1px solid var(--border); border-radius:10px; padding:12px 14px; margin-bottom:12px;">
+                <div style="font-size:14px; font-weight:700; color:var(--text-main);">
+                    Смета отправлена${sent ? ' ' + esc(sent) : ''}
+                </div>
+                ${sums}
+                <div style="margin-top:8px; font-size:12px; word-break:break-all; color:var(--primary);">${esc(url)}</div>
+             </div>
+             <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                <button type="button" class="custom-modal-btn" style="flex:1 1 160px; width:auto;"
+                    onclick="window.open('${esc(url)}', '_blank')">Открыть</button>
+                <button type="button" class="custom-modal-btn" style="flex:1 1 160px; width:auto;"
+                    onclick="app.copyToClipboard('${esc(url)}').then(() => app.showInAppNotification('Скопировано', 'Ссылка в буфере обмена', '🔗'))">
+                    Скопировать</button>
+             </div>
+             <p style="font-size:11px; color:var(--text-sec); margin-top:12px; line-height:1.5;">
+                По этой ссылке клиент видит смету такой, какой её отправили: состав, цены и дата того дня.
+                Открыть её можно сколько угодно раз — ничего не изменится.
+             </p>
+             <button type="button" class="custom-modal-btn" style="margin-top:6px; background:transparent; color:var(--text-sec); border:1px solid var(--border);"
+                onclick="app.resendSharedLink('${esc(estimateId)}')">
+                Отправить заново по сегодняшним ценам</button>
+             <p style="font-size:11px; color:var(--text-sec); margin-top:6px; line-height:1.5;">
+                Переотправка перезапишет ссылку: клиент увидит сегодняшние цены, а прежняя версия сметы пропадёт.
+             </p>`);
+    },
+
+    // Переотправка из окна ссылки — то же, что кнопка «Ссылка клиенту» у сметы,
+    // которую ещё не отправляли, но со спросом: старый снимок будет затёрт.
+    resendSharedLink: async function (estimateId) {
+        // Окно ссылки закрываем до вопроса: два наложенных модальных окна делят
+        // одну подложку, и подтверждение выходило бы под уже открытым.
+        this.closePlainModal();
+        if (!await this.confirm('Отправить смету заново?\n\nЦены пересчитаются по сегодняшнему каталогу, '
+            + 'и клиент по своей ссылке увидит уже новую сумму. Прежняя версия сметы не сохранится.')) return;
+        this.cloudRowAction(estimateId, 'share');
+    },
+
+    /**
+     * Открыть сохранённую смету, сбросив скидку и наценку. Из окна сверки цен:
+     * когда каталог подорожал, монтажник решает, оставить ли прежнюю уступку
+     * клиенту или закрыть ею подорожание. Трогаем только открытый расчёт —
+     * в облаке смета остаётся прежней, пока её не сохранят.
+     */
+    loadEstimateWithoutDiscount: async function (estimateId) {
+        await this.loadSingleEstimate(estimateId);
+        this.state.eqDiscount = 0;
+        this.state.worksDiscount = 0;
+        this.saveState();
+        this.syncUI();
+        this.render();
     },
 
     closeCloudListModal: function () {
@@ -7837,12 +7937,11 @@ const app = {
         const num = n => Math.round(Math.abs(n)).toLocaleString('ru-RU');
         const up = diff > 0;
         const when = saved.at ? new Date(saved.at).toLocaleDateString('ru-RU') : '';
-        // Разбор предлагаем везде, где его есть с чем сравнивать: снимок цен,
-        // записанный вместе со сметой, снимок отправленной клиенту сметы или —
-        // у смет постарше — даты обновления цен в самом каталоге.
+        // Разбор — то же окно, что кнопка «Цены» в «Моих объектах» (reprice.js).
+        // Оно само выбирает, с чем сравнивать: слепок цен той сметы, снимок
+        // отправленной клиенту или, если ни того ни другого нет, даты цен каталога.
         this._repriceSaved = saved;
-        const canDetail = !!((this._savedPriceSnap && this._savedPriceSnap.length)
-            || this.state.shared_invoice_id || saved.at);
+        const canDetail = typeof Reprice !== 'undefined' && !!this._loadedEstimateId;
 
         host.innerHTML = `
             <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:8px 14px;
@@ -7874,173 +7973,23 @@ const app = {
     },
 
     /**
-     * Построчно: что подорожало с того дня, каким смету запомнили.
+     * «Что изменилось» под плашкой — то же окно, что кнопка «Цены» в «Моих
+     * объектах» (reprice.js). Своего разбора здесь нет намеренно: правил
+     * сравнения набралось много — суффиксы артикулов, цена за бухту против цены
+     * за метр, позиции, которых в каталоге уже нет, — и держать их в двух местах
+     * значит однажды поправить только одно.
      *
-     * Источника три, в порядке точности:
-     *  1. снимок цен, записанный вместе со сметой (buildPriceSnapshot) — он из
-     *     той же отрисовки, что дала записанную сумму, поэтому «было → стало»
-     *     сходится с плашкой копейка в копейку;
-     *  2. снимок позиций отправленной клиенту сметы (shared_invoices) — у смет,
-     *     сохранённых до появления первого;
-     *  3. даты обновления цен в каталоге — для всего остального. Старых цен у
-     *     такой сметы нет нигде, но видно, какие позиции трогал прайс уже после
-     *     сохранения: это ответ на «почему», пусть и без «сколько».
+     * Состав открытой сметы передаём с собой: слепок цен есть только у смет,
+     * которые отправляли клиенту или печатали, а у просто сохранённой объяснить
+     * разницу можно лишь по датам цен в каталоге — и для этого нужен её состав.
      */
-    showRepriceDetails: async function () {
+    showRepriceDetails: function () {
+        if (typeof Reprice === 'undefined' || !this._loadedEstimateId) return;
         const saved = this._repriceSaved || {};
-        const snap = this._savedPriceSnap;
-        if (snap && snap.length) {
-            this.renderRepriceDiff(
-                snap.map(r => ({ id: r.a, price: r.p, q: r.q, name: r.n })),
-                saved.at, 'сохранения');
-            return;
-        }
-
-        const shareId = this.state.shared_invoice_id;
-        if (shareId) {
-            let row = null;
-            try {
-                const { data, error } = await supabaseClient.from('shared_invoices')
-                    .select('created_at, eq:items->equipment').eq('id', shareId).maybeSingle();
-                if (error) throw error;
-                row = data;
-            } catch (e) {
-                this.alert('Не удалось получить отправленную клиенту смету. Попробуйте позже.', 'Что изменилось');
-                return;
-            }
-            if (row && Array.isArray(row.eq) && row.eq.length) {
-                this.renderRepriceDiff(
-                    row.eq.map(it => it ? { id: it.originalId || it.id, price: it.price, q: it.q || it.qty, name: it.name } : null),
-                    row.created_at, 'отправки клиенту');
-                return;
-            }
-        }
-
-        this.showRepriceByDates();
-    },
-
-    /**
-     * Окно «было → стало». items — позиции с ценами того дня:
-     * { id, price, q, name? }. Имени у позиций каталога в снимке сметы нет —
-     * оно удвоило бы вес записи, — поэтому берём его из каталога; своё и
-     * распознанное оборудование несёт имя с собой, в каталоге его нет.
-     */
-    renderRepriceDiff: function (items, whenIso, what) {
-        const price = this.catalogPriceIndex();
-        const rows = [];
-        let skipped = 0, counted = 0, oldAll = 0, newAll = 0;
-        (items || []).forEach(it => {
-            if (!it) return;
-            const art = String(it.id || '');
-            // Свёрнутые комплекты — подытог раздела, а не позиция каталога
-            if (!art || art.indexOf('custom_collapsed_') === 0) { skipped++; return; }
-            const was = Number(it.price) || 0;
-            const now = price[art];
-            if (!was || now === undefined) { skipped++; return; }
-            const q = Number(it.q) || 1;
-            counted++;
-            oldAll += was * q; newAll += now * q;
-            if (Math.round(was) === Math.round(now)) return;
-            const cat = it.name ? null : this.resolveCatalogItem(art);
-            rows.push({ name: it.name || (cat && cat.name) || art, art, was, now, q, diff: (now - was) * q });
+        Reprice.open(this._loadedEstimateId, {
+            bill: this.currentEquipmentList || [],
+            savedAt: saved.at
         });
-
-        const num = n => Math.round(Math.abs(n)).toLocaleString('ru-RU');
-        const esc = s => String(s == null ? '' : s).replace(/</g, '&lt;');
-        const when = whenIso ? new Date(whenIso).toLocaleDateString('ru-RU') : '';
-        if (!rows.length) {
-            this.alert(`Цены позиций не изменились с ${when || 'момента ' + what}. Разница в сумме, если она есть, — от правок в самой смете.`, 'Что изменилось');
-            return;
-        }
-        rows.sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff));
-
-        const list = rows.map(r => `
-            <div style="display:flex; align-items:center; gap:10px; padding:7px 0; border-bottom:1px solid var(--border);">
-                <div style="min-width:0; flex:1;">
-                    <b style="font-size:12.5px; color:var(--text-main);">${esc(r.name)}</b>
-                    <br><small style="color:var(--text-sec);">${esc(r.art)} · ${num(r.was)} → ${num(r.now)} ₽${r.q > 1 ? ` × ${num(r.q)}` : ''}</small>
-                </div>
-                <b style="flex:0 0 auto; font-size:12.5px; color:${r.diff > 0 ? '#EF4444' : '#10B981'};">
-                    ${r.diff > 0 ? '+' : '−'}${num(r.diff)} ₽</b>
-            </div>`).join('');
-
-        const total = newAll - oldAll;
-        this.showPlainModal('Что изменилось с ' + (when || what),
-            `<p style="font-size:12.5px; color:var(--text-sec); margin:0 0 10px;">
-                Сравниваются цены сметы на момент ${what} с сегодняшними.
-                Изменилось ${rows.length} ${this.plural(rows.length, 'позиция', 'позиции', 'позиций')}
-                из ${counted}${skipped ? `, ещё ${skipped} не из каталога — их не сравнить` : ''}.
-             </p>`
-            + list
-            + `<div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0 0; font-size:13px;">
-                <b style="color:var(--text-main);">Итого по оборудованию</b>
-                <b style="color:${total > 0 ? '#EF4444' : '#10B981'};">${total > 0 ? '+' : '−'}${num(total)} ₽</b>
-               </div>`);
-    },
-
-    /**
-     * Объяснение для смет, сохранённых до того, как калькулятор начал писать
-     * снимок цен. Цен того дня у такой сметы нет нигде — в базе только итоговые
-     * суммы, — но у каждой позиции каталога есть дата, которой помечена её цена.
-     * Показываем строки, чью цену прайс обновил уже после сохранения: разница
-     * набежала на них. Саму разницу не называем, её взять неоткуда, — только
-     * сегодняшнюю стоимость этих строк.
-     */
-    showRepriceByDates: function () {
-        const saved = this._repriceSaved || {};
-        const at = saved.at ? new Date(saved.at) : null;
-        if (!at || isNaN(at.getTime())) {
-            this.alert('У этой сметы не сохранились ни цены того дня, ни его дата — сравнивать не с чем.', 'Что изменилось');
-            return;
-        }
-
-        const dates = this.catalogPriceDateIndex();
-        const rows = [];
-        let sumAll = 0, dated = 0;
-        (this.currentEquipmentList || []).forEach(i => {
-            // Снятые галочкой опции не входят в сумму оборудования — не входят и сюда
-            if (i.isOpt) return;
-            const art = String(i.originalId || i.id || '');
-            const d = art && dates[art];
-            if (!d) return;
-            dated++;
-            const t = new Date(d);
-            if (isNaN(t.getTime()) || t.getTime() <= at.getTime()) return;
-            const sum = Number(i.sum) || (Number(i.price) || 0) * (Number(i.q) || 1);
-            sumAll += sum;
-            rows.push({ name: i.name || art, art, at: t, sum, price: Number(i.price) || 0, q: Number(i.q) || 1 });
-        });
-
-        const num = n => Math.round(Math.abs(n)).toLocaleString('ru-RU');
-        const esc = s => String(s == null ? '' : s).replace(/</g, '&lt;');
-        const when = at.toLocaleDateString('ru-RU');
-        if (!rows.length) {
-            this.alert(`Цены позиций этой сметы каталог не обновлял с ${when}. Значит, сумма изменилась не из-за прайса, а из-за правок в самой смете — или из-за позиций, которых в каталоге больше нет.`, 'Что изменилось');
-            return;
-        }
-        rows.sort((a, b) => b.sum - a.sum);
-
-        const list = rows.map(r => `
-            <div style="display:flex; align-items:center; gap:10px; padding:7px 0; border-bottom:1px solid var(--border);">
-                <div style="min-width:0; flex:1;">
-                    <b style="font-size:12.5px; color:var(--text-main);">${esc(r.name)}</b>
-                    <br><small style="color:var(--text-sec);">${esc(r.art)} · цена от ${r.at.toLocaleDateString('ru-RU')} · ${num(r.price)} ₽${r.q > 1 ? ` × ${num(r.q)}` : ''}</small>
-                </div>
-                <b style="flex:0 0 auto; font-size:12.5px; color:var(--text-main);">${num(r.sum)} ₽</b>
-            </div>`).join('');
-
-        this.showPlainModal('Что изменилось с ' + when,
-            `<p style="font-size:12.5px; color:var(--text-sec); margin:0 0 10px;">
-                Цены того дня у этой сметы не записаны — калькулятор начал их сохранять позже,
-                поэтому «было → стало» по каждой строке показать не выйдет.
-                Зато видно, у каких позиций прайс обновил цену уже после ${when}: разница набежала на них.
-                Таких ${rows.length} ${this.plural(rows.length, 'позиция', 'позиции', 'позиций')} из ${dated}.
-             </p>`
-            + list
-            + `<div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0 0; font-size:13px;">
-                <b style="color:var(--text-main);">Сегодня эти позиции стоят</b>
-                <b style="color:var(--text-main);">${num(sumAll)} ₽</b>
-               </div>`);
     },
 
     /**
@@ -8113,11 +8062,8 @@ const app = {
             // старого объекта возвращало бы шапку к тому, что было тогда (а у смет,
             // сохранённых до заполнения реквизитов, — к ТЕРЕМ).
             delete loadedState.customCompany;
-            // Снимок цен на момент сохранения — для разбора «Что изменилось».
-            // В state не оставляем: он пересобирается при каждом сохранении заново
-            // (stateForCloud), а в localStorage это лишний вес.
-            this._savedPriceSnap = Array.isArray(loadedState.priceSnap) ? loadedState.priceSnap : null;
-            delete loadedState.priceSnap;
+            // Какая смета сейчас на экране — для разбора «Что изменилось» под плашкой
+            this._loadedEstimateId = id;
             this.state = { ...this.state, ...loadedState };
             this.migrateSnowPipeSwap();
             this.migrateBoilerSectionTitles();
@@ -10871,43 +10817,10 @@ const app = {
         // localStorage не резиновый.
         delete this.state.customCompany;
     },
-    /**
-     * Снимок цен позиций сметы: [{ a: артикул, p: цена, q: количество }].
-     *
-     * Сохранённая смета хранит только настройки объекта — список позиций
-     * калькулятор собирает заново по сегодняшнему каталогу. Значит, открытая
-     * через месяц смета УЖЕ пересчитана, а чем именно набежала разница, сказать
-     * нечем: в базе лежат одни итоговые суммы. Снимок и есть недостающее «было».
-     *
-     * Имя пишем только позициям вне каталога (своё, распознанное): остальным его
-     * достаёт resolveCatalogItem при показе, а в записи это лишние килобайты на
-     * каждое сохранение — их потом возить в каждом запросе к смете.
-     */
-    buildPriceSnapshot: function () {
-        const list = this.currentEquipmentList || [];
-        if (!list.length) return null;
-        const price = this.catalogPriceIndex();
-        const out = [];
-        list.forEach(i => {
-            // Снятые галочкой опции не входят в записанную сумму — не входят и сюда
-            if (i.isOpt) return;
-            const art = String(i.originalId || i.id || '');
-            const p = Number(i.price) || 0;
-            if (!art || !p) return;
-            const row = { a: art, p: Math.round(p), q: Number(i.q) || 1 };
-            if (price[art] === undefined) row.n = String(i.name || '').slice(0, 80);
-            out.push(row);
-        });
-        return out.length ? out : null;
-    },
     // Состояние для отправки в облако: к обычному расчёту добавляем реквизиты автора,
-    // чтобы сохранённая смета несла свою шапку (админский предпросмотр, печать), и
-    // снимок цен — чтобы через месяц можно было показать, что именно подорожало.
+    // чтобы сохранённая смета несла свою шапку (админский предпросмотр, печать).
     stateForCloud: function (base) {
-        return Object.assign({}, base || this.state, {
-            customCompany: this.companyDetails(),
-            priceSnap: this.buildPriceSnapshot()
-        });
+        return Object.assign({}, base || this.state, { customCompany: this.companyDetails() });
     },
     // Заполняет поля раздела «Реквизиты компании». Вызывается при открытии кабинета и
     // ещё раз, когда настройки доехали из облака (вход с нового устройства).
