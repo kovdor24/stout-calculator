@@ -4630,6 +4630,18 @@ const app = {
         }
     },
 
+    /**
+     * Отметка «ушло клиенту» для печати и выгрузки в Excel.
+     *
+     * К событию прикладываем номер снимка сметы, если он уже создавался (ссылка для
+     * клиента). По нему раздел «Заказы и счета» собирает договор и акты: состав и цены
+     * берутся из того, что видел клиент, а не пересчитываются по сегодняшнему каталогу.
+     */
+    logPrintedEvent: function () {
+        const shareId = this.state.shared_invoice_id;
+        this.logInvoiceEvent('printed', shareId ? { shared_invoice_id: shareId } : null);
+    },
+
     // Смета собрана распознаванием, а не подбором по параметрам объекта: хотя бы одна
     // позиция пришла из загруженного файла. У такой сметы площадь обычно 0 — она и не
     // нужна, позиции уже готовы, поэтому по площади её отличить нельзя.
@@ -6395,8 +6407,11 @@ const app = {
     ADMIN_KANBAN_EVENT_META: {
         calculated: { label: 'Новый расчёт', color: '#94A3B8' },
         saved: { label: 'Сохранено', color: '#60A5FA' },
-        sent: { label: 'Отправлено', color: '#818CF8' },
-        printed: { label: 'Распечатано', color: '#A78BFA' },
+        sent: { label: 'Отправлено клиенту', color: '#818CF8' },
+        // Печать и выгрузка в Excel — та же отправка: файл уходит клиенту в мессенджер
+        // или на почту. Отдельный ключ события нужен аналитике, отдельный статус —
+        // нет: для монтажника это одно и то же состояние сделки.
+        printed: { label: 'Отправлено клиенту', color: '#818CF8' },
         invoice_requested: { label: 'Запрошен счёт', color: '#F59E0B' },
         confirmed: { label: 'Одобрено', color: '#10B981' },
         needs_revision: { label: 'На доработке', color: '#EF4444' },
@@ -29484,7 +29499,7 @@ const app = {
                     pagebreak: { mode: ['css', 'legacy'] }
                 };
                 await html2pdf().set(opt).from(printBin).save();
-                this.logInvoiceEvent('printed');
+                this.logPrintedEvent();
                 GRM.trackAction('pdf', this.state.calc_id);  // геймификация: +5 XP + значки PDF
             } catch (err) {
                 console.error('[executeDownload] Ошибка формирования PDF:', err);
@@ -29503,7 +29518,7 @@ const app = {
         }
 
         window.print();
-        this.logInvoiceEvent('printed');
+        this.logPrintedEvent();
         GRM.trackAction('pdf', this.state.calc_id);  // геймификация: +5 XP + значки PDF
 
         // Возвращаем тему обратно
@@ -29553,7 +29568,7 @@ const app = {
         try {
             const safeName = (this.state.projectName || 'Смета').replace(/[\\\/:\*\?"<>\|]/g, '');
             ExcelExport.saveFromPrintBin(`${safeName}.xlsx`);
-            this.logInvoiceEvent('printed');
+            this.logPrintedEvent();
             GRM.trackAction('pdf', this.state.calc_id);  // геймификация: та же отметка, что и у PDF
         } catch (err) {
             console.error('[executeExcelDownload] Ошибка формирования Excel:', err);
