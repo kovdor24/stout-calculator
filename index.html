@@ -896,7 +896,7 @@
                  «сеть отключена». Условие показа общее для всей группы и то же,
                  что было у каждого пункта: подробный режим и электрокотёл
                  (app.syncUI). -->
-            <div class="control-item" id="blk_el_group" style="display:none;">
+            <div class="control-item toggle-item" id="blk_el_group" style="display:none;">
                 <!-- Заголовок — одна строка: название, следом сводка текущих
                      значений (её собирает app.syncUI), справа шеврон. Сводка
                      ужимается многоточием, а не переносится: строка должна
@@ -1076,7 +1076,7 @@
                  переключатель другой: магистральный газ считается по тарифу региона
                  (GAS_TARIFF_RU в catalog.js, подставляется по выбранному городу),
                  сжиженный тарифом не регулируется и задаётся руками. -->
-            <div class="control-item" id="blk_gas_cost" style="display:none;">
+            <div class="control-item toggle-item" id="blk_gas_cost" style="display:none;">
                 <div class="label-row">
                     <span class="lbl"
                         title="Во сколько обойдётся отопление газом: расход в кубометрах или литрах и счёт по месяцам, итог за отопительный сезон.">Стоимость
@@ -1161,12 +1161,10 @@
                 </div>
             </div>
 
-            <!-- Идёт в одном блоке с «Типом котла», поэтому нижняя черта отделяет
-                 весь блок целиком. Своей верхней линии у пункта нет: она резала
-                 блок пополам, а он и так закрыт чертой снизу. Верхний отступ
-                 ставит app.syncUI() — он нужен, только когда пункты над этим
-                 скрыты. -->
-            <div class="control-item" id="blk_boiler_auto_item"
+            <!-- Оформлен как все остальные пункты панели (toggle-item): черта
+                 сверху и такой же шаг. Нижняя черта своя — ею заканчивается весь
+                 блок «Тип котла». -->
+            <div class="control-item toggle-item" id="blk_boiler_auto_item"
                 style="border-bottom:1px dashed var(--border); padding-bottom:16px; margin-bottom:16px;">
                 <div class="label-row">
                     <span class="lbl"
