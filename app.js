@@ -7569,13 +7569,39 @@ const app = {
     // молча сделали бы своё дело над той сметой, что была открыта до этого.
     // Поэтому сначала загружаем выбранную, а потом запускаем действие.
     cloudRowAction: async function (id, what) {
+        if (what === 'download') { this.askDownloadFormat(id); return; }
         await this.loadSingleEstimate(id);
-        if (what === 'share') {
-            this.shareInvoice();
-        } else if (what === 'download') {
-            // Меню с выбором PDF или Excel — тот же, что под сметой
-            this.toggleDownloadMenu();
-        }
+        if (what === 'share') this.shareInvoice();
+    },
+
+    /**
+     * «Скачать» в списке объектов. Раньше кнопка открывала смету в калькуляторе
+     * и разворачивала меню под ней: человек жал «Скачать», а получал открытый
+     * расчёт и ещё одно меню где-то внизу страницы. Теперь формат спрашиваем
+     * сразу, а смету поднимаем уже под выбранный файл.
+     */
+    askDownloadFormat: function (id) {
+        const btn = (act, label, hint) => `<button type="button" class="custom-modal-btn"
+                style="flex:1 1 150px; width:auto; display:flex; flex-direction:column; gap:2px; align-items:center;"
+                onclick="app.downloadCloudEstimate('${id}', '${act}')">
+                <span>${label}</span>
+                <span style="font-size:11px; font-weight:500; opacity:0.75;">${hint}</span>
+            </button>`;
+        this.showPlainModal('Скачать смету',
+            `<div style="font-size:13px; color:var(--text-sec); margin-bottom:12px;">
+                Смета откроется в расчёте — состав и цены пересобираются по сегодняшнему каталогу,
+                иначе файл не из чего собрать. Несохранённая работа в открытом сейчас расчёте будет заменена.
+             </div>
+             <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                ${btn('print', 'PDF', 'через печать')}
+                ${btn('excel', 'Excel', '.xlsx')}
+             </div>`);
+    },
+
+    downloadCloudEstimate: async function (id, act) {
+        this.closePlainModal();
+        await this.loadSingleEstimate(id);
+        if (act === 'excel') this.downloadExcel(); else this.download();
     },
 
     /**

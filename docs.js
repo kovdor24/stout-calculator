@@ -829,12 +829,10 @@ const Docs = {
         }
         const html = kind === 'act' ? this.buildAct(d)
             : (kind === 'warranty' ? this.buildWarrantyDoc() : this.buildContract(d));
-        const w = window.open('', '_blank');
-        if (!w) { app.alert('Браузер заблокировал новое окно. Разрешите всплывающие окна для сайта.', 'Документы'); return; }
-        w.document.write(html);
-        w.document.close();
-        // Печать вызываем после отрисовки, иначе часть браузеров печатает пустой лист
-        setTimeout(() => { try { w.focus(); w.print(); } catch (e) { } }, 400);
+        const num = d.number ? ' № ' + d.number : '';
+        const file = kind === 'act' ? ('Акт сдачи-приёмки' + num)
+            : (kind === 'warranty' ? 'Гарантийный талон' : ('Договор' + num));
+        this.openDoc(html, file, 'Документы');
     },
 
     styles: function () {
@@ -856,7 +854,117 @@ const Docs = {
             .line { border-bottom: 1px solid #000; height: 6mm; margin-bottom: 1mm; }
             .page { page-break-before: always; }
             .small { font-size: 9pt; color: #333; }
+
+            /* Фирменный бланк монтажника — тот же, что в коммерческом предложении */
+            .lh { display: flex; gap: 6mm; align-items: center; margin-bottom: 3mm; }
+            .lh-logo { max-height: 18mm; max-width: 42mm; object-fit: contain; }
+            .lh-txt { font-size: 9pt; line-height: 1.35; }
+            .lh-name { font-size: 11pt; font-weight: bold; margin-bottom: 1mm; }
+            .lh-line { border: none; border-top: 2px solid #1E3A8A; margin: 0 0 5mm; }
+
+            /* Панель с кнопками поверх документа. На бумагу не идёт. */
+            .doc-bar {
+                position: sticky; top: 0; z-index: 5;
+                display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+                margin: -4mm 0 6mm; padding: 8px 10px;
+                background: #F3F4F6; border: 1px solid #D1D5DB; border-radius: 8px;
+                font-family: system-ui, -apple-system, "Segoe UI", sans-serif; font-size: 10pt;
+            }
+            .doc-bar button {
+                font: inherit; font-weight: 600; padding: 7px 16px; cursor: pointer;
+                border-radius: 6px; border: 1px solid #1E3A8A; background: #1E3A8A; color: #fff;
+            }
+            .doc-bar button.sec { background: #fff; color: #1E3A8A; }
+            .doc-bar span { color: #4B5563; }
+
+            @media print {
+                .doc-bar { display: none !important; }
+            }
         </style>`;
+    },
+
+    /**
+     * Фирменный бланк документа: логотип и реквизиты монтажника — те же, что он
+     * поставил в коммерческом предложении.
+     *
+     * Реквизиты ТЕРЕМ по умолчанию сюда не подставляются намеренно: договор
+     * заключает и работы выполняет монтажник, он же отвечает за качество. Не
+     * заполнил свои — шапки просто не будет, но чужой в документе не появится.
+     */
+    letterhead: function () {
+        const e = this.esc.bind(this);
+        const c = this.contractor();
+        const cc = app.companyDetails() || {};
+        const logo = (cc.logo && String(cc.logo).indexOf('data:') === 0) ? cc.logo : '';
+        const rows = [];
+        if (cc.address) rows.push(e(cc.address));
+        if (cc.bank) rows.push(e(cc.bank));
+        const contacts = [
+            c.phone ? 'тел.: ' + e(c.phone) : '',
+            c.email ? e(c.email) : '',
+            cc.website ? e(cc.website) : ''
+        ].filter(Boolean).join(' · ');
+        if (contacts) rows.push(contacts);
+        if (!c.name && !rows.length) return '';
+        return `<div class="lh">
+            ${logo ? `<img class="lh-logo" src="${logo}" alt="">` : ''}
+            <div class="lh-txt">
+                ${c.name ? `<div class="lh-name">${e(c.name)}</div>` : ''}
+                ${rows.map(t => `<div>${t}</div>`).join('')}
+            </div>
+        </div><hr class="lh-line">`;
+    },
+
+    /**
+     * Панель над документом: распечатать или скачать файлом. Раньше вкладка
+     * сама открывала окно печати — сохранить документ можно было только через
+     * «Сохранить как PDF» в этом окне, и человек, закрывший его, оставался ни с
+     * чем. Печать больше не запускается сама, выбирает человек.
+     */
+    docBar: function (filename) {
+        const name = String(filename || 'Документ').replace(/[\\/:*?"<>|]/g, ' ').trim() + '.pdf';
+        const js = String.raw`
+            var DOC_FILE = ${JSON.stringify(name)};
+            function docSave() {
+                var bar = document.querySelector('.doc-bar');
+                if (!window.html2pdf) {
+                    alert('Файл не собрался: не загрузилась библиотека. Нажмите «Распечатать» и выберите «Сохранить как PDF».');
+                    window.print();
+                    return;
+                }
+                bar.style.display = 'none';
+                html2pdf().set({
+                    margin: [12, 10, 14, 10],
+                    filename: DOC_FILE,
+                    image: { type: 'jpeg', quality: 0.96 },
+                    html2canvas: { scale: 2, useCORS: true },
+                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+                    pagebreak: { mode: ['css', 'legacy'] }
+                }).from(document.body).save()
+                  .then(function () { bar.style.display = ''; })
+                  .catch(function () {
+                      bar.style.display = '';
+                      alert('Файл не собрался. Нажмите «Распечатать» и выберите «Сохранить как PDF».');
+                  });
+            }`;
+        return `<div class="doc-bar">
+            <button type="button" onclick="window.print()">Распечатать</button>
+            <button type="button" class="sec" onclick="docSave()">Скачать PDF</button>
+            <span>${this.esc(name)}</span>
+        </div>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"><\/script>
+        <script>${js}<\/script>`;
+    },
+
+    /**
+     * Открыть готовый документ в новой вкладке вместе с панелью кнопок.
+     */
+    openDoc: function (html, filename, title) {
+        const w = window.open('', '_blank');
+        if (!w) { app.alert('Браузер заблокировал новое окно. Разрешите всплывающие окна для сайта.', title || 'Документы'); return; }
+        w.document.write(html.replace('</head><body>', '</head><body>' + this.docBar(filename)));
+        w.document.close();
+        try { w.focus(); } catch (e) { }
     },
 
     buildContract: function (d) {
@@ -876,7 +984,7 @@ const Docs = {
 
         return `<!DOCTYPE html><html lang="ru"><head><meta charset="utf-8">
             <title>Договор № ${e(d.number)}</title>${this.styles()}</head><body>
-
+        ${this.letterhead()}
         <h1>ДОГОВОР БЫТОВОГО ПОДРЯДА № ${e(d.number) || '____'}</h1>
         <div class="head"><span>${e(d.city) || '_______________'}</span><span>${this.dateRu(d.date)}</span></div>
 
@@ -1353,7 +1461,7 @@ const Docs = {
 
         return `<!DOCTYPE html><html lang="ru"><head><meta charset="utf-8">
             <title>Гарантийный талон</title>${this.styles()}</head><body>
-
+        ${this.letterhead()}
         <h1>ГАРАНТИЙНЫЙ ТАЛОН</h1>
         <div class="head"><span>к договору № ${e(d.number) || '____'} от ${this.dateRu(d.date)}</span>
             <span>${e(d.city) || ''}</span></div>
@@ -1485,7 +1593,8 @@ const Docs = {
     techHead: function (t, title) {
         const e = this.esc.bind(this);
         const c = this.contractor();
-        return `<h1>${title}</h1>
+        return `${this.letterhead()}
+        <h1>${title}</h1>
         <div class="head"><span>Объект: ${e(t.objectAddress)}</span><span>${this.dateRu(t.techDate)}</span></div>
         <p class="n">Комиссия в составе представителя Подрядчика ${e(t.signer || c.fio || c.name)}
         и Заказчика ${e(t.clientName)} составила настоящий акт о нижеследующем.</p>`;
@@ -1612,11 +1721,13 @@ const Docs = {
         };
         const build = map[kind];
         if (!build) return;
-        const w = window.open('', '_blank');
-        if (!w) { app.alert('Браузер заблокировал новое окно. Разрешите всплывающие окна для сайта.', 'Акты'); return; }
-        w.document.write(build());
-        w.document.close();
-        setTimeout(() => { try { w.focus(); w.print(); } catch (e) { } }, 400);
+        const names = {
+            pressure: 'Акт опрессовки',
+            hidden: 'Акт скрытых работ',
+            flush: 'Акт промывки',
+            heat: 'Акт прогрева'
+        };
+        this.openDoc(build(), names[kind], 'Акты');
     },
 
     // Акт сдачи-приёмки. Обязательные реквизиты первичного документа —
@@ -1628,7 +1739,7 @@ const Docs = {
         const today = new Date().toISOString().slice(0, 10);
         return `<!DOCTYPE html><html lang="ru"><head><meta charset="utf-8">
             <title>Акт сдачи-приёмки по договору № ${e(d.number)}</title>${this.styles()}</head><body>
-
+        ${this.letterhead()}
         <h1>АКТ СДАЧИ-ПРИЁМКИ ВЫПОЛНЕННЫХ РАБОТ</h1>
         <h1 style="margin-bottom:5mm;">к Договору бытового подряда № ${e(d.number) || '____'} от ${this.dateRu(d.date)}</h1>
         <div class="head"><span>${e(d.city) || '_______________'}</span><span>${this.dateRu(today)}</span></div>
