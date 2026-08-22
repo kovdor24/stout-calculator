@@ -9662,10 +9662,29 @@ const app = {
     RAIL_DOCK_KEY: 'lk_rail_dock',
     RAIL_GROUPS_KEY: 'lk_rail_groups',
 
+    // Раскладка хранится порознь для мыши и для сенсорного экрана: за
+    // компьютером у монтажника удобно одно расположение панелей, на планшете в
+    // руках — другое. Раньше обе стороны писали в одно поле, и та, что
+    // подключилась последней, перебивала чужой выбор. Заметнее всего это было на
+    // планшете: панель переносилась, но при следующем открытии из облака
+    // приезжала раскладка компьютера и возвращала всё назад.
+    railLayoutSlot: function () {
+        return this.isTouchOnly() ? 'railLayoutTouch' : 'railLayout';
+    },
+
     railLayout: function () {
         if (!this.installerSettings) this.loadInstallerSettingsLocal();
-        const saved = this.installerSettings.railLayout;
+        const slot = this.railLayoutSlot();
+        const saved = this.installerSettings[slot];
         if (saved && typeof saved === 'object') return saved;
+        // На планшете, пока своей раскладки ещё нет, показываем ту, что человек
+        // собрал за компьютером: привычное расположение лучше сброса к умолчанию.
+        // Стоит перетащить хоть одну панель — у планшета появится собственная
+        // раскладка, и дальше они живут независимо друг от друга.
+        if (slot !== 'railLayout') {
+            const byMouse = this.installerSettings.railLayout;
+            if (byMouse && typeof byMouse === 'object') return byMouse;
+        }
         let dock = null, groups = null;
         try {
             dock = localStorage.getItem(this.RAIL_DOCK_KEY);
@@ -9677,7 +9696,7 @@ const app = {
     saveRailLayout: function (patch) {
         if (!this.installerSettings) this.loadInstallerSettingsLocal();
         const now = this.railLayout();
-        this.installerSettings.railLayout = Object.assign({ dock: 'left', groups: null, params: 'left' }, now, patch || {});
+        this.installerSettings[this.railLayoutSlot()] = Object.assign({ dock: 'left', groups: null, params: 'left' }, now, patch || {});
         // Пишет и в localStorage, и (для вошедших) в облако
         this.pushInstallerSettingsToCloud();
     },
@@ -10481,8 +10500,9 @@ const app = {
     loadInstallerSettingsLocal: function () {
         let parsed = null;
         try { parsed = JSON.parse(localStorage.getItem('stout_installer_settings') || 'null'); } catch (e) { parsed = null; }
-        this.installerSettings = Object.assign({ workPrices: {}, equipmentLibrary: [], swapLog: [], deletionLog: [], company: null, railLayout: null }, parsed || {});
+        this.installerSettings = Object.assign({ workPrices: {}, equipmentLibrary: [], swapLog: [], deletionLog: [], company: null, railLayout: null, railLayoutTouch: null }, parsed || {});
         if (this.installerSettings.railLayout && typeof this.installerSettings.railLayout !== 'object') this.installerSettings.railLayout = null;
+        if (this.installerSettings.railLayoutTouch && typeof this.installerSettings.railLayoutTouch !== 'object') this.installerSettings.railLayoutTouch = null;
         if (!this.installerSettings.workPrices || typeof this.installerSettings.workPrices !== 'object') this.installerSettings.workPrices = {};
         if (!Array.isArray(this.installerSettings.equipmentLibrary)) this.installerSettings.equipmentLibrary = [];
         if (!Array.isArray(this.installerSettings.swapLog)) this.installerSettings.swapLog = [];
@@ -10608,11 +10628,18 @@ const app = {
                     // (первый вход после переезда раскладки в настройки аккаунта)
                     railLayout: (cloud.railLayout && typeof cloud.railLayout === 'object')
                         ? cloud.railLayout
-                        : ((this.installerSettings && this.installerSettings.railLayout) || null)
+                        : ((this.installerSettings && this.installerSettings.railLayout) || null),
+                    // Раскладка планшета — отдельным полем и по тому же правилу.
+                    // Забыть её здесь нельзя: настройки пересобираются целиком, и
+                    // не перечисленное поле просто пропадёт при первом же обмене.
+                    railLayoutTouch: (cloud.railLayoutTouch && typeof cloud.railLayoutTouch === 'object')
+                        ? cloud.railLayoutTouch
+                        : ((this.installerSettings && this.installerSettings.railLayoutTouch) || null)
                 };
                 this.saveInstallerSettingsLocal();
                 if (!cloudCompany && localCompany) this.pushInstallerSettingsToCloud();
                 if (!cloud.railLayout && this.installerSettings.railLayout) this.pushInstallerSettingsToCloud();
+                if (!cloud.railLayoutTouch && this.installerSettings.railLayoutTouch) this.pushInstallerSettingsToCloud();
                 if (this._activeProfileTab === 'workprices') this.renderWorkPricesTab();
                 if (this._activeProfileTab === 'equipment') this.renderEquipmentLibraryTab();
                 if (this._activeProfileTab === 'company') this.fillCompanyDetailsForm();
