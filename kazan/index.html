@@ -9,11 +9,28 @@
     <link rel="canonical" href="https://heatcalc.ru/kazan/">
     <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large">
     <link rel="icon" type="image/png" href="/img/logo_HC.png">
-    <meta name="theme-color" content="#2563EB">
+    <meta name="theme-color" content="#000000">
+    <link rel="stylesheet" href="/seo.css">
+
+    <!-- Тему ставим до первой отрисовки, иначе тёмная страница моргает белым.
+         При первом заходе выбираем по часам: с 7 до 19 светлая, иначе тёмная.
+         Дальше решает кнопка в шапке, выбор хранится в localStorage. -->
+    <script>
+        (function () {
+            var t;
+            try { t = localStorage.getItem('hc-theme'); } catch (e) { t = null; }
+            if (t !== 'light' && t !== 'dark') {
+                var h = new Date().getHours();
+                t = (h >= 7 && h < 19) ? 'light' : 'dark';
+            }
+            document.documentElement.setAttribute('data-theme', t);
+        })();
+    </script>
 
     <!-- Яндекс.Метрика + баннер согласия на cookie. Путь от корня, а не
          относительный: страница лежит в подпапке /kazan/. -->
     <script src="/cookie-consent.js" defer></script>
+    <script src="/seo-theme.js" defer></script>
 
     <meta property="og:type" content="article">
     <meta property="og:site_name" content="HeatCalc.ru">
@@ -105,152 +122,6 @@
     }
     </script>
 
-    <style>
-        :root {
-            --brand: #2563EB;
-            --brand-dark: #1D4ED8;
-            --ink: #111827;
-            --ink-soft: #374151;
-            --muted: #6B7280;
-            --line: #E5E7EB;
-            --bg-soft: #F9FAFB;
-        }
-
-        * { box-sizing: border-box; }
-
-        body {
-            margin: 0;
-            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-            color: var(--ink-soft);
-            line-height: 1.7;
-            font-size: 17px;
-            background: #fff;
-        }
-
-        .wrap { max-width: 780px; margin: 0 auto; padding: 0 20px; }
-
-        header.top {
-            border-bottom: 1px solid var(--line);
-            padding: 14px 0;
-            margin-bottom: 36px;
-        }
-
-        header.top .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
-
-        .logo {
-            font-weight: 800;
-            font-size: 19px;
-            color: var(--ink);
-            text-decoration: none;
-            letter-spacing: -0.3px;
-        }
-        .logo span { color: var(--brand); }
-
-        .crumbs { font-size: 14px; color: var(--muted); margin-bottom: 20px; }
-        .crumbs a { color: var(--muted); }
-
-        h1 {
-            font-size: 34px;
-            line-height: 1.2;
-            font-weight: 800;
-            color: var(--ink);
-            letter-spacing: -0.6px;
-            margin: 0 0 20px;
-        }
-
-        h2 {
-            font-size: 24px;
-            line-height: 1.3;
-            font-weight: 700;
-            color: var(--ink);
-            letter-spacing: -0.3px;
-            margin: 44px 0 14px;
-        }
-
-        h3 { font-size: 19px; font-weight: 700; color: var(--ink); margin: 28px 0 8px; }
-
-        p { margin: 0 0 18px; }
-
-        a { color: var(--brand); }
-
-        .lead { font-size: 19px; color: var(--ink-soft); }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 0 0 12px;
-            font-size: 16px;
-        }
-        th, td { text-align: left; padding: 11px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
-        th { font-weight: 700; color: var(--ink); background: var(--bg-soft); }
-        td.num { white-space: nowrap; font-variant-numeric: tabular-nums; }
-        .table-scroll { overflow-x: auto; }
-
-        .note { font-size: 14px; color: var(--muted); margin: 0 0 24px; }
-
-        ul, ol { margin: 0 0 18px; padding-left: 24px; }
-        li { margin-bottom: 9px; }
-
-        .cta {
-            display: block;
-            background: var(--brand);
-            color: #fff;
-            text-decoration: none;
-            text-align: center;
-            font-weight: 700;
-            font-size: 18px;
-            padding: 17px 24px;
-            border-radius: 12px;
-            margin: 32px 0;
-        }
-        .cta:hover { background: var(--brand-dark); }
-        .cta small { display: block; font-weight: 500; font-size: 14px; opacity: 0.85; margin-top: 4px; }
-
-        .callout {
-            background: var(--bg-soft);
-            border-left: 4px solid var(--brand);
-            border-radius: 0 10px 10px 0;
-            padding: 16px 18px;
-            margin: 0 0 24px;
-        }
-        .callout p:last-child { margin-bottom: 0; }
-
-        details {
-            border-bottom: 1px solid var(--line);
-            padding: 4px 0;
-        }
-        details summary {
-            cursor: pointer;
-            font-weight: 700;
-            color: var(--ink);
-            padding: 13px 0;
-            list-style: none;
-            display: flex;
-            justify-content: space-between;
-            gap: 12px;
-        }
-        details summary::-webkit-details-marker { display: none; }
-        details summary::after { content: '+'; color: var(--brand); font-size: 22px; line-height: 1; flex-shrink: 0; }
-        details[open] summary::after { content: '−'; }
-        details .answer { padding: 0 0 16px; }
-        details .answer p:last-child { margin-bottom: 0; }
-
-        footer.bottom {
-            border-top: 1px solid var(--line);
-            margin-top: 56px;
-            padding: 28px 0 48px;
-            font-size: 14px;
-            color: var(--muted);
-        }
-        footer.bottom a { color: var(--muted); margin-right: 18px; }
-
-        @media (max-width: 600px) {
-            body { font-size: 16px; }
-            h1 { font-size: 27px; }
-            h2 { font-size: 21px; }
-            .lead { font-size: 17px; }
-        }
-    </style>
 </head>
 
 <body>
@@ -258,7 +129,13 @@
     <header class="top">
         <div class="wrap">
             <a class="logo" href="/">HeatCalc<span>.ru</span></a>
-            <a href="/" style="font-size:15px;font-weight:600;text-decoration:none;">Открыть калькулятор →</a>
+            <div class="head-actions">
+                <a class="head-link" href="/">Открыть калькулятор →</a>
+                <button class="theme-toggle" type="button" aria-label="Сменить тему">
+                    <span class="i-moon" aria-hidden="true"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></span>
+                    <span class="i-sun" aria-hidden="true"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg></span>
+                </button>
+            </div>
         </div>
     </header>
 
