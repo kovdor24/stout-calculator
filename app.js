@@ -14705,6 +14705,10 @@ const app = {
     // месте, а не падение; по мягкому правилу значок вставал бы у каждой
     // второй строки и перестал бы что-либо значить.
     TRENDS_DISPUTE_MIN: 8,
+    // Какую долю спроса группы должны покрывать фразы с гугловыми данными,
+    // чтобы их среднее вообще показывать. Считается по яндексовым объёмам:
+    // это единственная мера «веса» формулировки, какая у нас есть.
+    TRENDS_MIN_COVER: 0.5,
 
     /**
      * Изменение ряда [[«2026-07», 63], …] за backMonths месяцев назад.
@@ -14752,14 +14756,23 @@ const app = {
      * формулировка тянула бы группу наравне с основной.
      */
     trendsGroupDelta: function (ids, weightOf, backMonths) {
-        let sum = 0, w = 0, n = 0;
+        let sum = 0, w = 0, n = 0, total = 0;
         (ids || []).forEach(id => {
+            const wt = Math.max(0, Number(weightOf ? weightOf(id) : 1) || 0) || 1;
+            total += wt;
             const d = this.trendsPhraseDelta(id, backMonths);
             if (!d) return;
-            const wt = Math.max(0, Number(weightOf ? weightOf(id) : 1) || 0) || 1;
             sum += d.pct * wt; w += wt; n++;
         });
-        return w ? { pct: Math.round(sum / w), count: n } : null;
+        if (!w) return null;
+        // Группу представляют не все фразы: часть Google не знает, у части
+        // данных слишком мало. Пока покрыта хотя бы половина спроса — среднее
+        // осмысленно; ниже порога одна второстепенная формулировка начинает
+        // говорить за всю группу. Так «спрос на монтаж» показывал +4 % при
+        // яндексовых −13 %, опираясь на единственный «монтаж тёплого пола»,
+        // который весит малую долю группы.
+        if (total && w / total < this.TRENDS_MIN_COVER) return null;
+        return { pct: Math.round(sum / w), count: n, cover: total ? w / total : 0 };
     },
 
     /**
