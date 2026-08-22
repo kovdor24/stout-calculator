@@ -7938,7 +7938,12 @@ const app = {
      */
     showRepriceNotice: function (saved) {
         const host = document.getElementById('reprice_notice');
-        if (!host || !saved) return;
+        if (!host) return;
+        // Плашка всегда относится к смете, открытой прямо сейчас. Если у новой
+        // сметы разницы нет, ниже сработает один из ранних выходов — и без этой
+        // строки на экране осталась бы висеть плашка от предыдущего объекта.
+        this.closeRepriceNotice();
+        if (!saved) return;
         const was = Number(saved.eqSum) || 0;
         const now = Number(this.lastEqSum) || 0;
         if (!was || !now) return;
@@ -30935,6 +30940,13 @@ const app = {
         // никто больше не сошлётся, уберёт автоочистка по сроку хранения.
         try { localStorage.removeItem('floor_plans_v1'); } catch (e) { }
         this.loadPlanCheckData();
+
+        // Плашка «цены изменились» и разбор «Что изменилось» под ней привязаны к
+        // загруженной смете. После сброса на экране пустой расчёт, а плашка
+        // продолжала висеть и предлагала разобрать цены уже закрытого объекта.
+        this._loadedEstimateId = null;
+        this._repriceSaved = null;
+        this.closeRepriceNotice();
 
         this.saveState();
         this.syncUI();

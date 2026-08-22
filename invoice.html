@@ -11,6 +11,26 @@
     <meta name="robots" content="noindex, nofollow">
     <title>Коммерческое предложение - HeatCalc.ru</title>
     <link rel="icon" type="image/png" href="img/logo_HC.png">
+    <meta name="theme-color" content="#F3F4F6">
+
+    <!-- Тема КП. Режимы: 'auto' (тёмная с 20:00 до 8:00), 'light', 'dark'.
+         Выбор лежит в localStorage['stout_save'].invoiceTheme отдельным полем:
+         страницу КП чаще всего открывает клиент, и тема калькулятора у монтажника
+         от этого меняться не должна. Класс ставим здесь, до первой отрисовки. -->
+    <script>
+        (function () {
+            'use strict';
+            var mode = 'auto';
+            try {
+                var saved = JSON.parse(localStorage.getItem('stout_save') || 'null') || {};
+                if (saved.invoiceTheme === 'light' || saved.invoiceTheme === 'dark') mode = saved.invoiceTheme;
+            } catch (e) { /* приватный режим — остаёмся на 'auto' */ }
+            window.__invoiceTheme = mode;
+            var h = new Date().getHours();
+            var dark = mode === 'dark' || (mode === 'auto' && (h >= 20 || h < 8));
+            document.documentElement.classList.toggle('dark-mode', dark);
+        })();
+    </script>
 
     <!-- Google Fonts Inter -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -33,6 +53,18 @@
             --border: #E5E7EB;
             --surface: #FFFFFF;
             --background: #F3F4F6;
+            --surface-light: #F9FAFB;
+            /* Мягкая подложка: строка менеджера, карточка объекта, шапка таблицы, подвал окна */
+            --soft: #F9FAFB;
+            /* Строка-заголовок раздела сметы */
+            --group-bg: #F3F4F6;
+            /* Тонкая линия между строками таблицы */
+            --line-soft: #F3F4F6;
+            /* Плитка под фото товара */
+            --img-bg: #FFFFFF;
+            /* Дорожка переключателя и серая кнопка */
+            --track: #E5E7EB;
+            --track-hover: #D1D5DB;
         }
 
         * {
@@ -177,7 +209,7 @@
 
         /* Manager / Master Details */
         .manager-bar {
-            background-color: #F9FAFB;
+            background-color: var(--soft);
             border: 1px solid var(--border);
             padding: 10px 20px;
             border-radius: 8px;
@@ -215,7 +247,7 @@
             flex-wrap: wrap;
             justify-content: space-between;
             align-items: center;
-            background: #F9FAFB;
+            background: var(--soft);
             padding: 12px 10px;
             border-radius: 8px;
             border: 1px solid var(--border);
@@ -303,7 +335,7 @@
             display: inline-block;
             width: 34px;
             height: 18px;
-            background-color: #E5E7EB;
+            background-color: var(--track);
             border-radius: 20px;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
@@ -354,7 +386,7 @@
         }
 
         .spec-table th {
-            background-color: #F9FAFB;
+            background-color: var(--soft);
             color: var(--text-sec);
             font-weight: 700;
             text-transform: uppercase;
@@ -365,7 +397,7 @@
 
         .spec-table td {
             padding: 4px 12px;
-            border-bottom: 1px solid #F3F4F6;
+            border-bottom: 1px solid var(--line-soft);
             vertical-align: middle;
         }
 
@@ -439,14 +471,14 @@
             height: 26px;
             object-fit: contain;
             border-radius: 4px;
-            background: #fff;
-            border: 1px solid #E5E7EB;
+            background: var(--img-bg);
+            border: 1px solid var(--border);
             padding: 1px;
         }
 
         /* Section grouping rows */
         .group-row td {
-            background-color: #F3F4F6;
+            background-color: var(--group-bg);
             color: var(--primary);
             font-weight: 700;
             text-transform: uppercase;
@@ -461,7 +493,7 @@
             color: var(--text-sec);
             font-size: 11px;
             padding: 8px 12px;
-            background-color: #FAFBFB;
+            background-color: var(--soft);
         }
 
         /* Summary / Totals Panel */
@@ -508,7 +540,7 @@
         .error-card {
             max-width: 500px;
             margin: 100px auto;
-            background: #fff;
+            background: var(--surface);
             border-radius: 16px;
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
             border: 1px solid var(--border);
@@ -525,7 +557,7 @@
         .error-card h2 {
             font-size: 20px;
             font-weight: 800;
-            color: #111827;
+            color: var(--text-main);
             margin-bottom: 10px;
         }
 
@@ -737,7 +769,7 @@
 
         .modal-footer {
             padding: 15px 20px;
-            background: #F9FAFB;
+            background: var(--soft);
             border-top: 1px solid var(--border);
             display: flex;
             justify-content: flex-end;
@@ -755,12 +787,12 @@
         }
 
         .btn-cancel {
-            background: #E5E7EB;
+            background: var(--track);
             color: var(--text-sec);
         }
 
         .btn-cancel:hover {
-            background: #D1D5DB;
+            background: var(--track-hover);
         }
 
         .btn-submit {
@@ -2102,6 +2134,95 @@
         body.html2pdf-printing .tooltip-content {
             display: none !important;
         }
+
+        /* ===== Тема: день / ночь =============================================
+           Класс dark-mode стоит и на <html> (его ставит инлайн-скрипт в <head>,
+           до первой отрисовки — иначе тёмная страница успевает моргнуть белым),
+           и на <body> (существующие мобильные правила смотрят на body).
+           Печать и PDF остаются светлыми — блок сброса ниже. */
+        html.dark-mode,
+        body.dark-mode {
+            --primary: #60A5FA;
+            --primary-light: rgba(96, 165, 250, 0.15);
+            --text-main: #F3F4F6;
+            --text-sec: #9CA3AF;
+            --border: #2A2A2A;
+            --surface: #121212;
+            --surface-light: #1E1E1E;
+            --background: #000000;
+            --soft: #171717;
+            --group-bg: #1C1C1C;
+            --line-soft: #232323;
+            /* Фото товаров сняты на белом фоне, поэтому плитку под ними оставляем светлой */
+            --img-bg: #FFFFFF;
+            --track: #3A3A3A;
+            --track-hover: #4A4A4A;
+        }
+
+        body.dark-mode .container {
+            box-shadow: none;
+        }
+
+        body.dark-mode .modal-body textarea {
+            background: var(--surface-light);
+            color: var(--text-main);
+        }
+
+        /* Кнопка переключения темы — первая в столбике круглых кнопок, чтобы
+           её добавление не сдвинуло привычные «Подтвердить» и «Печать». */
+        .fab-theme {
+            width: 44px;
+            height: 44px;
+            align-self: flex-end;
+            background-color: var(--surface);
+            color: var(--text-sec);
+            border: 1px solid var(--border);
+        }
+
+        .fab-theme:hover {
+            background-color: var(--soft);
+            color: var(--primary);
+        }
+
+        /* Печать и PDF всегда светлые: документ уходит на бумагу и клиенту в почту. */
+        @media print {
+
+            html.dark-mode,
+            body.dark-mode {
+                --primary: #1E3A8A;
+                --primary-light: #EFF6FF;
+                --text-main: #1F2937;
+                --text-sec: #4B5563;
+                --border: #E5E7EB;
+                --surface: #FFFFFF;
+                --surface-light: #F9FAFB;
+                --background: #FFFFFF;
+                --soft: #F9FAFB;
+                --group-bg: #F3F4F6;
+                --line-soft: #F3F4F6;
+                --img-bg: #FFFFFF;
+                --track: #E5E7EB;
+                --track-hover: #D1D5DB;
+            }
+        }
+
+        body.html2pdf-printing,
+        body.html2pdf-printing.dark-mode {
+            --primary: #1E3A8A;
+                --primary-light: #EFF6FF;
+                --text-main: #1F2937;
+                --text-sec: #4B5563;
+                --border: #E5E7EB;
+                --surface: #FFFFFF;
+                --surface-light: #F9FAFB;
+                --background: #FFFFFF;
+                --soft: #F9FAFB;
+                --group-bg: #F3F4F6;
+                --line-soft: #F3F4F6;
+                --img-bg: #FFFFFF;
+                --track: #E5E7EB;
+                --track-hover: #D1D5DB;
+        }
     </style>
 </head>
 
@@ -2115,6 +2236,9 @@
 
     <!-- Floating Action Buttons -->
     <div class="fab-container no-print">
+        <!-- Theme Toggle (auto / day / night) -->
+        <button class="fab-btn fab-theme" id="btn_theme" onclick="cycleInvoiceTheme()"
+            title="Тема: авто (тёмная с 20:00 до 8:00)"></button>
         <!-- Confirm Button (Green checkmark) -->
         <button class="fab-btn fab-confirm" onclick="confirmInvoice()" title="Подтвердить КП">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
@@ -4167,6 +4291,81 @@
                 }
             }
         }
+    </script>
+
+    <!-- Переключение темы: авто -> светлая -> тёмная -->
+    <script>
+        (function () {
+            'use strict';
+
+            var KEY = 'stout_save';
+            var ORDER = ['auto', 'light', 'dark'];
+            var NIGHT_FROM = 20;   // с 20:00
+            var NIGHT_TO = 8;      // до 8:00
+
+            var ICONS = {
+                // Часы — режим «по времени суток»
+                auto: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><polyline points="12 7 12 12 15.5 14"></polyline></svg>',
+                // Солнце — всегда светлая
+                light: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.5"></circle><line x1="12" y1="1.5" x2="12" y2="4"></line><line x1="12" y1="20" x2="12" y2="22.5"></line><line x1="4.2" y1="4.2" x2="6" y2="6"></line><line x1="18" y1="18" x2="19.8" y2="19.8"></line><line x1="1.5" y1="12" x2="4" y2="12"></line><line x1="20" y1="12" x2="22.5" y2="12"></line><line x1="4.2" y1="19.8" x2="6" y2="18"></line><line x1="18" y1="6" x2="19.8" y2="4.2"></line></svg>',
+                // Месяц — всегда тёмная
+                dark: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path></svg>'
+            };
+
+            var TITLES = {
+                auto: 'Тема: авто (тёмная с 20:00 до 8:00)',
+                light: 'Тема: светлая',
+                dark: 'Тема: тёмная'
+            };
+
+            function mode() {
+                return ICONS[window.__invoiceTheme] ? window.__invoiceTheme : 'auto';
+            }
+
+            function isNight() {
+                var h = new Date().getHours();
+                return h >= NIGHT_FROM || h < NIGHT_TO;
+            }
+
+            function save(value) {
+                try {
+                    var saved = JSON.parse(localStorage.getItem(KEY) || 'null') || {};
+                    saved.invoiceTheme = value;
+                    localStorage.setItem(KEY, JSON.stringify(saved));
+                } catch (e) { /* приватный режим или переполненное хранилище */ }
+            }
+
+            function apply() {
+                var m = mode();
+                var dark = m === 'dark' || (m === 'auto' && isNight());
+                document.documentElement.classList.toggle('dark-mode', dark);
+                if (document.body) document.body.classList.toggle('dark-mode', dark);
+                var meta = document.querySelector('meta[name="theme-color"]');
+                if (meta) meta.setAttribute('content', dark ? '#000000' : '#F3F4F6');
+                var btn = document.getElementById('btn_theme');
+                if (btn) {
+                    btn.innerHTML = ICONS[m];
+                    btn.title = TITLES[m];
+                    btn.setAttribute('aria-label', TITLES[m]);
+                }
+            }
+
+            window.cycleInvoiceTheme = function () {
+                var next = ORDER[(ORDER.indexOf(mode()) + 1) % ORDER.length];
+                window.__invoiceTheme = next;
+                save(next);
+                apply();
+            };
+
+            // Если КП открыто в 19:59, в 20:00 оно должно потемнеть само.
+            setInterval(function () { if (mode() === 'auto') apply(); }, 60000);
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', apply);
+            } else {
+                apply();
+            }
+        })();
     </script>
 </body>
 

@@ -35,7 +35,7 @@ const Docs = {
         dateEnd: '',
         prepay: 50,
         warrantyMonths: 24,
-        offerDays: 14,
+        offerDays: 5,
         materialsBy: 'contractor',   // чьи материалы: contractor | client
         priceKind: 'firm',           // firm — твёрдая, approx — приблизительная
         execKind: 'self',            // self — самозанятый, ip — ИП, ooo — организация
@@ -73,11 +73,40 @@ const Docs = {
         if (!d.number && num) d.number = String(num);
         const name = snap ? ((snap.object_info || {}).projectName || '') : st.projectName;
         if (!d.objectAddress && name) d.objectAddress = name;
-        if (!d.city) {
-            const c = (app.companyDetails() || {}).city;
-            if (c) d.city = c;
-        }
+        if (!d.city) d.city = this.defaultCity();
+        // Телефон, введённый до появления маски, приводим к тому же виду: он
+        // попадает в шапку договора и в акт, и разнобой там заметен.
+        if (d.clientPhone) d.clientPhone = this.maskPhone(d.clientPhone);
+        // Начало работ по умолчанию — день, когда смета ушла клиенту: ссылка,
+        // печать или запрос счёта. Договор подписывают по этой смете, и работы
+        // обычно начинают с той же даты. Дату всегда можно поправить руками.
+        if (!d.dateStart) d.dateStart = this.sentDate() || d.date;
         return d;
+    },
+
+    /**
+     * Город подписания. По умолчанию — город монтажника из личного кабинета,
+     * но если в расчёте город выбрали руками (объект в другом городе), берём его:
+     * договор подписывают там, где объект.
+     */
+    defaultCity: function () {
+        const picked = app.state.selectedCity && String(app.state.selectedCity.name || '').trim();
+        if (picked) return picked;
+        return (app.companyDetails() || {}).city || '';
+    },
+
+    /**
+     * Когда смета ушла клиенту, в формате YYYY-MM-DD. У заказа из кабинета это
+     * дата отправленной ссылки, у открытого расчёта — отметка слепка цен
+     * (app.capturePriceSnapshot снимает её при печати, выгрузке и ссылке).
+     * Ничего не отправляли — вернём пустую строку.
+     */
+    sentDate: function () {
+        const src = (this._ctx && this._ctx.snap && this._ctx.snap.created_at)
+            || ((app.state.priceSnapshot || {}).at);
+        if (!src) return '';
+        const dt = new Date(src);
+        return isNaN(dt) ? '' : dt.toISOString().slice(0, 10);
     },
 
     save: function (patch) {
@@ -230,6 +259,44 @@ const Docs = {
         this.open();
     },
 
+    // ---------- телефон ----------
+    //
+    // В поле можно было написать что угодно — в договоре оказывались «89ххх», три
+    // цифры или адрес электронной почты. Номер заказчика нужен не для красоты: по
+    // нему вызывают на объект и по нему же доказывают, что уведомляли о готовности
+    // к приёмке. Поэтому поле ведёт себя как маска: оставляет только цифры и
+    // раскладывает их в +7 (999) 999-99-99.
+    //
+    // Не российские коды (Беларусь +375 и другие) маска не ломает: если номер
+    // начинается не с 7 и не с 8, она просто чистит лишние знаки.
+    maskPhone: function (v) {
+        let d = String(v == null ? '' : v).replace(/\D/g, '');
+        if (!d) return '';
+        if (d[0] === '8') d = '7' + d.slice(1);            // как набирают внутри страны
+        if (d[0] === '9' && d.length <= 10) d = '7' + d;   // начали сразу с 9xx
+        if (d[0] !== '7') return '+' + d.slice(0, 15);     // чужой код — не трогаем
+        d = d.slice(0, 11);
+        let out = '+7';
+        if (d.length > 1) out += ' (' + d.slice(1, 4);
+        if (d.length >= 4) out += ')';
+        if (d.length > 4) out += ' ' + d.slice(4, 7);
+        if (d.length > 7) out += '-' + d.slice(7, 9);
+        if (d.length > 9) out += '-' + d.slice(9, 11);
+        return out;
+    },
+
+    onPhoneInput: function (el, ev) {
+        let digits = el.value.replace(/\D/g, '');
+        // Стирание через Backspace: если под курсором была скобка или дефис, маска
+        // тут же вернула бы их на место и удалить номер стало бы невозможно.
+        if (ev && ev.inputType === 'deleteContentBackward' && this.maskPhone(digits).length > el.value.length) {
+            digits = digits.slice(0, -1);
+        }
+        el.value = this.maskPhone(digits);
+        const end = el.value.length;
+        try { el.setSelectionRange(end, end); } catch (e) { }
+    },
+
     // ---------- вспомогательное ----------
 
     esc: function (s) {
@@ -366,7 +433,13 @@ const Docs = {
         wrap.innerHTML = `
             <div class="custom-modal" style="max-width:640px; padding:26px 24px; text-align:left;">
                 <span class="auth-modal-close" onclick="Docs.close()" style="top:6px; right:8px; padding:10px 14px;">&times;</span>
-                <div class="custom-modal-title" style="font-size:18px; margin-bottom:4px;">Документы к смете</div>
+                <div class="custom-modal-title" style="font-size:18px; margin-bottom:4px;">
+                    Документы к смете
+                    <button type="button" id="docs_help_btn" onclick="Docs.helpToggle()" title="Пояснения к полям"
+                        style="float:right; font:inherit; font-size:11.5px; font-weight:600; padding:4px 10px;
+                               border:1px solid var(--border); border-radius:8px; background:var(--surface);
+                               color:var(--text-sec); cursor:pointer;">🎓 Подсказки</button>
+                </div>
                 <div class="custom-modal-text" style="margin-bottom:14px;">
                     Договор бытового подряда, спецификация, смета работ и акт сдачи-приёмки.
                     ${this._ctx
@@ -374,7 +447,7 @@ const Docs = {
                         : 'Заполните данные один раз — они сохранятся вместе с расчётом.'}
                 </div>
 
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:0 12px;">
+                <div id="docs_grid_main" style="display:grid; grid-template-columns:1fr 1fr; gap:0 12px;">
                     ${inp('number', 'Номер договора')}
                     ${inp('date', 'Дата договора', 'date')}
                     ${inp('city', 'Город подписания')}
@@ -382,26 +455,28 @@ const Docs = {
                 </div>
 
                 <div style="font-size:12px; font-weight:700; color:var(--text-main); margin:10px 0 6px;">Заказчик</div>
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:0 12px;">
-                    ${inp('clientName', 'ФИО полностью')}
-                    ${inp('clientPhone', 'Телефон')}
-                    ${inp('clientPassport', 'Паспорт: серия, номер, кем и когда выдан')}
+                <div id="docs_grid_client" style="display:grid; grid-template-columns:1fr 1fr; gap:0 12px;">
+                    ${inp('clientName', 'ФИО полностью', 'text', 'placeholder="Иванов Иван Иванович"')}
+                    ${inp('clientPhone', 'Телефон', 'tel',
+                        'inputmode="tel" maxlength="18" placeholder="+7 (___) ___-__-__" oninput="Docs.onPhoneInput(this, event)"')}
+                    ${inp('clientPassport', 'Паспорт: серия, номер, кем и когда выдан', 'text',
+                        'placeholder="4509 123456, выдан ОВД ... 12.03.2015"')}
                     ${inp('clientAddress', 'Адрес регистрации')}
                 </div>
 
                 <div id="docs_price_mode">${this.priceModeHtml()}</div>
 
                 <div style="font-size:12px; font-weight:700; color:var(--text-main); margin:10px 0 6px;">Условия</div>
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:0 12px;">
+                <div id="docs_grid_terms" style="display:grid; grid-template-columns:1fr 1fr; gap:0 12px;">
                     ${inp('dateStart', 'Начало работ', 'date')}
-                    ${inp('dateEnd', 'Окончание работ', 'date')}
+                    ${inp('dateEnd', 'Окончание работ', 'date', 'onchange="Docs.onDateEndChange(this.value)"')}
                     ${inp('prepay', 'Аванс, %', 'number', 'min="0" max="100"')}
                     ${inp('warrantyMonths', 'Гарантия на работы, мес.', 'number', 'min="0"')}
                     ${inp('offerDays', 'Цена действительна, дней', 'number', 'min="0"')}
                     ${inp('signer', 'Кто подписывает (ФИО)')}
                 </div>
 
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:0 12px; margin-top:6px;">
+                <div id="docs_grid_kind" style="display:grid; grid-template-columns:1fr 1fr; gap:0 12px; margin-top:6px;">
                     <label style="display:block;">
                         <span style="display:block; font-size:11.5px; color:var(--text-sec); margin-bottom:3px;">Цена</span>
                         <select id="doc_priceKind" style="width:100%; padding:8px 10px; border:1px solid var(--border); border-radius:8px; background:var(--bg); color:var(--text-main); font:inherit; font-size:13px;">
@@ -427,7 +502,7 @@ const Docs = {
                 </div>
 
                 <div style="font-size:12px; font-weight:700; color:var(--text-main); margin:10px 0 6px;">Испытания и скрытые работы</div>
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:0 12px;">
+                <div id="docs_grid_tech" style="display:grid; grid-template-columns:1fr 1fr; gap:0 12px;">
                     <label style="display:block; margin-bottom:8px;">
                         <span style="display:block; font-size:11.5px; color:var(--text-sec); margin-bottom:3px;">Какую систему испытывали</span>
                         <select id="doc_techSystem" onchange="Docs.onSystemChange(this.value)"
@@ -447,24 +522,19 @@ const Docs = {
                     ${this.esc(hint.rule)}. Если изготовитель трубы требует другого — ставьте его значения,
                     они главнее общего правила.
                 </p>
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:0 12px;">
+                <div id="docs_grid_hidden" style="display:grid; grid-template-columns:1fr 1fr; gap:0 12px;">
                     ${inp('hiddenFrom', 'Скрытые работы: с', 'date')}
                     ${inp('hiddenTo', 'Скрытые работы: по', 'date')}
                 </div>
-                ${inp('hiddenWorks', 'Что скрывается (если пусто — стандартная формулировка)')}
-
-                ${(() => { const stale = this.staleInsurance(d.date); return stale.length
-                    ? `<p style="font-size:11px; line-height:1.5; color:#EF4444; margin:12px 0 0;">
-                        Страховой полис ${stale.map(p => this.esc(p.brand) + ' истёк ' + this.dateRu(p.to).replace(/\.$/, '')).join(', ')}.
-                        В гарантийный талон он не попадёт — пришлите свежий сертификат, и он вернётся.
-                       </p>` : ''; })()}
+                ${inp('hiddenWorks', 'Что скрывается (если пусто — стандартная формулировка)', 'text',
+                    'placeholder="трубы тёплого пола под стяжкой, разводка отопления в штробах"')}
                 <p style="font-size:11px; line-height:1.5; color:var(--text-sec); margin:12px 0 0;">
                     Шаблоны составлены по § 2 главы 37 ГК РФ (бытовой подряд) и закону «О защите прав
                     потребителей». Это типовые формы: стороны вправе изменить любой пункт.
                     Перед регулярным применением покажите документы своему юристу.
                 </p>
 
-                <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:14px;">
+                <div id="docs_actions" style="display:flex; flex-wrap:wrap; gap:8px; margin-top:14px;">
                     <button type="button" class="custom-modal-btn" style="flex:1 1 180px; width:auto;"
                         onclick="Docs.print('contract')">Договор с приложениями</button>
                     <button type="button" class="custom-modal-btn" style="flex:1 1 140px; width:auto;"
@@ -486,7 +556,11 @@ const Docs = {
                     onclick="Docs.close()">Закрыть</button>
             </div>`;
         document.body.appendChild(wrap);
-        setTimeout(() => { wrap.classList.add('active'); if (app.syncModalOverlayClass) app.syncModalOverlayClass(); }, 20);
+        setTimeout(() => {
+            wrap.classList.add('active');
+            if (app.syncModalOverlayClass) app.syncModalOverlayClass();
+            if (this.helpDue()) this.helpStart(true);
+        }, 20);
     },
 
     // Переключили систему — подставляем её значения по СП, но только если поля
@@ -502,6 +576,23 @@ const Docs = {
         set('doc_techWorkPressure', prev.work, hint.work);
         set('doc_techTestPressure', prev.test, hint.test);
         set('doc_techHold', prev.hold, hint.hold);
+        this.collect();
+    },
+
+    /**
+     * Ввели окончание работ — той же датой закрываются испытания и скрытые
+     * работы: систему сдают в один день. Поля, которые монтажник уже поправил
+     * руками, не трогаем — затирать чужой ввод нельзя.
+     */
+    onDateEndChange: function (value) {
+        if (!value) return;
+        // Что стояло до правки: у заказа из кабинета данные лежат не в расчёте,
+        // а отдельной записью, поэтому спрашиваем их через data().
+        const prev = this.data().dateEnd || '';
+        ['doc_techDate', 'doc_hiddenTo'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el && (!el.value || el.value === prev)) el.value = value;
+        });
         this.collect();
     },
 
@@ -529,6 +620,207 @@ const Docs = {
         });
         this.save(patch);
         return this.data();
+    },
+
+    // ---------- режим обучения по форме ----------
+    //
+    // Договор человек заполняет впервые, а поля названы по закону, а не
+    // по-житейски. «Цена твёрдая или приблизительная» решает, можно ли будет
+    // потребовать доплату; акт скрытых работ — единственное, чем после заливки
+    // стяжки доказать, что под ней уложено; сроки начала и окончания вообще
+    // существенное условие, без них договор оспаривают целиком. Поэтому первые
+    // три открытия окна ведём человека по разделам и объясняем каждый.
+    //
+    // Ведём подсказки не всплывающими окошками, а карточкой, вставленной прямо
+    // в поток под нужным разделом: окно прокручивается, и любая абсолютно
+    // спозиционированная подсказка уехала бы от своего поля при первом же
+    // движении колеса.
+
+    HELP_SEEN: 'docs_help_seen',   // сколько раз обучение уже показывали
+    HELP_OFF: 'docs_help_off',     // человек выключил подсказки сам
+    HELP_TIMES: 3,
+
+    HELP_STEPS: [
+        {
+            sel: null,
+            title: 'Зачем это окно',
+            text: 'Здесь из готовой сметы собираются бумаги: договор бытового подряда с приложениями, '
+                + 'акт сдачи-приёмки, гарантийный талон и четыре технических акта. Состав оборудования и '
+                + 'работ уже посчитан, реквизиты — в настройках аккаунта; руками остаётся заполнить данные '
+                + 'заказчика и сроки. Введённое сохраняется вместе с расчётом, второй раз вводить не придётся.'
+        },
+        {
+            sel: '#docs_grid_main',
+            title: 'Номер, дата, город и объект',
+            text: 'Номер подставлен из номера сметы — так документы и смета остаются одной историей. '
+                + 'Город подписания берётся из вашего личного кабинета, а если в расчёте выбран другой город, '
+                + 'то из расчёта. Адрес объекта — это предмет договора: где именно выполняются работы. Без него '
+                + 'документ не имеет силы, поэтому печать без адреса не даётся.'
+        },
+        {
+            sel: '#docs_grid_client',
+            title: 'Данные заказчика',
+            text: 'ФИО полностью и паспорт нужны, чтобы в договоре было видно, с кем он заключён: по одной фамилии '
+                + 'в суде человека не опознать. Телефон поле раскладывает само в +7 (999) 999-99-99 — по нему потом '
+                + 'вызывают на приёмку, и он же подтверждает, что заказчика извещали о готовности работ.'
+        },
+        {
+            sel: '#docs_price_mode',
+            title: 'Какими ценами печатать',
+            text: 'По умолчанию в бумагах стоят цены, которые видел клиент, а не сегодняшние. Каталог за месяц '
+                + 'мог уехать, но твёрдая цена по договору от подорожания не меняется — документ должен повторять '
+                + 'то, о чём стороны договорились. Переключатель нужен только если цену пересогласовали.'
+        },
+        {
+            sel: '#docs_grid_kind',
+            title: 'Цена, материалы, кто исполнитель',
+            text: 'Твёрдая цена — доплаты не будет, даже если работы окажется больше: это ваш риск, и закон считает '
+                + 'цену твёрдой по умолчанию. Приблизительная позволяет пересчитать, но только предупредив заказчика '
+                + 'заранее и отдельным соглашением. «Материалы» — чьё оборудование по смете. «Кто исполнитель» меняет '
+                + 'текст договора: у самозанятого добавляется пункт про чек по налогу на профессиональный доход.'
+        },
+        {
+            sel: '#docs_grid_terms',
+            title: 'Сроки и деньги',
+            text: 'Начало и окончание работ — существенное условие: без них договор можно оспорить целиком, а просрочку '
+                + 'считают именно от этих дат. Начало подставлено днём, когда смета ушла клиенту. Аванс и гарантия на '
+                + 'работы — ваши обязательства, срок гарантии вы назначаете сами. «Цена действительна, дней» — сколько '
+                + 'вы держите цену: по её истечении смету можно пересчитать без объяснений.'
+        },
+        {
+            sel: '#docs_grid_tech',
+            title: 'Испытания',
+            text: 'Опрессовку принимают по СП 73.13330.2016; давления и выдержка подставлены по выбранной системе. '
+                + 'Если изготовитель трубы требует другого — ставьте его цифры, они главнее общего правила. Дата '
+                + 'испытания подставляется из окончания работ: систему сдают в один день.'
+        },
+        {
+            sel: '#docs_grid_hidden',
+            title: 'Скрытые работы',
+            text: 'Самый ценный акт для монтажника: как только залита стяжка или зашит короб, доказать, что там '
+                + 'уложено, больше нечем. Даты — период, когда работы выполнялись; «по» подставляется из окончания '
+                + 'работ. Строку «что скрывается» можно оставить пустой — встанет стандартная формулировка, — но '
+                + 'своими словами всегда точнее: труба, узел, участок.'
+        },
+        {
+            sel: '#docs_actions',
+            title: 'Что печатать',
+            text: '«Договор с приложениями» — сам договор, спецификация оборудования и смета работ одним файлом. '
+                + '«Акт сдачи-приёмки» подписывают после окончания работ, «Гарантийный талон» отдают заказчику. '
+                + 'Ниже — четыре технических акта: опрессовка, скрытые работы, промывка и прогрев. Документ '
+                + 'открывается в новой вкладке и сразу уходит на печать — оттуда же его можно сохранить в PDF.'
+        }
+    ],
+
+    // Показывать ли обучение при открытии окна
+    helpDue: function () {
+        try {
+            if (localStorage.getItem(this.HELP_OFF) === '1') return false;
+            return (parseInt(localStorage.getItem(this.HELP_SEEN), 10) || 0) < this.HELP_TIMES;
+        } catch (e) { return false; }
+    },
+
+    helpStart: function (auto) {
+        if (!document.getElementById('docs_modal_overlay')) return;
+        this.helpCss();
+        if (auto) {
+            try {
+                const n = (parseInt(localStorage.getItem(this.HELP_SEEN), 10) || 0) + 1;
+                localStorage.setItem(this.HELP_SEEN, String(n));
+            } catch (e) { /* приватный режим — просто покажем ещё раз */ }
+        }
+        this.helpGo(0);
+    },
+
+    // forever — человек сказал «больше не показывать»; при обычном завершении
+    // счётчик открытий сам доведёт дело до конца
+    helpStop: function (forever) {
+        if (forever) { try { localStorage.setItem(this.HELP_OFF, '1'); } catch (e) { } }
+        const card = document.getElementById('docs_help_card');
+        if (card) card.remove();
+        const lit = document.querySelector('.docs-help-target');
+        if (lit) lit.classList.remove('docs-help-target');
+    },
+
+    // Кнопка в заголовке окна: включает подсказки заново или выключает совсем
+    helpToggle: function () {
+        if (document.getElementById('docs_help_card')) { this.helpStop(true); return; }
+        try { localStorage.removeItem(this.HELP_OFF); } catch (e) { }
+        this.helpStart(false);
+    },
+
+    helpGo: function (i) {
+        const steps = this.HELP_STEPS;
+        if (i < 0 || i >= steps.length) { this.helpStop(false); return; }
+        const step = steps[i];
+        this.helpStop(false);
+
+        const card = document.createElement('div');
+        card.id = 'docs_help_card';
+        card.className = 'docs-help-card';
+        const last = i === steps.length - 1;
+        card.innerHTML = `
+            <div class="docs-help-top">
+                <span class="docs-help-num">Подсказка ${i + 1} из ${steps.length}</span>
+                <button type="button" class="docs-help-x" title="Скрыть подсказки"
+                    onclick="Docs.helpStop(true)">&times;</button>
+            </div>
+            <div class="docs-help-title">${this.esc(step.title)}</div>
+            <div class="docs-help-text">${this.esc(step.text)}</div>
+            <div class="docs-help-btns">
+                ${i > 0 ? `<button type="button" class="docs-help-btn" onclick="Docs.helpGo(${i - 1})">Назад</button>` : ''}
+                <button type="button" class="docs-help-btn primary" onclick="Docs.helpGo(${i + 1})">
+                    ${last ? 'Понятно' : 'Дальше'}</button>
+                <button type="button" class="docs-help-btn plain" onclick="Docs.helpStop(true)">Больше не показывать</button>
+            </div>`;
+
+        const target = step.sel ? document.querySelector(step.sel) : null;
+        if (target) {
+            target.classList.add('docs-help-target');
+            target.insertAdjacentElement('afterend', card);
+        } else {
+            const head = document.querySelector('#docs_modal_overlay .custom-modal-text');
+            if (head) head.insertAdjacentElement('afterend', card);
+            else return;
+        }
+        try { card.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch (e) { }
+    },
+
+    helpCss: function () {
+        if (document.getElementById('docs_help_css')) return;
+        const st = document.createElement('style');
+        st.id = 'docs_help_css';
+        st.textContent = `
+            .docs-help-target {
+                outline: 2px solid var(--primary);
+                outline-offset: 6px;
+                border-radius: 10px;
+            }
+            .docs-help-card {
+                background: var(--primary-light);
+                border: 1px solid var(--primary);
+                border-radius: 12px;
+                padding: 12px 14px;
+                margin: 14px 0 12px;
+            }
+            .docs-help-top { display: flex; align-items: center; justify-content: space-between; }
+            .docs-help-num { font-size: 11px; font-weight: 700; color: var(--primary); letter-spacing: .3px; }
+            .docs-help-x {
+                font: inherit; font-size: 18px; line-height: 1; padding: 0 4px;
+                border: none; background: transparent; color: var(--text-sec); cursor: pointer;
+            }
+            .docs-help-title { font-size: 13px; font-weight: 700; color: var(--text-main); margin: 4px 0 4px; }
+            .docs-help-text { font-size: 12px; line-height: 1.5; color: var(--text-main); }
+            .docs-help-btns { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+            .docs-help-btn {
+                font: inherit; font-size: 12px; font-weight: 600; padding: 6px 14px;
+                border: 1px solid var(--border); border-radius: 8px;
+                background: var(--surface); color: var(--text-main); cursor: pointer;
+            }
+            .docs-help-btn.primary { background: var(--primary); border-color: var(--primary); color: #fff; }
+            .docs-help-btn.plain { border-color: transparent; background: transparent; color: var(--text-sec); }
+        `;
+        document.head.appendChild(st);
     },
 
     // ---------- документы ----------
@@ -844,22 +1136,39 @@ const Docs = {
         return set;
     },
 
-    // Полисы, действующие на дату документа и относящиеся к брендам сметы
+    // Сколько лет подряд продлеваем полис своими силами, не дожидаясь бумаги.
+    // Три года — предохранитель: если сертификата нет так долго, страховки,
+    // скорее всего, и правда нет, и писать о ней в документе нельзя.
+    INSURANCE_ROLL_YEARS: 3,
+
+    /**
+     * Полисы, действующие на дату документа и относящиеся к брендам сметы.
+     *
+     * Полисы годовые, и изготовитель продлевает их каждый год — но свежий
+     * сертификат доходит до нас не в день продления. Убирать из документа
+     * страховку, которая на объекте действует, только потому что бумага ещё не
+     * пришла, неправильно: клиент теряет довод в пользу бренда, а монтажник —
+     * лишнюю защиту. Поэтому истёкший полис продлеваем на целое число лет
+     * вперёд, до даты документа. Пришёл новый сертификат — правим даты и номер
+     * в INSURANCE, и продление больше не нужно.
+     */
     activeInsurance: function (onDate) {
         const day = onDate ? new Date(onDate) : new Date();
         const brands = this.brandsInEstimate();
-        return this.INSURANCE.filter(p =>
-            brands.has(p.brand.toUpperCase()) &&
-            new Date(p.from) <= day && day <= new Date(p.to + 'T23:59:59'));
-    },
-
-    // Просроченные полисы брендов из сметы — их показываем монтажнику в окне,
-    // чтобы он прислал свежий сертификат, а в документ не пускаем
-    staleInsurance: function (onDate) {
-        const day = onDate ? new Date(onDate) : new Date();
-        const brands = this.brandsInEstimate();
-        return this.INSURANCE.filter(p =>
-            brands.has(p.brand.toUpperCase()) && day > new Date(p.to + 'T23:59:59'));
+        const out = [];
+        this.INSURANCE.forEach(p => {
+            if (!brands.has(p.brand.toUpperCase())) return;
+            if (new Date(p.from) > day) return;              // полис ещё не начался
+            let to = new Date(p.to + 'T23:59:59');
+            let years = 0;
+            while (day > to && years < this.INSURANCE_ROLL_YEARS) {
+                to.setFullYear(to.getFullYear() + 1);
+                years++;
+            }
+            if (day > to) return;                            // продлевать дальше не станем
+            out.push(Object.assign({}, p, { to: to.toISOString().slice(0, 10) }));
+        });
+        return out;
     },
 
     insuranceSection: function (d) {
@@ -1144,7 +1453,11 @@ const Docs = {
     techData: function () {
         const d = this.data();
         const t = Object.assign({}, this.TECH_DEFAULTS, app.state.contract || {});
-        if (!t.techDate) t.techDate = new Date().toISOString().slice(0, 10);
+        // Испытание и закрытие скрытых работ приходятся на день сдачи системы —
+        // это и есть окончание работ по договору. Раз дата уже введена, второй раз
+        // спрашивать её незачем; поправить руками по-прежнему можно.
+        if (!t.techDate) t.techDate = d.dateEnd || new Date().toISOString().slice(0, 10);
+        if (!t.hiddenTo) t.hiddenTo = d.dateEnd || '';
         const hint = this.PRESSURE_HINT[t.techSystem] || this.PRESSURE_HINT.heating;
         if (!t.techWorkPressure) t.techWorkPressure = hint.work;
         if (!t.techTestPressure) t.techTestPressure = hint.test;
