@@ -370,8 +370,46 @@ h3 {
     margin-bottom: 0;
 }
 
+/* Заголовок группы — кликабельная плашка: рамка с фоном и шеврон справа сразу
+   говорят, что строка разворачивается. Без них она читалась как обычная подпись
+   и мимо неё проходили. */
+#blk_el_group_head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface-light);
+    cursor: pointer;
+    transition: border-color .15s, background .15s;
+}
+
+#blk_el_group_head:hover {
+    border-color: var(--primary);
+}
+
 #blk_el_group_head:hover .lbl {
     color: var(--primary);
+}
+
+/* Сводка занимает всё, что осталось от названия и шеврона, и при нехватке места
+   обрезается многоточием — переносом она сломала бы однострочный заголовок. */
+#el_group_sum {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-size: 11px;
+    color: var(--text-sec);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: right;
+}
+
+#el_group_arrow {
+    flex: 0 0 auto;
+    color: var(--text-sec);
+    transition: transform .2s;
 }
 
 .label-row {

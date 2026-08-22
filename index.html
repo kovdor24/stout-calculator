@@ -896,17 +896,18 @@
                  что было у каждого пункта: подробный режим и электрокотёл
                  (app.syncUI). -->
             <div class="control-item" id="blk_el_group" style="display:none;">
-                <div id="blk_el_group_head" onclick="app.toggleElGroup(event)" style="cursor:pointer;">
-                    <div class="label-row" style="margin-bottom:0;">
-                        <span class="lbl">⚡ Электросеть</span>
-                        <span id="el_group_arrow"
-                            style="font-size:11px; color:var(--text-sec); transition:transform .2s; line-height:1;">▾</span>
-                    </div>
-                    <!-- Пока группа свёрнута, текущие значения видно прямо в
-                         заголовке — иначе ради проверки лимита или числа фаз
-                         пришлось бы каждый раз её разворачивать. Собирает
-                         app.syncUI(). -->
-                    <div id="el_group_sum" style="font-size:11px; color:var(--text-sec); margin-top:3px;"></div>
+                <!-- Заголовок — одна строка: название, следом сводка текущих
+                     значений (её собирает app.syncUI), справа шеврон. Сводка
+                     ужимается многоточием, а не переносится: строка должна
+                     остаться одной при любом городе и любом тарифе. -->
+                <div id="blk_el_group_head" onclick="app.toggleElGroup(event)">
+                    <span class="lbl" style="white-space:nowrap;">⚡ Электросеть</span>
+                    <span id="el_group_sum"></span>
+                    <svg id="el_group_arrow" viewBox="0 0 24 24" width="16" height="16" fill="none"
+                        stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
+                        aria-hidden="true">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
                 </div>
                 <div id="blk_el_group_body" style="display:none; margin-top:14px;">
             <!-- Выделенная на участок электрическая мощность. Котёл мощнее неё
