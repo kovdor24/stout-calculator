@@ -29915,6 +29915,7 @@ const app = {
                 // requestAnimationFrame здесь не годится: в свёрнутой/неактивной вкладке он
                 // может не сработать вовсе и захват зависнет — setTimeout срабатывает всегда.
                 await new Promise(resolve => setTimeout(resolve, 50));
+                await this.awaitPrintImages();
 
                 const safeName = (this.state.projectName || 'Смета').replace(/[\\\/:\*\?"<>\|]/g, '');
                 const opt = {
@@ -29948,6 +29949,13 @@ const app = {
             return;
         }
 
+        // Печатную копию собираем заранее и ждём её картинки: обработчик
+        // 'beforeprint' синхронный, внутри него дождаться загрузки нельзя, а
+        // диалог печати снимает страницу такой, какая она есть. К моменту
+        // window.print() файлы уже в кэше, и повторная сборка их не теряет.
+        prepareForPrint();
+        await this.awaitPrintImages();
+
         window.print();
         this.logPrintedEvent();
         GRM.trackAction('pdf', this.state.calc_id);  // геймификация: +5 XP + значки PDF
@@ -29955,6 +29963,36 @@ const app = {
         // Возвращаем тему обратно
         if (wasDark) document.body.classList.add('dark-mode');
     },
+    /**
+     * Дождаться миниатюр перед печатью и выгрузкой в PDF.
+     *
+     * Браузер печатает то, что успел загрузить: незагруженная картинка уходит на
+     * бумагу пустым местом. У сметы на сотню позиций так пропадала половина
+     * фотографий. Ждём не дольше шести секунд — пустая клетка лучше, чем
+     * повисшая печать.
+     */
+    awaitPrintImages: async function (timeoutMs) {
+        const host = document.getElementById('print_bin');
+        if (!host) return;
+        const pending = [];
+        host.querySelectorAll('img').forEach(img => {
+            img.loading = 'eager';
+            img.decoding = 'sync';
+            if (img.complete && img.naturalWidth) return;
+            const src = img.getAttribute('src');
+            if (src) img.setAttribute('src', src);
+            pending.push(new Promise(resolve => {
+                img.addEventListener('load', resolve, { once: true });
+                img.addEventListener('error', resolve, { once: true });   // нет файла — не ждём
+            }));
+        });
+        if (!pending.length) return;
+        await Promise.race([
+            Promise.all(pending),
+            new Promise(resolve => setTimeout(resolve, timeoutMs || 6000))
+        ]);
+    },
+
     // Выгрузка сметы в Excel (.xlsx). Готовим документ ровно так же, как для печати
     // (prepareForPrint собирает #print_bin), а собирает книгу excel_export.js —
     // он читает уже готовую печатную вёрстку. За счёт этого в файл попадает та же
@@ -54632,6 +54670,17 @@ function prepareForPrint() {
         printArea.classList.add('hide-original-for-print');
         let liveScheme = document.getElementById('dynamic_scheme');
         if (liveScheme) liveScheme.classList.add('hide-original-for-print');
+
+        // Миниатюры в смете помечены loading="lazy": пока строка не показалась на
+        // экране, файл не запрашивается вовсе. Печатная копия целиком лежит за
+        // пределами экрана, поэтому в PDF половина фотографий уходила пустой
+        // клеткой. Клонам ленивую загрузку снимаем — ждёт их app.awaitPrintImages().
+        printBin.querySelectorAll('img').forEach(img => {
+            img.loading = 'eager';
+            img.decoding = 'sync';
+            const src = img.getAttribute('src');
+            if (src && !img.complete) img.setAttribute('src', src);
+        });
 
         // Возвращаем интерфейс в исходное состояние
         app.state.viewMode = originalMode;
