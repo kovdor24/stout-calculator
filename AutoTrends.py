@@ -58,7 +58,13 @@ UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
       "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36")
 
 CATEGORIES_FILE = "analytics/wordstat_categories.json"
+PHRASES_FILE = "analytics/wordstat_phrases.json"
 OUT_FILE = "analytics/google_trends.json"
+
+# Группы фраз из wordstat_phrases.json, которые собираем помимо категорий:
+# по ним на дашборде стоят плитки «спрос на монтаж / на подбор / на
+# оборудование» и строка дайджеста.
+TRACK_GROUPS = ("demand", "calc", "equipment")
 
 GEO = "RU"
 START_MONTH = "2018-01"
@@ -191,6 +197,20 @@ def load_categories():
     return out
 
 
+def load_tracked_phrases():
+    """Фразы плиток дашборда — «спрос на монтаж», «спрос на подбор», «спрос на
+    оборудование». Лежат там же, где яндексовые: analytics/wordstat_phrases.json,
+    группы demand/calc/equipment. Марки (group brands) сюда не берём: спрос по
+    марке у Google тонет в тёзках — «стаут» это ещё и сорт пива, а минус-слов
+    в Trends нет."""
+    cfg = load_json_file(PHRASES_FILE, None)
+    out = []
+    for p in ((cfg or {}).get("phrases") or []):
+        if p.get("group") in TRACK_GROUPS and p.get("id") and p.get("text"):
+            out.append({"id": p["id"], "phrase": p["text"], "group": p["group"]})
+    return out
+
+
 # ──────────────────────────────────────────────────────────────────────────
 # Сбор ряда
 # ──────────────────────────────────────────────────────────────────────────
@@ -235,31 +255,48 @@ def is_sparse(series):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--only", default="", help="собрать только одну категорию (id)")
+    ap.add_argument("--part", default="all", choices=("all", "cats", "phrases"),
+                    help="что собирать: cats — товарные категории, phrases — фразы "
+                         "плиток дашборда, all — всё подряд (упрётся в отказы)")
     args = ap.parse_args()
 
     today = datetime.date.today()
     end = last_closed_month(today)
     time_range = "%s-01 %s-%02d" % (START_MONTH, end.strftime("%Y-%m"),
                                     calendar.monthrange(end.year, end.month)[1])
-    log("Google Trends, %s, диапазон %s" % (GEO, time_range))
+    part_name = {"cats": "товарные категории", "phrases": "фразы плиток",
+                 "all": "всё сразу"}[args.part]
+    log("Google Trends, %s, диапазон %s, часть: %s" % (GEO, time_range, part_name))
 
-    cats = load_categories()
+    # Списка два: товарные категории таблицы и фразы плиток дашборда. Ходят они
+    # по очереди и разными днями — Google считает запросы, и на седьмом десятке
+    # подряд начинает отвечать «слишком часто»: в один прогон 68 штук не
+    # проходят, 18 последних отваливались. Порознь по 47 и 21 проходят целиком,
+    # а собранное мержится в один файл, поэтому таблица и дашборд всё равно
+    # видят полный набор.
+    items = []
+    if args.part in ("all", "cats"):
+        items += [dict(c, kind="cat") for c in load_categories()]
+    if args.part in ("all", "phrases"):
+        items += [dict(p, kind="phrase") for p in load_tracked_phrases()]
     if args.only:
-        cats = [c for c in cats if c["id"] == args.only]
-        if not cats:
-            raise RuntimeError("категория «%s» не найдена в %s"
-                               % (args.only, CATEGORIES_FILE))
+        items = [c for c in items if c["id"] == args.only]
+        if not items:
+            raise RuntimeError("«%s» не найдено ни в %s, ни в %s"
+                               % (args.only, CATEGORIES_FILE, PHRASES_FILE))
 
     old = load_json_file(OUT_FILE, {}) or {}
     out_cats = dict(old.get("cats") or {})
     out_phrases = dict(old.get("phrases") or {})
+    out_pser = dict(old.get("phrase_series") or {})
+    out_ptext = dict(old.get("phrase_text") or {})
 
     client = TrendsClient()
     client.warm_up()
 
     ok, failed = 0, []
-    for i, c in enumerate(cats, 1):
-        log("[%d/%d] %s — «%s»" % (i, len(cats), c["id"], c["phrase"]))
+    for i, c in enumerate(items, 1):
+        log("[%d/%d] %s — «%s»" % (i, len(items), c["id"], c["phrase"]))
         try:
             series = fetch_series(client, c["phrase"], time_range)
         except Exception as e:
@@ -272,8 +309,12 @@ def main():
             log("  не собрано: точек всего %d" % len(series))
             failed.append(c["id"])
             continue
-        out_cats[c["id"]] = series
-        out_phrases[c["id"]] = c["phrase"]
+        if c["kind"] == "cat":
+            out_cats[c["id"]] = series
+            out_phrases[c["id"]] = c["phrase"]
+        else:
+            out_pser[c["id"]] = series
+            out_ptext[c["id"]] = c["phrase"]
         ok += 1
         log("  точек %d, последняя %s = %d%s"
             % (len(series), series[-1][0], series[-1][1],
@@ -293,12 +334,20 @@ def main():
                  "можно только точки одного ряда."),
         "cats": out_cats,
         "phrases": out_phrases,
-        "sparse": sorted(k for k, s in out_cats.items() if is_sparse(s)),
-        "failed": sorted(failed)
+        "phrase_series": out_pser,
+        "phrase_text": out_ptext,
+        "sparse": sorted([k for k, s in out_cats.items() if is_sparse(s)]
+                         + [k for k, s in out_pser.items() if is_sparse(s)]),
+        # Прогон знает только про свою половину, поэтому чужие неудачи из
+        # прошлого прогона переносим как есть. Иначе сбор категорий стирал бы
+        # список несобранных фраз, и назавтра казалось бы, что всё в порядке.
+        "failed": sorted(set(failed) | {f for f in (old.get("failed") or [])
+                                        if f not in {c["id"] for c in items}})
     })
-    sparse_n = sum(1 for s in out_cats.values() if is_sparse(s))
+    sparse_n = sum(1 for s in list(out_cats.values()) + list(out_pser.values())
+                   if is_sparse(s))
     log("Готово: обновлено %d из %d, не собрано %d, мало данных у %d."
-        % (ok, len(cats), len(failed), sparse_n))
+        % (ok, len(items), len(failed), sparse_n))
     return 0
 
 

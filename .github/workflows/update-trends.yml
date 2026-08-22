@@ -1,20 +1,33 @@
 name: Google Trends
 
-# Динамика спроса по Google — столбец «Google» в таблице «Наши места по
-# категориям» (вкладка «Аналитика» в админке). Проверяет яндексовую динамику
-# чужой выборкой; абсолютных чисел у Google нет, см. шапку AutoTrends.py.
+# Динамика спроса по Google — столбец «Рынок» в таблице «Наши места по
+# категориям» и плитки спроса на дашборде. Проверяет яндексовую динамику чужой
+# выборкой; абсолютных чисел у Google нет, см. шапку AutoTrends.py.
 #
-# 6-го числа, после снимка Wordstat (3-го) и рейтингов марок (5-го): к этому
-# моменту прошлый месяц закрыт у обоих источников, и столбцы в таблице
-# описывают один и тот же период.
+# Два прогона в разные дни, а не один общий: Google считает запросы и на
+# седьмом десятке подряд начинает отвечать «слишком часто». 68 фраз за раз не
+# проходят — последние 18 отваливались. Порознь (47 категорий и 21 фраза)
+# проходят целиком, а собранное мержится в один файл.
 #
-# Ключей и секретов нет: Trends открыт без авторизации. Зато он ограничивает
-# частоту обращений, поэтому 47 категорий собираются минут восемь — паузы
-# между запросами заложены в самом скрипте.
+#   6-го — товарные категории, после снимка Wordstat (3-го) и марок (5-го);
+#   7-го — фразы плиток дашборда.
+#
+# Ключей и секретов нет: Trends открыт без авторизации. Паузы между запросами
+# заложены в самом скрипте, поэтому прогон категорий занимает минут восемь.
 on:
   schedule:
-    - cron: '0 6 6 * *'
+    - cron: '0 6 6 * *'      # cats — товарные категории
+    - cron: '0 6 7 * *'      # phrases — фразы плиток дашборда
   workflow_dispatch:
+    inputs:
+      part:
+        description: 'Что собирать'
+        type: choice
+        default: cats
+        options:
+          - cats
+          - phrases
+          - all
 
 jobs:
   scrape:
@@ -28,8 +41,20 @@ jobs:
         with:
           python-version: '3.10'
       # Зависимостей нет: скрипт ходит в Trends через urllib.
+      - name: Determine part
+        id: part
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            PART="${{ github.event.inputs.part }}"
+          elif [ "${{ github.event.schedule }}" = "0 6 7 * *" ]; then
+            PART="phrases"
+          else
+            PART="cats"
+          fi
+          echo "Часть: $PART"
+          echo "part=$PART" >> "$GITHUB_OUTPUT"
       - name: Run Google Trends collector
-        run: python AutoTrends.py
+        run: python AutoTrends.py --part "${{ steps.part.outputs.part }}"
       - name: Commit and push changes
         run: |
           git config --local user.email "action@github.com"
@@ -38,7 +63,7 @@ jobs:
           if git diff --staged --quiet; then
             echo "Данные Google Trends не изменились."
           else
-            git commit -m "Автообновление данных Google Trends"
+            git commit -m "Автообновление данных Google Trends (${{ steps.part.outputs.part }})"
             for i in {1..5}; do
               git pull --rebase origin main && git push origin main && exit 0
               git rebase --abort || true
