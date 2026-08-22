@@ -422,17 +422,25 @@ const Docs = {
         return s.charAt(0).toUpperCase() + s.slice(1) + ' ' + plural(n, 'рубль', 'рубля', 'рублей') + ' 00 копеек';
     },
 
-    // Реквизиты исполнителя из настроек аккаунта. Там они одним куском текста —
-    // в документ уходят как есть: разбирать чужую строку на ИНН и расчётный счёт
-    // регулярками надёжнее не станет, а ошибётся — в договоре.
+    /**
+     * Кто в документах Подрядчик. Это монтажник — тот, кто выполняет работы и
+     * отвечает за них.
+     *
+     * Реквизиты компании из настроек сюда не берём намеренно. Там лежат данные
+     * поставщика (ТЕРЕМ или дистрибьютора), которыми брендируется коммерческое
+     * предложение: его логотип, его расчётный счёт. Монтаж выполняет не он, и
+     * подписывать договор бытового подряда от его имени монтажник не вправе.
+     * Своё ИП или ООО монтажник вписывает в договор сам — в форме есть поле
+     * «Кто подписывает», а пункт про исполнителя меняет текст под НПД, ИП или
+     * организацию.
+     */
     contractor: function () {
-        const cc = app.companyDetails() || {};
-        const u = app.state.tgUser || {};
-        const fio = [u.last_name, u.first_name, u.middle_name].filter(Boolean).join(' ');
+        const u = app.state.tgUser || app.state.user || {};
+        const fio = [u.lastName, u.givenName, u.middleName].filter(Boolean).join(' ')
+            || [u.last_name, u.first_name, u.middle_name].filter(Boolean).join(' ')
+            || String(u.first_name || '').trim();
         return {
-            name: cc.name || fio || '',
-            address: cc.address || '',
-            bank: cc.bank || '',
+            name: fio,
             phone: u.phone || '',
             email: u.email || '',
             fio: fio
@@ -855,13 +863,6 @@ const Docs = {
             .page { page-break-before: always; }
             .small { font-size: 9pt; color: #333; }
 
-            /* Фирменный бланк монтажника — тот же, что в коммерческом предложении */
-            .lh { display: flex; gap: 6mm; align-items: center; margin-bottom: 3mm; }
-            .lh-logo { max-height: 18mm; max-width: 42mm; object-fit: contain; }
-            .lh-txt { font-size: 9pt; line-height: 1.35; }
-            .lh-name { font-size: 11pt; font-weight: bold; margin-bottom: 1mm; }
-            .lh-line { border: none; border-top: 2px solid #1E3A8A; margin: 0 0 5mm; }
-
             /* Панель с кнопками поверх документа. На бумагу не идёт. */
             .doc-bar {
                 position: sticky; top: 0; z-index: 5;
@@ -884,38 +885,6 @@ const Docs = {
     },
 
     /**
-     * Фирменный бланк документа: логотип и реквизиты монтажника — те же, что он
-     * поставил в коммерческом предложении.
-     *
-     * Реквизиты ТЕРЕМ по умолчанию сюда не подставляются намеренно: договор
-     * заключает и работы выполняет монтажник, он же отвечает за качество. Не
-     * заполнил свои — шапки просто не будет, но чужой в документе не появится.
-     */
-    letterhead: function () {
-        const e = this.esc.bind(this);
-        const c = this.contractor();
-        const cc = app.companyDetails() || {};
-        const logo = (cc.logo && String(cc.logo).indexOf('data:') === 0) ? cc.logo : '';
-        const rows = [];
-        if (cc.address) rows.push(e(cc.address));
-        if (cc.bank) rows.push(e(cc.bank));
-        const contacts = [
-            c.phone ? 'тел.: ' + e(c.phone) : '',
-            c.email ? e(c.email) : '',
-            cc.website ? e(cc.website) : ''
-        ].filter(Boolean).join(' · ');
-        if (contacts) rows.push(contacts);
-        if (!c.name && !rows.length) return '';
-        return `<div class="lh">
-            ${logo ? `<img class="lh-logo" src="${logo}" alt="">` : ''}
-            <div class="lh-txt">
-                ${c.name ? `<div class="lh-name">${e(c.name)}</div>` : ''}
-                ${rows.map(t => `<div>${t}</div>`).join('')}
-            </div>
-        </div><hr class="lh-line">`;
-    },
-
-    /**
      * Панель над документом: распечатать или скачать файлом. Раньше вкладка
      * сама открывала окно печати — сохранить документ можно было только через
      * «Сохранить как PDF» в этом окне, и человек, закрывший его, оставался ни с
@@ -925,6 +894,33 @@ const Docs = {
         const name = String(filename || 'Документ').replace(/[\\/:*?"<>|]/g, ' ').trim() + '.pdf';
         const js = String.raw`
             var DOC_FILE = ${JSON.stringify(name)};
+            // Word получает обычный HTML под своим MIME-типом: так документ
+            // открывается редактируемым, без сторонних библиотек и без сервера.
+            // Нужен он именно для правки — типовой договор монтажник дописывает
+            // под себя, а из PDF это не сделать.
+            function docWord() {
+                var body = document.body.cloneNode(true);
+                var bar = body.querySelector('.doc-bar');
+                if (bar) bar.parentNode.removeChild(bar);
+                var junk = body.querySelectorAll('script');
+                for (var i = 0; i < junk.length; i++) junk[i].parentNode.removeChild(junk[i]);
+                var css = document.querySelector('style');
+                var html = '<html xmlns:o="urn:schemas-microsoft-com:office:office"'
+                    + ' xmlns:w="urn:schemas-microsoft-com:office:word"'
+                    + ' xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><title>'
+                    + document.title + '</title>' + (css ? css.outerHTML : '')
+                    + '</head><body>' + body.innerHTML + '</body></html>';
+                var blob = new Blob(['\ufeff' + html], { type: 'application/msword' });
+                var url = URL.createObjectURL(blob);
+                var a = document.createElement('a');
+                a.href = url;
+                a.download = DOC_FILE.replace(/\.pdf$/, '.doc');
+                document.body.appendChild(a);
+                a.click();
+                a.parentNode.removeChild(a);
+                setTimeout(function () { URL.revokeObjectURL(url); }, 3000);
+            }
+
             function docSave() {
                 var bar = document.querySelector('.doc-bar');
                 if (!window.html2pdf) {
@@ -950,6 +946,7 @@ const Docs = {
         return `<div class="doc-bar">
             <button type="button" onclick="window.print()">Распечатать</button>
             <button type="button" class="sec" onclick="docSave()">Скачать PDF</button>
+            <button type="button" class="sec" onclick="docWord()">Скачать Word</button>
             <span>${this.esc(name)}</span>
         </div>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"><\/script>
@@ -984,7 +981,6 @@ const Docs = {
 
         return `<!DOCTYPE html><html lang="ru"><head><meta charset="utf-8">
             <title>Договор № ${e(d.number)}</title>${this.styles()}</head><body>
-        ${this.letterhead()}
         <h1>ДОГОВОР БЫТОВОГО ПОДРЯДА № ${e(d.number) || '____'}</h1>
         <div class="head"><span>${e(d.city) || '_______________'}</span><span>${this.dateRu(d.date)}</span></div>
 
@@ -1099,8 +1095,9 @@ const Docs = {
 
         <h2>9. Адреса, реквизиты и подписи Сторон</h2>
         <table><tr>
-            <td style="width:50%;"><b>ПОДРЯДЧИК</b><br>${e(c.name)}<br>${e(c.address).replace(/\n/g, '<br>')}<br>
-                ${e(c.bank).replace(/\n/g, '<br>')}<br>${c.phone ? 'тел.: ' + e(c.phone) + '<br>' : ''}${c.email ? e(c.email) : ''}</td>
+            <td style="width:50%;"><b>ПОДРЯДЧИК</b><br>${e(c.name) || '_______________________'}<br>
+                ${c.phone ? 'тел.: ' + e(c.phone) + '<br>' : ''}${c.email ? e(c.email) + '<br>' : ''}
+                <span class="small">ИНН, адрес и банковские реквизиты: _______________________________</span></td>
             <td style="width:50%;"><b>ЗАКАЗЧИК</b><br>${e(d.clientName)}<br>
                 ${d.clientPassport ? 'Паспорт: ' + e(d.clientPassport) + '<br>' : ''}
                 ${d.clientAddress ? 'Адрес: ' + e(d.clientAddress) + '<br>' : ''}
@@ -1461,7 +1458,6 @@ const Docs = {
 
         return `<!DOCTYPE html><html lang="ru"><head><meta charset="utf-8">
             <title>Гарантийный талон</title>${this.styles()}</head><body>
-        ${this.letterhead()}
         <h1>ГАРАНТИЙНЫЙ ТАЛОН</h1>
         <div class="head"><span>к договору № ${e(d.number) || '____'} от ${this.dateRu(d.date)}</span>
             <span>${e(d.city) || ''}</span></div>
@@ -1593,8 +1589,7 @@ const Docs = {
     techHead: function (t, title) {
         const e = this.esc.bind(this);
         const c = this.contractor();
-        return `${this.letterhead()}
-        <h1>${title}</h1>
+        return `<h1>${title}</h1>
         <div class="head"><span>Объект: ${e(t.objectAddress)}</span><span>${this.dateRu(t.techDate)}</span></div>
         <p class="n">Комиссия в составе представителя Подрядчика ${e(t.signer || c.fio || c.name)}
         и Заказчика ${e(t.clientName)} составила настоящий акт о нижеследующем.</p>`;
@@ -1739,7 +1734,6 @@ const Docs = {
         const today = new Date().toISOString().slice(0, 10);
         return `<!DOCTYPE html><html lang="ru"><head><meta charset="utf-8">
             <title>Акт сдачи-приёмки по договору № ${e(d.number)}</title>${this.styles()}</head><body>
-        ${this.letterhead()}
         <h1>АКТ СДАЧИ-ПРИЁМКИ ВЫПОЛНЕННЫХ РАБОТ</h1>
         <h1 style="margin-bottom:5mm;">к Договору бытового подряда № ${e(d.number) || '____'} от ${this.dateRu(d.date)}</h1>
         <div class="head"><span>${e(d.city) || '_______________'}</span><span>${this.dateRu(today)}</span></div>
@@ -1774,7 +1768,7 @@ const Docs = {
         по одному для каждой из Сторон.</p>
 
         <table style="margin-top:6mm;"><tr>
-            <td style="width:50%;"><b>ПОДРЯДЧИК</b><br>${e(c.name)}<br>${e(c.address).replace(/\n/g, '<br>')}</td>
+            <td style="width:50%;"><b>ПОДРЯДЧИК</b><br>${e(c.name) || '_______________________'}${c.phone ? '<br>тел.: ' + e(c.phone) : ''}</td>
             <td style="width:50%;"><b>ЗАКАЗЧИК</b><br>${e(d.clientName)}<br>${d.clientPhone ? 'тел.: ' + e(d.clientPhone) : ''}</td>
         </tr><tr>
             <td><div class="line"></div><span class="small">${e(d.signer || c.fio || '')} / подпись</span></td>
