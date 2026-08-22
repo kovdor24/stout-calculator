@@ -216,6 +216,14 @@ const Docs = {
      */
     openForOrder: async function (calcId, shareId) {
         this._ctx = null;
+        // Номер снимка знает событие «отправлено», но не всегда: ссылку часто
+        // делают уже после сохранения сметы, и в meta события его нет. Сам снимок
+        // при этом есть — он помечен номером КП. Ищем по нему, иначе окно
+        // предлагало бы заменить открытый расчёт ради того, что лежит в облаке.
+        // Тем же способом ищет ссылку кнопка «Ссылка клиенту» (app.openSharedLink).
+        if (!shareId && calcId) {
+            shareId = await this.findShareId(calcId);
+        }
         if (!shareId) {
             // Снимка нет: смету не отправляли клиенту, а просто распечатали или
             // запросили по ней счёт. Состав в облаке не хранится — но если этот же
@@ -257,6 +265,26 @@ const Docs = {
         }
         this._ctx = { calcId: String(calcId), snap: snap };
         this.open();
+    },
+
+    /**
+     * Найти снимок отправленной клиенту сметы по номеру КП. У свежих снимков
+     * номер лежит в object_info.sequence_id; у совсем старых идентификатором
+     * записи был сам номер расчёта — проверяем и это.
+     */
+    findShareId: async function (calcId) {
+        try {
+            const { data } = await supabaseClient.from('shared_invoices')
+                .select('id').eq('object_info->>sequence_id', String(calcId))
+                .order('created_at', { ascending: false }).limit(1);
+            if (data && data.length) return String(data[0].id);
+        } catch (e) { /* нет связи или снимка — вернём пустое */ }
+        try {
+            const { data } = await supabaseClient.from('shared_invoices')
+                .select('id').eq('id', String(calcId)).maybeSingle();
+            if (data && data.id) return String(data.id);
+        } catch (e) { /* и так бывает: снимка нет вовсе */ }
+        return '';
     },
 
     // ---------- телефон ----------
