@@ -696,10 +696,10 @@ const Docs = {
     // существенное условие, без них договор оспаривают целиком. Поэтому первые
     // три открытия окна ведём человека по разделам и объясняем каждый.
     //
-    // Ведём подсказки не всплывающими окошками, а карточкой, вставленной прямо
-    // в поток под нужным разделом: окно прокручивается, и любая абсолютно
-    // спозиционированная подсказка уехала бы от своего поля при первом же
-    // движении колеса.
+    // Карточка подсказки приклеена к низу экрана, а не вставлена в поток под
+    // разделом: в потоке она раздвигала форму и закрывала собой те самые поля,
+    // про которые рассказывала. Снизу она никуда не уезжает при прокрутке, а
+    // нужный раздел подсвечивается рамкой и сам подводится под неё.
 
     HELP_SEEN: 'docs_help_seen',   // сколько раз обучение уже показывали
     HELP_OFF: 'docs_help_off',     // человек выключил подсказки сам
@@ -737,20 +737,20 @@ const Docs = {
                 + 'то, о чём стороны договорились. Переключатель нужен только если цену пересогласовали.'
         },
         {
-            sel: '#docs_grid_kind',
-            title: 'Цена, материалы, кто исполнитель',
-            text: 'Твёрдая цена — доплаты не будет, даже если работы окажется больше: это ваш риск, и закон считает '
-                + 'цену твёрдой по умолчанию. Приблизительная позволяет пересчитать, но только предупредив заказчика '
-                + 'заранее и отдельным соглашением. «Материалы» — чьё оборудование по смете. «Кто исполнитель» меняет '
-                + 'текст договора: у самозанятого добавляется пункт про чек по налогу на профессиональный доход.'
-        },
-        {
             sel: '#docs_grid_terms',
             title: 'Сроки и деньги',
             text: 'Начало и окончание работ — существенное условие: без них договор можно оспорить целиком, а просрочку '
                 + 'считают именно от этих дат. Начало подставлено днём, когда смета ушла клиенту. Аванс и гарантия на '
                 + 'работы — ваши обязательства, срок гарантии вы назначаете сами. «Цена действительна, дней» — сколько '
                 + 'вы держите цену: по её истечении смету можно пересчитать без объяснений.'
+        },
+        {
+            sel: '#docs_grid_kind',
+            title: 'Цена, материалы, кто исполнитель',
+            text: 'Твёрдая цена — доплаты не будет, даже если работы окажется больше: это ваш риск, и закон считает '
+                + 'цену твёрдой по умолчанию. Приблизительная позволяет пересчитать, но только предупредив заказчика '
+                + 'заранее и отдельным соглашением. «Материалы» — чьё оборудование по смете. «Кто исполнитель» меняет '
+                + 'текст договора: у самозанятого добавляется пункт про чек по налогу на профессиональный доход.'
         },
         {
             sel: '#docs_grid_tech',
@@ -805,6 +805,10 @@ const Docs = {
         if (card) card.remove();
         const lit = document.querySelector('.docs-help-target');
         if (lit) lit.classList.remove('docs-help-target');
+        const wrap = document.getElementById('docs_modal_overlay');
+        if (wrap) wrap.classList.remove('docs-help-on');
+        const spacer = document.getElementById('docs_help_spacer');
+        if (spacer) spacer.remove();
     },
 
     // Кнопка в заголовке окна: включает подсказки заново или выключает совсем
@@ -839,16 +843,54 @@ const Docs = {
                 <button type="button" class="docs-help-btn plain" onclick="Docs.helpStop(true)">Больше не показывать</button>
             </div>`;
 
+        const wrap = document.getElementById('docs_modal_overlay');
+        if (!wrap) return;
+        wrap.classList.add('docs-help-on');
+        wrap.appendChild(card);
+
+        // Запас снизу, чтобы последний экран формы можно было докрутить из-под
+        // карточки. Именно распоркой, а не отступом окна: нижний padding у
+        // прокручиваемого блока в область прокрутки не попадает, и кнопки печати
+        // так и оставались бы под карточкой.
+        const modal = wrap.querySelector('.custom-modal');
+        if (modal && !document.getElementById('docs_help_spacer')) {
+            const spacer = document.createElement('div');
+            spacer.id = 'docs_help_spacer';
+            spacer.style.height = '46vh';
+            spacer.setAttribute('aria-hidden', 'true');
+            modal.appendChild(spacer);
+        }
+
         const target = step.sel ? document.querySelector(step.sel) : null;
         if (target) {
             target.classList.add('docs-help-target');
-            target.insertAdjacentElement('afterend', card);
+            this.helpScrollTo(target);
         } else {
-            const head = document.querySelector('#docs_modal_overlay .custom-modal-text');
-            if (head) head.insertAdjacentElement('afterend', card);
-            else return;
+            const modal = wrap.querySelector('.custom-modal');
+            if (modal) try { modal.scrollIntoView({ block: 'start' }); } catch (e) { }
         }
-        try { card.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch (e) { }
+    },
+
+    /**
+     * Подвести раздел под свободную часть экрана — ту, что выше карточки.
+     * Штатный scrollIntoView({block:'center'}) считает по всему окну и загонял
+     * нижнюю половину подсвеченного блока под карточку.
+     */
+    helpScrollTo: function (el) {
+        const card = document.getElementById('docs_help_card');
+        const free = card ? card.getBoundingClientRect().top : window.innerHeight;
+        let sc = el.parentElement;
+        while (sc && sc !== document.body) {
+            const st = getComputedStyle(sc);
+            if (/(auto|scroll)/.test(st.overflowY) && sc.scrollHeight > sc.clientHeight + 2) break;
+            sc = sc.parentElement;
+        }
+        const r = el.getBoundingClientRect();
+        const want = Math.max(16, (free - r.height) / 2);
+        const delta = r.top - want;
+        if (Math.abs(delta) < 2) return;
+        if (sc && sc !== document.body) sc.scrollTop += delta;
+        else window.scrollBy(0, delta);
     },
 
     helpCss: function () {
@@ -862,11 +904,19 @@ const Docs = {
                 border-radius: 10px;
             }
             .docs-help-card {
-                background: var(--primary-light);
+                position: fixed;
+                left: 50%;
+                bottom: 12px;
+                transform: translateX(-50%);
+                width: min(620px, calc(100vw - 24px));
+                max-height: 42vh;
+                overflow-y: auto;
+                background: var(--surface);
                 border: 1px solid var(--primary);
                 border-radius: 12px;
                 padding: 12px 14px;
-                margin: 14px 0 12px;
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+                z-index: 10;
             }
             .docs-help-top { display: flex; align-items: center; justify-content: space-between; }
             .docs-help-num { font-size: 11px; font-weight: 700; color: var(--primary); letter-spacing: .3px; }
