@@ -41669,6 +41669,34 @@ const app = {
         // режим и включённый электрокотёл. В быстром режиме настройки не видно, и
         // сеть там считается трёхфазной (см. elPhase): иначе смета менялась бы от
         // невидимого переключателя.
+        // Обёртка группы «⚡ Электросеть». Условие показа общее и то же, что у
+        // каждого её пункта по отдельности; сами пункты продолжают считать своё
+        // условие сами — так группа остаётся пустой оболочкой, а не вторым
+        // местом, где решается, что показывать.
+        const elGrpBlk = document.getElementById('blk_el_group');
+        if (elGrpBlk) {
+            const elGrpOn = this.state.detailedRooms && this.state.fuels.includes('el');
+            elGrpBlk.style.display = elGrpOn ? 'block' : 'none';
+            const elGrpOpen = !!this.state.showElGroup;
+            const elGrpBody = document.getElementById('blk_el_group_body');
+            if (elGrpBody) elGrpBody.style.display = elGrpOpen ? 'block' : 'none';
+            const elGrpArr = document.getElementById('el_group_arrow');
+            if (elGrpArr) elGrpArr.style.transform = elGrpOpen ? 'rotate(180deg)' : '';
+            // Сводка в заголовке нужна только свёрнутой группе: раскрытая
+            // показывает те же цифры сама, и строка была бы их повтором.
+            const elGrpSum = document.getElementById('el_group_sum');
+            if (elGrpSum) {
+                elGrpSum.style.display = elGrpOpen ? 'none' : 'block';
+                if (elGrpOn && !elGrpOpen) {
+                    const parts = [this.state.elPowerLimitOff ? 'без ограничения' : ((parseFloat(this.state.elPowerLimit) || 15) + ' кВт'),
+                        this.elPhase() + ' В'];
+                    // Тариф в сводке — только при включённом прогнозе: иначе цифра
+                    // выглядела бы участвующей в расчёте, а она там не участвует.
+                    if (this.state.showElCost) parts.push(this.getElTariff().day.toFixed(1) + ' ₽/кВт·ч');
+                    elGrpSum.innerText = parts.join(' · ');
+                }
+            }
+        }
         const elPhaseBlk = document.getElementById('blk_el_phase');
         if (elPhaseBlk) {
             const elPhaseOn = this.state.detailedRooms && this.state.fuels.includes('el');
@@ -43252,6 +43280,16 @@ const app = {
         }
         this.syncUI();
         this.render();
+    },
+    // Группа «⚡ Электросеть»: ограничение мощности, число фаз и прогноз
+    // стоимости собраны под один заголовок и по умолчанию свёрнуты — тремя
+    // отдельными пунктами панель выглядела перегруженной. Раскрытие держим в
+    // state, чтобы оно переживало перезагрузку страницы.
+    toggleElGroup: function (event) {
+        if (event) event.stopPropagation();
+        this.state.showElGroup = !this.state.showElGroup;
+        this.syncUI();
+        this.saveState();
     },
     // Прогноз занимает половину экрана панели, а нужен не каждому расчёту —
     // поэтому он спрятан под тумблер и по умолчанию свёрнут.
