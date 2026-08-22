@@ -1705,6 +1705,21 @@ function autoScale(silent) {
   return true;
 }
 
+/** Подложка на месте, а масштаба у этажа нет — подбираем сам.
+ *
+ *  Нужно для планов, пришедших не из файла, а из распознавания: их подложку
+ *  кладёт калькулятор, applyPlanCanvas в этом случае не работает. Один раз на
+ *  этаж: не подобрался — значит, монтажник задаст его вручную, и навязываться
+ *  на каждой перерисовке незачем. Через таймер, потому что зовут отсюда из
+ *  draw(), а autoScale сам draw() и вызывает. */
+var scaleTried = {};
+function tryAutoScaleOnce() {
+  var f = F();
+  if (!f || !f.img || f.pxPerM || scaleTried[cur] || !imgCache[cur]) return;
+  scaleTried[cur] = true;
+  setTimeout(function () { autoScale(true); }, 0);
+}
+
 /** Какими зонами комната подробного расчёта ложится на план.
  *
  *  Назначение помещения важнее системы: котельная и санузел дают зону своего
@@ -2087,6 +2102,7 @@ function draw() {
     im.src = f.img; return;
   }
   var im2 = imgCache[cur];
+  tryAutoScaleOnce();
   if (im2) {
     cv.width = 1200; cv.height = Math.round(1200 * f.h / f.w);
   } else { cv.width = 1200; cv.height = 850; }
