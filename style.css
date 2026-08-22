@@ -362,6 +362,18 @@ h3 {
     margin-bottom: 16px;
 }
 
+/* Группа «⚡ Электросеть»: заголовок со стрелкой и сводкой значений вместо трёх
+   отдельных пунктов панели (см. #blk_el_group в index.html). Тело группы — те же
+   .control-item, поэтому нижний отступ последнего снимаем: иначе он складывался
+   бы с отступом самой группы. */
+#blk_el_group_body > .control-item:last-child {
+    margin-bottom: 0;
+}
+
+#blk_el_group_head:hover .lbl {
+    color: var(--primary);
+}
+
 .label-row {
     display: flex;
     justify-content: space-between;

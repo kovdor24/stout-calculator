@@ -888,6 +888,27 @@
                 </div>
             </div>
 
+            <!-- Электрические настройки объекта — ограничение мощности, сеть и
+                 прогноз стоимости — свёрнуты в одну группу: тремя отдельными
+                 пунктами панель выглядела перегруженной. Тумблера здесь нет
+                 намеренно: блок ничего не включает, а тумблер читался бы как
+                 «сеть отключена». Условие показа общее для всей группы и то же,
+                 что было у каждого пункта: подробный режим и электрокотёл
+                 (app.syncUI). -->
+            <div class="control-item" id="blk_el_group" style="display:none;">
+                <div id="blk_el_group_head" onclick="app.toggleElGroup(event)" style="cursor:pointer;">
+                    <div class="label-row" style="margin-bottom:0;">
+                        <span class="lbl">⚡ Электросеть</span>
+                        <span id="el_group_arrow"
+                            style="font-size:11px; color:var(--text-sec); transition:transform .2s; line-height:1;">▾</span>
+                    </div>
+                    <!-- Пока группа свёрнута, текущие значения видно прямо в
+                         заголовке — иначе ради проверки лимита или числа фаз
+                         пришлось бы каждый раз её разворачивать. Собирает
+                         app.syncUI(). -->
+                    <div id="el_group_sum" style="font-size:11px; color:var(--text-sec); margin-top:3px;"></div>
+                </div>
+                <div id="blk_el_group_body" style="display:none; margin-top:14px;">
             <!-- Выделенная на участок электрическая мощность. Котёл мощнее неё
                  подбирать нельзя — сеть не потянет, поэтому подбор упирается в
                  этот потолок и каскад в нём не собирает. Показывается только в
@@ -1044,6 +1065,8 @@
                     </div>
 
                     <div id="el_cost_body"></div>
+                </div>
+            </div>
                 </div>
             </div>
 
