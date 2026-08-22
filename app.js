@@ -42402,6 +42402,19 @@ const app = {
         // Синхронизация Автоматики котельной. Саму сводку наполняет render(),
         // здесь только галочка и скрытие панели при выключении.
         if (document.getElementById('chk_boiler_auto')) document.getElementById('chk_boiler_auto').checked = this.state.boilerAuto;
+        // «Автоматика котельной» — последний пункт блока «Тип котла». Когда всё,
+        // что стоит над ней, скрыто (быстрый режим: там нет ни электрических
+        // настроек, ни прогноза стоимости), она упирается прямо во вкладки
+        // топлива и выглядит прижатой. В этом случае даём ей верхний отступ,
+        // равный шагу между пунктами панели.
+        const _autoItem = document.getElementById('blk_boiler_auto_item');
+        if (_autoItem) {
+            const _prevShown = ['blk_el_group', 'blk_gas_cost'].some(id => {
+                const b = document.getElementById(id);
+                return b && b.style.display !== 'none';
+            });
+            _autoItem.style.paddingTop = _prevShown ? '' : '16px';
+        }
         // Серая рамка со всем хозяйством контроллера — как у блока «Горячая
         // вода (Бойлер)». Пустой её показывать нельзя, см. updateBoilerAutoBox.
         this.updateBoilerAutoBox();
