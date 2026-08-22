@@ -816,16 +816,90 @@ const Docs = {
     // пишем «по паспорту изготовителя», а не выдумываем: обещание в талоне,
     // которого изготовитель не давал, обернётся против монтажника.
 
+
+    // Официальные сроки с сайта изготовителя — https://www.stout.ru/guarantee/
+    // Сверено 22.08.2026. Ведётся руками, в отличие от warranty.js: тот пересобирается
+    // из паспортов, и вписанное сюда там бы потерялось.
+    //
+    // Зачем второй источник, если есть паспорта. Паспорта молчат ровно там, где
+    // дороже всего: радиаторы, конвекторы, котлы. А страница гарантии — публичное
+    // обязательство изготовителя, которое клиент может открыть и проверить сам.
+    //
+    // Ключ — начало артикула (группа товара). Значение: месяцы либо { months, note },
+    // когда изготовитель делит срок (у водонагревателя бак и оборудование разные).
+    BRAND_WARRANTY: {
+        source: 'https://www.stout.ru/guarantee/',
+        checked: '2026-08-22',
+        byPrefix: {
+            SRB: 120,                               // биметаллические радиаторы Space, Style
+            SRA: 120,                               // алюминиевые радиаторы Bravo, Vega
+            SCN: 120, SCQ: 120,                     // конвекторы
+            SFA: 60, SFP: 60, SFC: 60, SFH: 60,     // фитинги аксиальные, компрессионные, пресс
+            SFS: 60, SFB: 60,
+            SPX: 60, SPM: 60, SPS: 60, SPI: 60,     // трубы PE-X и металлопластик
+            SVB: 60,                                // шаровые краны полнопроходные
+            SVT: 60,                                // клапаны радиаторные термостатические
+            SVH: 60,                                // узлы нижнего подключения
+            SWH: { months: 60, note: 'бак; на оборудование водонагревателя — 2 года' },
+            // Латунные резьбовые: на странице срок раздвоен — 5 лет на резьбу и 2 года
+            // на соединения с резиновыми уплотнениями. Американки и сгоны как раз с
+            // уплотнением, поэтому берём меньший: обещать 5 лет на прокладку нельзя.
+            SFT: { months: 24, note: 'на резьбовые соединения без уплотнений — 5 лет' },
+            SEB: 24,                                // котлы
+            SST: 24,                                // дымоходы
+            SMB: 24, SMS: 24,                       // коллекторные блоки
+            SDG: 24,                                // группы быстрого монтажа, смесительные узлы
+            SVS: 24, SVM: 24, STE: 24, SMH: 24,     // КИП, приводы, автоматика, термостаты
+            SVL: 24, SVR: 24,                       // клапаны радиаторные и приводы
+            SPC: 36,                                // насосы циркуляционные
+            STH: 12, STW: 12,                       // баки мембранные
+            SCC: 12,                                // шкафы коллекторные
+            SSV: 12                                 // принадлежности тёплого пола
+        }
+    },
+
+    /**
+     * Срок гарантии на позицию. Источников два, и они не всегда согласны.
+     *
+     * Паспорт даёт срок по конкретному артикулу, официальная страница изготовителя —
+     * по группе товара. Где оба говорят своё, берём МЕНЬШИЙ: талон подписывает
+     * монтажник, и обещание сверх того, что даёт изготовитель, ляжет на него.
+     * Занизить не страшно — клиент всегда может сослаться на публичную страницу
+     * бренда и получить больше.
+     */
     warrantyMonthsFor: function (item) {
-        if (typeof WARRANTY_DB === 'undefined' || !WARRANTY_DB) return null;
         const art = String((item && (item.displaySku || item.originalId || item.id)) || '').trim();
         if (!art) return null;
-        const exact = WARRANTY_DB.byArticle[art];
-        if (exact !== undefined) return { months: exact, exact: true };
-        const fam = art.split('-').slice(0, 2).join('-');
-        const byFam = WARRANTY_DB.byFamily[fam];
-        if (byFam !== undefined) return { months: byFam, exact: false };
-        return null;
+
+        // Из паспортов: сначала точный артикул, затем семейство
+        let fromPassport = null;
+        if (typeof WARRANTY_DB !== 'undefined' && WARRANTY_DB) {
+            const exact = WARRANTY_DB.byArticle[art];
+            if (exact !== undefined) fromPassport = { months: exact, exact: true };
+            else {
+                const byFam = WARRANTY_DB.byFamily[art.split('-').slice(0, 2).join('-')];
+                if (byFam !== undefined) fromPassport = { months: byFam, exact: false };
+            }
+        }
+
+        // С официальной страницы: по началу артикула
+        let fromBrand = null;
+        const raw = this.BRAND_WARRANTY.byPrefix[art.split('-')[0]];
+        if (raw !== undefined) {
+            fromBrand = (typeof raw === 'number')
+                ? { months: raw, exact: false }
+                : { months: raw.months, note: raw.note, exact: false };
+        }
+
+        if (fromPassport && fromBrand) {
+            // При равных сроках берём запись сайта: у неё бывает примечание
+            // (у водонагревателя срок бака и оборудования разный)
+            return fromPassport.months < fromBrand.months
+                ? fromPassport
+                : Object.assign({}, fromBrand, { official: true });
+        }
+        if (fromBrand) return Object.assign({}, fromBrand, { official: true });
+        return fromPassport;
     },
 
     monthsWords: function (m) {
@@ -859,7 +933,7 @@ const Docs = {
                 <td>${e(it.name || art)}</td>
                 <td class="c">${e(art)}</td>
                 <td class="c">${e(it.brand || '')}</td>
-                <td class="c">${w ? this.monthsWords(w.months) : 'по паспорту'}</td>
+                <td class="c">${w ? this.monthsWords(w.months) + (w.note ? '<br><span style="font-size:8pt;">' + e(w.note) + '</span>' : '') : 'по паспорту'}</td>
             </tr>`;
         }).filter(Boolean).join('');
 
@@ -888,8 +962,10 @@ const Docs = {
             <tr><th>Наименование</th><th>Артикул</th><th>Бренд</th><th>Гарантия</th></tr>
             ${rows || '<tr><td colspan="4" class="c">Оборудование не выбрано</td></tr>'}
         </table>
-        <p class="small">Срок указан по паспорту изготовителя. «По паспорту» означает, что срок
-        смотрите в паспорте изделия: он передан вам вместе с оборудованием.
+        <p class="small">Сроки указаны по паспортам изделий и официальной странице гарантии
+        изготовителя (${e(this.BRAND_WARRANTY.source)}). Где источники расходятся, приведён
+        меньший срок. «По паспорту» означает, что срок смотрите в паспорте изделия: он передан
+        вам вместе с оборудованием.
         Учтено позиций со сроком: ${known}${unknown ? `, без срока в справочнике: ${unknown}` : ''}.</p>
         <p class="n">2.2. Гарантийный срок исчисляется с даты продажи оборудования, но не может
         выходить за пределы срока, установленного изготовителем.</p>
