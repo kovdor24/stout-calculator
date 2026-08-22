@@ -235,24 +235,6 @@ td strong { color: var(--primary); }
 .cta:hover { opacity: 0.9; text-decoration: none; }
 .cta small { display: block; font-weight: 500; font-size: 13px; opacity: 0.85; margin-top: 3px; }
 
-/* ── Полоса силуэтов в шапке страниц городов ─────────────────────── */
-
-/* Достопримечательности нарисованы своими силуэтами — не фотографии,
-   поэтому нет ни чужих прав, ни лишних килобайт. Цвет из переменной
-   темы, значит полоса переключается вместе со страницей. */
-
-.skyline {
-    margin: 0 0 24px;
-    padding: 8px 0 0;
-    border-bottom: 1px solid var(--border);
-}
-.skyline svg { display: block; width: 100%; height: auto; font-family: inherit; }
-
-@media (max-width: 600px) {
-    .skyline { margin-bottom: 18px; }
-    .skyline svg { min-height: 0; }
-}
-
 /* ── Графики ─────────────────────────────────────────────────────── */
 
 /* Рисуются прямо в разметке как inline SVG: ни одного запроса к серверу,
