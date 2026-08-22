@@ -64,6 +64,10 @@
   button.on { background: var(--primary); color: #fff; border-color: var(--primary-dim); }
   button.on:hover { background: var(--primary-dim); }
   button.ghost { background: transparent; color: var(--text-sec); border-color: var(--border-soft); }
+  /* Главное действие панели: делает разом то, на что ниже пять кнопок. */
+  button.go { background: var(--ok); border-color: var(--ok); color: #fff; font-weight: 600; }
+  button.go:hover { background: var(--ok); border-color: #fff; }
+  button.go:disabled { opacity: .5; cursor: default; }
   button.ghost:hover { background: var(--surface-light); color: var(--text-main); }
   input[type=text] { background: #2a2a2a; border-color: #222; cursor: text; }
   input[type=text]:focus { outline: none; border-color: var(--primary); }
@@ -169,6 +173,7 @@
   <label class="ghost" id="b_upload" style="padding:6px 12px;border-radius:8px;font-weight:600;font-size:13px;cursor:pointer">
     Загрузить план <input type="file" multiple accept="image/*,.pdf,application/pdf" style="display:none" onchange="loadImage(this)">
   </label>
+  <button id="b_automark" class="go" onclick="autoMarkAll()" title="Масштаб, зоны, радиаторы и коллектор — по всем этажам сразу, и сохранить">Разметить всё</button>
   <button id="b_scale" onclick="setMode('scale')">Масштаб</button>
   <button id="b_autoscale" onclick="autoScale()" title="Подобрать масштаб по площадям комнат подробного расчёта">Масштаб по расчёту</button>
   <button id="b_autorooms" onclick="autoRooms()" title="Найти все комнаты по стенам и создать зоны по комнатам расчёта: тёплый пол, котельная, санузлы">Распознать комнаты</button>
@@ -1720,6 +1725,104 @@ function tryAutoScaleOnce() {
   setTimeout(function () { autoScale(true); }, 0);
 }
 
+/** Подложка этажа в кэше картинок: маску по ней строит getMask, а он берёт
+ *  только готовую. Для текущего этажа это делает draw(), для остальных — никто:
+ *  их разметка идёт «вслепую», без открытия вкладки. */
+function ensureImage(fi) {
+  return new Promise(function (ok) {
+    var f = DATA.floors[fi];
+    if (!f || !f.img) { ok(false); return; }
+    if (imgCache[fi]) { ok(true); return; }
+    var im = new Image();
+    if (f.img.indexOf('data:') !== 0) im.crossOrigin = 'anonymous';
+    im.onload = function () { imgCache[fi] = im; ok(true); };
+    im.onerror = function () { ok(false); };
+    im.src = f.img;
+  });
+}
+
+/**
+ * «Разметить всё»: масштаб → комнаты → радиаторы → коллектор → сохранение,
+ * по всем этажам подряд.
+ *
+ * Ничего нового кнопка не считает — зовёт те же autoScale, autoRooms, autoRads
+ * и saveAll. Но по отдельности их пять, идут они в строгом порядке и на каждом
+ * этаже заново, а бросают разметку ровно на середине этого порядка.
+ *
+ * Уже размеченное не сносится: autoRooms пропускает комнаты, где зона есть,
+ * autoRads — окна, под которыми уже стоит радиатор. Поэтому нажать её можно и
+ * после ручных правок, и второй раз подряд.
+ */
+var autoBusy = false;
+function autoMarkAll() {
+  if (autoBusy) return;
+  if (!DATA.floors.some(function (f) { return f.img; })) {
+    alert('Сначала загрузите план этажа.'); return;
+  }
+  autoBusy = true;
+  var btn = document.getElementById('b_automark');
+  if (btn) btn.disabled = true;
+  var was = cur, zones = 0, rads = 0, colls = 0, bad = [];
+  // Возвращаем обещание: кнопке оно не нужно, но по нему видно, когда разметка
+  // кончилась, — этим пользуется стенд, и это же понадобится, если запускать
+  // разметку не рукой.
+  var chain = Promise.resolve();
+  DATA.floors.forEach(function (f, fi) {
+    chain = chain.then(function () {
+      if (!f.img) return null;
+      cur = fi;
+      hint('Размечаю ' + (fi + 1) + '-й этаж из ' + DATA.floors.length + '…');
+      return ensureImage(fi).then(function (okImg) {
+        var name = (fi + 1) + '-й этаж';
+        if (!okImg) { bad.push(name + ' — подложка не открылась'); return; }
+        if (!f.pxPerM) autoScale(true);
+        if (!f.pxPerM) { bad.push(name + ' — не подобрался масштаб'); return; }
+        var z0 = f.zones.length, r0 = (f.rads || []).length;
+        autoRooms();
+        autoRads();
+        zones += f.zones.length - z0;
+        rads += (f.rads || []).length - r0;
+        // Коллектор ТП ставим в котельную — там он и стоит. Котельной на
+        // этаже нет, а тёплый пол есть — место неочевидно, точку ставит
+        // монтажник, и об этом надо сказать вслух.
+        var hasTp = f.zones.some(function (z) { return z.type === 'tp'; });
+        var bz = null;
+        f.zones.forEach(function (z) { if (z.type === 'boiler') bz = z; });
+        if (hasTp && !f.coll) {
+          if (bz) {
+            var c = centroid(bz.pts);
+            f.coll = { x: Math.round(c[0]), y: Math.round(c[1]) };
+            colls++;
+          } else {
+            bad.push(name + ' — некуда поставить коллектор ТП: котельная не отмечена');
+          }
+        }
+      });
+    });
+  });
+  return chain.then(function () {
+    cur = was;
+    if (mode !== 'select') setMode('select');
+    renderTabs(); renderZones(); draw(); updateGuide();
+    return saveAll();      // сохранение считает трассы, подводки и контуры стен
+  }).then(function () {
+    var done = zones + rads + colls;
+    hint((done
+      ? '<span class=ok>Разметка готова и сохранена.</span> Зон: ' + zones +
+        ', радиаторов: ' + rads + (colls ? ', коллекторов ТП: ' + colls : '') + '. '
+      : '<span class=ok>Сохранено.</span> Новых зон и радиаторов не нашлось. ') +
+      (bad.length ? '<b>Осталось руками:</b> ' + bad.join('; ') + '. ' : '') +
+      'Проверьте зоны и радиаторы — и «Листы проекта» в калькуляторе.');
+  })['catch'](function (e) {
+    console.error('[plan_editor] авторазметка:', e);
+    hint('Разметить всё не удалось: ' + (e && e.message ? e.message : e) +
+      '. Пройдите шаги по одному — кнопками выше.');
+  }).then(function () {
+    autoBusy = false;
+    if (btn) btn.disabled = false;
+  });
+}
+
 /** Какими зонами комната подробного расчёта ложится на план.
  *
  *  Назначение помещения важнее системы: котельная и санузел дают зону своего
@@ -3169,7 +3272,7 @@ function stepTip(s, L) {
   var f = F();
   var wcZones = f.zones.filter(function (z) { return z.type === 'wc'; });
   var TXT = {
-    plan: 'Загрузите план этажа: фото, скан или PDF. Можно выбрать сразу несколько файлов — каждый станет своим этажом.',
+    plan: 'Загрузите план этажа: фото, скан или PDF. Можно выбрать сразу несколько файлов — каждый станет своим этажом. Дальше всё остальное делает кнопка «Разметить всё»: масштаб, зоны, радиаторы, коллектор и сохранение — по всем этажам сразу. Шаги ниже остаются, чтобы проверить и поправить сделанное.',
     scale: 'Масштаб обычно подбирается сам при загрузке плана — по площадям комнат подробного расчёта; кнопка «Масштаб по расчёту» повторяет подбор. Если комнат в расчёте нет или стены на подложке не читаются, задайте вручную: «Масштаб», две точки отрезка с известной длиной и его длина в метрах. Без масштаба площади зон не посчитать.',
     tp: 'Нажмите «Распознать комнаты» — все комнаты найдутся по стенам, а зоны создадутся и подпишутся по комнатам подробного расчёта: тёплый пол, котельная и санузлы сразу своим типом. Поправить можно вручную: «Зона: по клику» внутри комнаты или «Зона: контур». Нет тёплого пола на этаже — переходите к радиаторам.',
     rad: 'Нажмите «Под окна» — радиаторы расставятся по найденным окнам. Лишние убираются кликом по значку, недостающие добавляются кликом в режиме «Радиаторы». Нет радиаторов на этаже — переходите дальше.',
