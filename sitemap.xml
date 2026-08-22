@@ -42,6 +42,13 @@
     </url>
 
     <url>
+        <loc>https://heatcalc.ru/chem-otaplivat-dom/</loc>
+        <lastmod>2026-08-22</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.9</priority>
+    </url>
+
+    <url>
         <loc>https://heatcalc.ru/goroda/</loc>
         <lastmod>2026-08-20</lastmod>
         <changefreq>monthly</changefreq>

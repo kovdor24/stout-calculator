@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Чем выгоднее отапливать дом: цена киловатт-часа тепла по видам топлива | HeatCalc.ru</title>
+    <meta name="description" content="Сколько стоит киловатт-час тепла от газа, электричества, дров, пеллет, сжиженного газа и дизеля. Магистральный газ — 0,80–1,11 ₽, электричество — 3,14–7,28 ₽. Формула расчёта и таблица тарифов по 22 городам.">
+    <link rel="canonical" href="https://heatcalc.ru/chem-otaplivat-dom/">
+    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large">
+    <link rel="icon" type="image/png" href="/img/logo_HC.png">
+    <meta name="theme-color" content="#2563EB">
+
+    <!-- Яндекс.Метрика + баннер согласия на cookie. Путь от корня, а не
+         относительный: страница лежит в подпапке. -->
+    <script src="/cookie-consent.js" defer></script>
+
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="HeatCalc.ru">
+    <meta property="og:locale" content="ru_RU">
+    <meta property="og:url" content="https://heatcalc.ru/chem-otaplivat-dom/">
+    <meta property="og:title" content="Чем выгоднее отапливать дом: цена киловатт-часа тепла">
+    <meta property="og:description" content="Газ, электричество, дрова, пеллеты, дизель — сколько стоит киловатт-час тепла от каждого. Формула и таблица тарифов по 22 городам.">
+    <meta property="og:image" content="https://heatcalc.ru/img/og_cover.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="HeatCalc.ru — калькулятор отопления частного дома">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content="https://heatcalc.ru/img/og_cover.png">
+
+    <!-- Микроразметка: карточка страницы, хлебные крошки и блок вопрос-ответ.
+         Вопросы и ответы здесь обязаны дословно совпадать с видимым текстом
+         внизу страницы — за расхождение Яндекс и Google снимают разметку. -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "WebPage",
+          "@id": "https://heatcalc.ru/chem-otaplivat-dom/#webpage",
+          "url": "https://heatcalc.ru/chem-otaplivat-dom/",
+          "name": "Чем выгоднее отапливать дом: цена киловатт-часа тепла по видам топлива",
+          "description": "Сравнение стоимости киловатт-часа тепла от магистрального и сжиженного газа, электричества, дров, пеллет и дизеля, с формулой расчёта и таблицей тарифов по регионам.",
+          "inLanguage": "ru-RU",
+          "isPartOf": { "@id": "https://heatcalc.ru/#website" },
+          "about": { "@type": "Thing", "name": "Сравнение видов отопления частного дома" }
+        },
+        {
+          "@type": "BreadcrumbList",
+          "itemListElement": [
+            { "@type": "ListItem", "position": 1, "name": "Калькулятор отопления", "item": "https://heatcalc.ru/" },
+            { "@type": "ListItem", "position": 2, "name": "Чем отапливать дом", "item": "https://heatcalc.ru/chem-otaplivat-dom/" }
+          ]
+        },
+        {
+          "@type": "FAQPage",
+          "mainEntity": [
+            {
+              "@type": "Question",
+              "name": "Что дешевле: газ или электричество?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Магистральный газ дешевле везде, где он есть. Киловатт-час тепла от газа стоит от 0,80 ₽ в Вологодской области до 1,11 ₽ в Калининградской, от электричества — от 3,14 ₽ в Мурманской области до 7,28 ₽ в Москве. Разница по регионам получается от 3,6 до 7,3 раза, и ни в одном регионе электричество не выходит дешевле газа."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Какое отопление самое дешёвое?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "По цене топлива — магистральный газ, около рубля за киловатт-час тепла. Следом идут дрова и пеллеты: примерно 1,2–1,6 ₽ у дров и 1,6–3,8 ₽ у пеллет, но это рыночные цены, они сильно расходятся по регионам. Самое дорогое — дизельное топливо, около 9–10 ₽ за киловатт-час, дороже электричества."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Насколько сильно тарифы отличаются по регионам?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "В таблице цена киловатт-часа тепла от газа укладывается в 1,4 раза — от 0,80 ₽ в Вологодской области до 1,11 ₽ в Калининградской, а от электричества в 2,3 раза — от 3,14 ₽ в Мурманской области до 7,28 ₽ в Москве. По стране целиком разброс шире у обоих, но соотношение устойчиво: даже самый дорогой газ дешевле самого дешёвого электричества."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Выгоден ли электрокотёл с ночным тарифом?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Ночная ставка снижает цену киловатт-часа до 1,77–4,20 ₽ в зависимости от региона, и это заметно меняет расклад, но газ всё равно остаётся дешевле. Ночной тариф имеет смысл там, где магистрального газа нет: в связке с теплоаккумулятором он делает электрокотёл рабочей основной системой, а не вынужденной мерой."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Учитывает ли эта таблица стоимость оборудования?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Нет, здесь сравнивается только цена топлива. Полная картина включает ещё стоимость котельной и её монтажа, подключение к сетям, обслуживание и трудозатраты: дрова дёшевы по топливу, но требуют места для хранения и ручной загрузки, а подключение газа к участку может стоить сотни тысяч рублей."
+              }
+            }
+          ]
+        }
+      ]
+    }
+    </script>
+
+    <style>
+        :root {
+            --brand: #2563EB;
+            --brand-dark: #1D4ED8;
+            --ink: #111827;
+            --ink-soft: #374151;
+            --muted: #6B7280;
+            --line: #E5E7EB;
+            --bg-soft: #F9FAFB;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+            color: var(--ink-soft);
+            line-height: 1.7;
+            font-size: 17px;
+            background: #fff;
+        }
+
+        .wrap { max-width: 780px; margin: 0 auto; padding: 0 20px; }
+
+        header.top {
+            border-bottom: 1px solid var(--line);
+            padding: 14px 0;
+            margin-bottom: 36px;
+        }
+
+        header.top .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+
+        .logo {
+            font-weight: 800;
+            font-size: 19px;
+            color: var(--ink);
+            text-decoration: none;
+            letter-spacing: -0.3px;
+        }
+        .logo span { color: var(--brand); }
+
+        .crumbs { font-size: 14px; color: var(--muted); margin-bottom: 20px; }
+        .crumbs a { color: var(--muted); }
+
+        h1 {
+            font-size: 34px;
+            line-height: 1.2;
+            font-weight: 800;
+            color: var(--ink);
+            letter-spacing: -0.6px;
+            margin: 0 0 20px;
+        }
+
+        h2 {
+            font-size: 24px;
+            line-height: 1.3;
+            font-weight: 700;
+            color: var(--ink);
+            letter-spacing: -0.3px;
+            margin: 44px 0 14px;
+        }
+
+        h3 { font-size: 19px; font-weight: 700; color: var(--ink); margin: 28px 0 8px; }
+
+        p { margin: 0 0 18px; }
+
+        a { color: var(--brand); }
+
+        .lead { font-size: 19px; color: var(--ink-soft); }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 0 0 12px;
+            font-size: 16px;
+        }
+        th, td { text-align: left; padding: 11px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+        th { font-weight: 700; color: var(--ink); background: var(--bg-soft); }
+        td.num { white-space: nowrap; font-variant-numeric: tabular-nums; }
+        .table-scroll { overflow-x: auto; }
+
+        .note { font-size: 14px; color: var(--muted); margin: 0 0 24px; }
+
+        ul, ol { margin: 0 0 18px; padding-left: 24px; }
+        li { margin-bottom: 9px; }
+
+        .cta {
+            display: block;
+            background: var(--brand);
+            color: #fff;
+            text-decoration: none;
+            text-align: center;
+            font-weight: 700;
+            font-size: 18px;
+            padding: 17px 24px;
+            border-radius: 12px;
+            margin: 32px 0;
+        }
+        .cta:hover { background: var(--brand-dark); }
+        .cta small { display: block; font-weight: 500; font-size: 14px; opacity: 0.85; margin-top: 4px; }
+
+        .callout {
+            background: var(--bg-soft);
+            border-left: 4px solid var(--brand);
+            border-radius: 0 10px 10px 0;
+            padding: 16px 18px;
+            margin: 0 0 24px;
+        }
+        .callout p:last-child { margin-bottom: 0; }
+
+        .formula {
+            background: var(--bg-soft);
+            border-radius: 10px;
+            padding: 18px 20px;
+            margin: 0 0 24px;
+            font-size: 17px;
+            text-align: center;
+            color: var(--ink);
+            font-weight: 600;
+        }
+
+        details {
+            border-bottom: 1px solid var(--line);
+            padding: 4px 0;
+        }
+        details summary {
+            cursor: pointer;
+            font-weight: 700;
+            color: var(--ink);
+            padding: 13px 0;
+            list-style: none;
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+        }
+        details summary::-webkit-details-marker { display: none; }
+        details summary::after { content: '+'; color: var(--brand); font-size: 22px; line-height: 1; flex-shrink: 0; }
+        details[open] summary::after { content: '−'; }
+        details .answer { padding: 0 0 16px; }
+        details .answer p:last-child { margin-bottom: 0; }
+
+        footer.bottom {
+            border-top: 1px solid var(--line);
+            margin-top: 56px;
+            padding: 28px 0 48px;
+            font-size: 14px;
+            color: var(--muted);
+        }
+        footer.bottom a { color: var(--muted); margin-right: 18px; }
+
+        @media (max-width: 600px) {
+            body { font-size: 16px; }
+            h1 { font-size: 27px; }
+            h2 { font-size: 21px; }
+            .lead { font-size: 17px; }
+        }
+    </style>
+</head>
+
+<body>
+
+    <header class="top">
+        <div class="wrap">
+            <a class="logo" href="/">HeatCalc<span>.ru</span></a>
+            <a href="/" style="font-size:15px;font-weight:600;text-decoration:none;">Открыть калькулятор →</a>
+        </div>
+    </header>
+
+    <main class="wrap">
+
+        <nav class="crumbs"><a href="/">Калькулятор отопления</a> → Чем отапливать дом</nav>
+
+        <h1>Чем выгоднее отапливать дом: цена киловатт-часа тепла</h1>
+
+        <p class="lead">
+            Сравнивать топливо по цене за кубометр, литр или тонну бессмысленно — единицы
+            разные. Сравнивать нужно по цене одного киловатт-часа тепла, который реально
+            дошёл до батарей. По этой мерке магистральный газ стоит около рубля,
+            электричество — от трёх до семи с лишним, а дизельное топливо — около десяти.
+        </p>
+
+        <a class="cta" href="/">
+            Посчитать стоимость сезона для своего дома
+            <small>По тарифам вашего региона, бесплатно</small>
+        </a>
+
+        <h2>Формула</h2>
+
+        <p>
+            Чтобы привести любое топливо к общей мерке, нужны две величины: сколько тепла
+            даёт единица топлива и какая доля этого тепла достаётся дому, а не улетает
+            в трубу.
+        </p>
+
+        <div class="formula">
+            Цена 1 кВт·ч тепла = цена единицы топлива ÷ (теплотворность × КПД котла)
+        </div>
+
+        <p>
+            КПД здесь принципиален. Электрокотёл превращает в тепло практически всю
+            энергию — потери только на корпусе. Газовый усваивает около 92 %. У дровяного
+            котла КПД около 75 %, то есть четверть тепла уходит в дымоход. Поэтому дрова,
+            дешёвые «на входе», не настолько дёшевы «на выходе», как кажется по ценнику.
+        </p>
+
+        <h2>Сколько стоит киловатт-час от разных видов топлива</h2>
+
+        <div class="table-scroll">
+            <table>
+                <tr>
+                    <th>Топливо</th>
+                    <th>Теплотворность</th>
+                    <th>КПД котла</th>
+                    <th>Цена единицы</th>
+                    <th>Цена 1 кВт·ч тепла</th>
+                </tr>
+                <tr>
+                    <td>Магистральный газ</td>
+                    <td class="num">9,45 кВт·ч/м³</td>
+                    <td class="num">92 %</td>
+                    <td class="num">6,95–9,62 ₽/м³</td>
+                    <td class="num"><strong>0,80–1,11 ₽</strong></td>
+                </tr>
+                <tr>
+                    <td>Дрова берёзовые</td>
+                    <td class="num">3,8 кВт·ч/кг</td>
+                    <td class="num">75 %</td>
+                    <td class="num">1 600–2 000 ₽/м³</td>
+                    <td class="num"><strong>1,2–1,6 ₽</strong></td>
+                </tr>
+                <tr>
+                    <td>Пеллеты</td>
+                    <td class="num">4,7 кВт·ч/кг</td>
+                    <td class="num">85 %</td>
+                    <td class="num">6 500–15 000 ₽/т</td>
+                    <td class="num"><strong>1,6–3,8 ₽</strong></td>
+                </tr>
+                <tr>
+                    <td>Электричество, ночная ставка</td>
+                    <td class="num">1 кВт·ч</td>
+                    <td class="num">≈100 %</td>
+                    <td class="num">1,77–4,20 ₽</td>
+                    <td class="num"><strong>1,77–4,20 ₽</strong></td>
+                </tr>
+                <tr>
+                    <td>Электричество, одноставочный</td>
+                    <td class="num">1 кВт·ч</td>
+                    <td class="num">≈100 %</td>
+                    <td class="num">3,14–7,28 ₽</td>
+                    <td class="num"><strong>3,14–7,28 ₽</strong></td>
+                </tr>
+                <tr>
+                    <td>Сжиженный газ (пропан-бутан)</td>
+                    <td class="num">6,91 кВт·ч/л</td>
+                    <td class="num">92 %</td>
+                    <td class="num">≈26 ₽/л</td>
+                    <td class="num"><strong>≈4,1 ₽</strong></td>
+                </tr>
+                <tr>
+                    <td>Дизельное топливо</td>
+                    <td class="num">10 кВт·ч/л</td>
+                    <td class="num">90 %</td>
+                    <td class="num">82–93 ₽/л</td>
+                    <td class="num"><strong>9,1–10,3 ₽</strong></td>
+                </tr>
+            </table>
+        </div>
+
+        <p class="note">
+            Газ и электричество — регулируемые тарифы, диапазон взят из таблицы ниже
+            (по газу — 21 город, в Мурманске газа нет). Дрова, пеллеты и дизель продаются по рыночным ценам:
+            это типичные значения, а не тариф, и в вашем городе они могут быть другими —
+            подставьте свою цену в формулу. Дрова считаны как берёзовые колотые
+            естественной влажности, около 450 кг в складочном кубометре. Уголь в таблицу
+            не вошёл намеренно: его цена расходится по стране сильнее всех остальных
+            и зависит от удалённости от добывающих регионов, поэтому осмысленного
+            общероссийского диапазона у него нет.
+        </p>
+
+        <div class="callout">
+            <p>
+                <strong>Главный вывод.</strong> Там, где есть магистральный газ,
+                вопрос «чем топить» экономикой не решается — газ дешевле любой
+                альтернативы в разы. Все остальные варианты сравнивают между собой
+                там, где газа нет.
+            </p>
+        </div>
+
+        <h2>Газ против электричества: таблица по городам</h2>
+
+        <p>
+            Это точная часть сравнения: обе цены — регулируемые тарифы, а не рыночные
+            оценки. Газ пересчитан в тепло по теплотворности и КПД 92 %, электричество
+            взято по льготной категории для домов с электроотоплением.
+        </p>
+
+        <div class="table-scroll">
+            <table>
+                <tr>
+                    <th>Город</th>
+                    <th>Газ, ₽/кВт·ч</th>
+                    <th>Электричество, ₽/кВт·ч</th>
+                    <th>Ночная ставка</th>
+                    <th>Во сколько раз дороже</th>
+                </tr>
+                <tr><td><a href="/vologda/">Вологда</a></td><td class="num">0,80</td><td class="num">5,83</td><td class="num">4,20</td><td class="num">7,3</td></tr>
+                <tr><td>Омск</td><td class="num">0,80</td><td class="num">4,45</td><td class="num">2,87</td><td class="num">5,6</td></tr>
+                <tr><td><a href="/ekaterinburg/">Екатеринбург</a></td><td class="num">0,83</td><td class="num">4,50</td><td class="num">2,70</td><td class="num">5,4</td></tr>
+                <tr><td>Челябинск</td><td class="num">0,83</td><td class="num">3,39</td><td class="num">2,03</td><td class="num">4,1</td></tr>
+                <tr><td><a href="/perm/">Пермь</a></td><td class="num">0,83</td><td class="num">4,65</td><td class="num">3,15</td><td class="num">5,6</td></tr>
+                <tr><td><a href="/nizhniy-novgorod/">Нижний Новгород</a></td><td class="num">0,88</td><td class="num">3,99</td><td class="num">2,26</td><td class="num">4,5</td></tr>
+                <tr><td><a href="/petrozavodsk/">Петрозаводск</a></td><td class="num">0,89</td><td class="num">3,83</td><td class="num">1,77</td><td class="num">4,3</td></tr>
+                <tr><td><a href="/novosibirsk/">Новосибирск</a></td><td class="num">0,92</td><td class="num">3,34</td><td class="num">2,58</td><td class="num">3,6</td></tr>
+                <tr><td><a href="/krasnodar/">Краснодар</a></td><td class="num">0,92</td><td class="num">5,24</td><td class="num">3,16</td><td class="num">5,7</td></tr>
+                <tr><td><a href="/samara/">Самара</a></td><td class="num">0,92</td><td class="num">4,38</td><td class="num">2,63</td><td class="num">4,8</td></tr>
+                <tr><td>Волгоград</td><td class="num">0,92</td><td class="num">4,72</td><td class="num">3,27</td><td class="num">5,1</td></tr>
+                <tr><td>Уфа</td><td class="num">0,94</td><td class="num">3,49</td><td class="num">2,80</td><td class="num">3,7</td></tr>
+                <tr><td><a href="/arkhangelsk/">Архангельск</a></td><td class="num">0,95</td><td class="num">5,73</td><td class="num">2,97</td><td class="num">6,0</td></tr>
+                <tr><td><a href="/voronezh/">Воронеж</a></td><td class="num">0,97</td><td class="num">4,21</td><td class="num">2,72</td><td class="num">4,3</td></tr>
+                <tr><td><a href="/kazan/">Казань</a></td><td class="num">0,98</td><td class="num">4,96</td><td class="num">3,48</td><td class="num">5,0</td></tr>
+                <tr><td><a href="/moskva/">Москва</a></td><td class="num">1,00</td><td class="num">7,28</td><td class="num">3,77</td><td class="num">7,3</td></tr>
+                <tr><td><a href="/velikiy-novgorod/">Великий Новгород</a></td><td class="num">1,01</td><td class="num">4,74</td><td class="num">2,84</td><td class="num">4,7</td></tr>
+                <tr><td>Ростов-на-Дону</td><td class="num">1,04</td><td class="num">4,20</td><td class="num">2,52</td><td class="num">4,0</td></tr>
+                <tr><td><a href="/pskov/">Псков</a></td><td class="num">1,05</td><td class="num">5,50</td><td class="num">3,83</td><td class="num">5,3</td></tr>
+                <tr><td><a href="/spb/">Санкт-Петербург</a></td><td class="num">1,06</td><td class="num">5,31</td><td class="num">3,31</td><td class="num">5,0</td></tr>
+                <tr><td><a href="/kaliningrad/">Калининград</a></td><td class="num">1,11</td><td class="num">4,73</td><td class="num">3,78</td><td class="num">4,3</td></tr>
+                <tr><td><a href="/murmansk/">Мурманск</a></td><td class="num">газа нет</td><td class="num">3,14</td><td class="num">1,88</td><td class="num">—</td></tr>
+            </table>
+        </div>
+
+        <p class="note">
+            Тарифы 2026 года, обновляются в справочнике калькулятора ежемесячно.
+            В Мурманской области магистрального газа нет, поэтому сравнивать не с чем —
+            зато электричество там самое дешёвое в таблице.
+        </p>
+
+        <h2>Насколько сильно расходятся тарифы по регионам</h2>
+
+        <p>
+            В таблице выше цена киловатт-часа тепла от газа укладывается в 1,4 раза:
+            от 0,80 ₽ в Вологодской области до 1,11 ₽ в Калининградской. У электричества
+            разброс шире — 2,3 раза, от 3,14 ₽ в Мурманской области до 7,28 ₽ в Москве.
+            По стране целиком коридор ещё шире у обоих: есть регионы, где газ вдвое
+            дешевле вологодского.
+        </p>
+
+        <p>
+            Но соотношение между ними держится устойчиво: даже самый дорогой газ в стране
+            дешевле самого дешёвого электричества. Цена киловатт-часа сильно зависит
+            от того, чем регион генерирует энергию — там, где рядом крупные гидростанции
+            и атомные, электричество заметно дешевле: Мурманская область с Кольской АЭС
+            и каскадами ГЭС, Новосибирская с Новосибирской ГЭС. В Москве, наоборот,
+            одно из самых дорогих электричеств в стране. Поэтому расклад «газ
+            или электрокотёл» в разных регионах выглядит по-разному: в Новосибирске
+            электричество дороже газа в 3,6 раза, а в Москве и Вологде — в 7,3 раза.
+        </p>
+
+        <h2>Когда электричество всё-таки имеет смысл</h2>
+
+        <p>
+            Из таблицы легко сделать вывод «электрокотёл — это дорого и всё», но он
+            слишком грубый. Есть четыре ситуации, где электричество выигрывает.
+        </p>
+
+        <ul>
+            <li><strong>Газа нет и не будет.</strong> Сравнивать приходится не с газом,
+                а с дровами, пеллетами и дизелем. На этом фоне электричество проигрывает
+                твёрдому топливу по цене, но выигрывает по удобству, а дизель обходит
+                с большим запасом.</li>
+            <li><strong>Есть ночной тариф и место под теплоаккумулятор.</strong> Ночная
+                ставка от 1,77 ₽ в Карелии до 4,20 ₽ в Вологодской области — это
+                уже сопоставимо с пеллетами. Бак греется ночью и отдаёт тепло днём.</li>
+            <li><strong>Дом небольшой и хорошо утеплён.</strong> Когда речь идёт
+                о нескольких тысячах киловатт-часов за сезон, разница в тарифе
+                перестаёт перевешивать стоимость подключения газа.</li>
+            <li><strong>Электрокотёл как резерв.</strong> Он дешёвый, не требует дымохода
+                и включается автоматически, если основной котёл встал.</li>
+        </ul>
+
+        <a class="cta" href="/">
+            Сравнить газ и электричество для своего дома
+            <small>Калькулятор посчитает сезон по обоим вариантам</small>
+        </a>
+
+        <h2>Чего эта таблица не учитывает</h2>
+
+        <p>
+            Здесь сравнивается только топливо. Полная экономика включает ещё несколько
+            статей, и они способны перевернуть вывод.
+        </p>
+
+        <ul>
+            <li><strong>Стоимость котельной.</strong> Электрокотёл с обвязкой заметно
+                дешевле газовой котельной с дымоходом, а пеллетный котёл с бункером —
+                наоборот, дороже.</li>
+            <li><strong>Подключение к сетям.</strong> Довести газ до дома внутри участка
+                стоит десятки, а иногда сотни тысяч рублей, и эта сумма ложится
+                на первый год.</li>
+            <li><strong>Обслуживание.</strong> Газовому котлу нужен ежегодный сервис
+                и договор с газовой службой, твердотопливному — регулярная чистка.</li>
+            <li><strong>Трудозатраты.</strong> Дрова и уголь надо где-то хранить,
+                подкидывать вручную и выгребать золу. Пеллетный котёл с бункером
+                автономен несколько дней, газовый и электрический — весь сезон.</li>
+        </ul>
+
+        <p>
+            Поэтому окончательное решение принимают, сложив две цифры: сколько стоит
+            построить систему и сколько она будет съедать каждый сезон. Первую даёт
+            <a href="/smeta/">смета на отопление</a>, вторую — расчёт стоимости сезона
+            по тарифам вашего региона. Калькулятор считает обе.
+        </p>
+
+        <h2>Частые вопросы</h2>
+
+        <details open>
+            <summary>Что дешевле: газ или электричество?</summary>
+            <div class="answer">
+                <p>Магистральный газ дешевле везде, где он есть. Киловатт-час тепла
+                    от газа стоит от 0,80 ₽ в Вологодской области до 1,11 ₽
+                    в Калининградской, от электричества — от 3,14 ₽ в Мурманской области
+                    до 7,28 ₽ в Москве. Разница по регионам получается от 3,6 до 7,3 раза,
+                    и ни в одном регионе электричество не выходит дешевле газа.</p>
+            </div>
+        </details>
+
+        <details>
+            <summary>Какое отопление самое дешёвое?</summary>
+            <div class="answer">
+                <p>По цене топлива — магистральный газ, около рубля за киловатт-час тепла.
+                    Следом идут дрова и пеллеты: примерно 1,2–1,6 ₽ у дров и 1,6–3,8 ₽
+                    у пеллет, но это рыночные цены, они сильно расходятся по регионам.
+                    Самое дорогое — дизельное топливо, около 9–10 ₽ за киловатт-час,
+                    дороже электричества.</p>
+            </div>
+        </details>
+
+        <details>
+            <summary>Насколько сильно тарифы отличаются по регионам?</summary>
+            <div class="answer">
+                <p>В таблице цена киловатт-часа тепла от газа укладывается в 1,4 раза —
+                    от 0,80 ₽ в Вологодской области до 1,11 ₽ в Калининградской,
+                    а от электричества в 2,3 раза — от 3,14 ₽ в Мурманской области
+                    до 7,28 ₽ в Москве. По стране целиком разброс шире у обоих,
+                    но соотношение устойчиво: даже самый дорогой газ дешевле самого
+                    дешёвого электричества.</p>
+            </div>
+        </details>
+
+        <details>
+            <summary>Выгоден ли электрокотёл с ночным тарифом?</summary>
+            <div class="answer">
+                <p>Ночная ставка снижает цену киловатт-часа до 1,77–4,20 ₽ в зависимости
+                    от региона, и это заметно меняет расклад, но газ всё равно остаётся
+                    дешевле. Ночной тариф имеет смысл там, где магистрального газа нет:
+                    в связке с теплоаккумулятором он делает электрокотёл рабочей основной
+                    системой, а не вынужденной мерой.</p>
+            </div>
+        </details>
+
+        <details>
+            <summary>Учитывает ли эта таблица стоимость оборудования?</summary>
+            <div class="answer">
+                <p>Нет, здесь сравнивается только цена топлива. Полная картина включает
+                    ещё стоимость котельной и её монтажа, подключение к сетям, обслуживание
+                    и трудозатраты: дрова дёшевы по топливу, но требуют места для хранения
+                    и ручной загрузки, а подключение газа к участку может стоить сотни
+                    тысяч рублей.</p>
+            </div>
+        </details>
+
+        <h2>Дальше</h2>
+        <p>
+            Цена киловатт-часа — это ставка, а не счёт. Сколько киловатт-часов
+            понадобится именно вашему дому за зиму и во что это выльется в рублях,
+            разобрано на странице <a href="/stoimost-otopleniya-gazom/">стоимости
+            отопления газом</a>: там та же методика, но с расходом за сезон
+            по 21 городу. Расклад по конкретному городу с местными тарифами —
+            на странице <a href="/goroda/">городов</a>.
+        </p>
+
+    </main>
+
+    <footer class="bottom">
+        <div class="wrap">
+            <p>
+                <a href="/">Калькулятор</a>
+                <a href="/smeta/">Смета</a>
+                <a href="/stoimost-otopleniya-gazom/">Стоимость газа</a>
+                <a href="/goroda/">Все города</a>
+                <a href="/moskva/">Москва</a>
+                <a href="/spb/">Санкт-Петербург</a>
+                <a href="/oferta.html">Оферта</a>
+                <a href="/privacy-policy.html">Конфиденциальность</a>
+                <a href="https://t.me/heatcalc">Поддержка</a>
+            </p>
+            <p>© 2026 HeatCalc.ru — инженерный калькулятор отопления, водоснабжения и канализации.</p>
+        </div>
+    </footer>
+
+</body>
+
+</html>
