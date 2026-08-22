@@ -14697,7 +14697,7 @@ const app = {
 
         if (!this.ensureAnalyticsData(wrap)) return;
 
-        const { brands, wordstat, pulse, gas } = this._analytics;
+        const { brands, wordstat, pulse, gas, trends } = this._analytics;
         if (!brands && !wordstat && !gas) {
             wrap.innerHTML = `<div style="padding:30px 0; text-align:center; color:var(--text-sec);">
                 Данных пока нет. Их собирает GitHub Actions → Wordstat Analytics: сначала режим <b>brands</b>, затем <b>monthly</b>.
@@ -14824,6 +14824,50 @@ const app = {
             return `<span title="${d.nowM}: ${num(d.now)} против ${d.baseM}: ${num(d.base)}" style="color:${color}; font-weight:700;">${sign}${d.pct}%</span>`;
         };
 
+        // ── Тот же спрос, но по Google ──────────────────────────────────────
+        // Абсолютной частоты у Google нет ни в одном открытом источнике
+        // (см. шапку AutoTrends.py), поэтому здесь только динамика — и только
+        // как проверка яндексовой: расходятся ли два источника в направлении.
+        // Столбец появляется сам, когда файл собран, — до первого прогона
+        // Actions его в таблице нет.
+        const gCats = (trends && trends.cats) || {};
+        const gSparse = new Set((trends && trends.sparse) || []);
+        const hasGoogle = Object.keys(gCats).length > 0;
+        // Месяц у двух источников может разойтись: Wordstat собирается 3-го
+        // числа, Trends 6-го, и в стык месяца один уже перешагнул границу, а
+        // другой нет. Поэтому базу ищем по ключу месяца, а не по смещению
+        // в массиве, — иначе тихо сравнили бы разные пары месяцев.
+        const shiftMonth = (key, back) => {
+            const [y, m] = String(key).split('-').map(Number);
+            const d = new Date(Date.UTC(y, (m - 1) - back, 1));
+            return d.getUTCFullYear() + '-' + String(d.getUTCMonth() + 1).padStart(2, '0');
+        };
+        const gDeltaOf = (catId) => {
+            const s = gCats[catId];
+            if (!s || !s.length || gSparse.has(catId)) return null;
+            const by = {};
+            s.forEach(p => { by[p[0]] = p[1]; });
+            const nowM = s[s.length - 1][0];
+            const baseM = shiftMonth(nowM, backMonths);
+            if (by[baseM] == null || !by[baseM]) return null;
+            return {
+                pct: Math.round((by[nowM] - by[baseM]) / by[baseM] * 100),
+                now: by[nowM], nowM: nowM, base: by[baseM], baseM: baseM
+            };
+        };
+        const gDeltaCell = (catId) => {
+            if (gSparse.has(catId)) {
+                return `<span style="color:var(--text-sec);" title="У Google по этой фразе слишком мало запросов: ряд скачет от нуля, и динамика по нему ничего не значит">·</span>`;
+            }
+            const d = gDeltaOf(catId);
+            if (!d) return `<span style="color:var(--text-sec);">—</span>`;
+            const color = d.pct > 4 ? '#10B981' : (d.pct < -4 ? '#EF4444' : 'var(--text-sec)');
+            const sign = d.pct > 0 ? '+' : '';
+            // В подсказке — сами индексы, чтобы было видно: это не запросы,
+            // а шкала 0–100, где 100 — лучший месяц этой же строки.
+            return `<span title="Индекс интереса Google, ${d.nowM}: ${d.now} против ${d.baseM}: ${d.base} (шкала 0–100 внутри строки, не запросы)" style="color:${color}; font-weight:700;">${sign}${d.pct}%</span>`;
+        };
+
         // Без истории категорий проценты посчитать не из чего, и кнопки базы
         // сравнения нажимались бы вхолостую — молча, будто интерфейс сломан.
         // Поэтому либо кнопки, либо прямое объяснение, почему их нет.
@@ -14848,7 +14892,8 @@ const app = {
                 <h4 style="margin:0; color:var(--text-main);">Наши места по категориям${region ? ` — ${esc(region)}` : ''}</h4>
                 ${hasHistory
                     ? `<span style="font-size:12px; color:var(--text-sec); margin-left:6px;">спрос к:</span>
-                       ${cmpBtn(1, 'прошлому месяцу')}${cmpBtn(3, 'кварталу')}${cmpBtn(12, 'году назад')}`
+                       ${cmpBtn(1, 'прошлому месяцу')}${cmpBtn(3, 'кварталу')}${cmpBtn(12, 'году назад')}
+                       ${hasGoogle ? `<span style="font-size:12px; color:var(--text-sec);" title="Google не отдаёт число запросов ни в одном открытом источнике — только относительный индекс. Поэтому столбец «Google» показывает лишь направление: совпадает оно с Яндексом или нет.">· столбцы считаются за одни и те же месяцы</span>` : ''}`
                     : `<span style="font-size:12px; color:#F97316; margin-left:6px;">История по категориям ещё не собрана — запустите Actions → Wordstat Analytics → brands. Тогда появятся проценты изменения и графики по каждой группе.</span>`}
               </div>
             ${ownFilter ? `<div style="font-size:12px; color:${this.brandChartColor(ownFilter.brand)}; margin:0 0 6px;">
@@ -14861,7 +14906,8 @@ const app = {
             <div style="overflow-x:auto;"><table class="inv-table">
                 <thead><tr>
                     <th>Группа прайса</th><th>Лидер спроса</th>
-                    <th style="text-align:center; width:80px;">Спрос</th>
+                    <th style="text-align:center; width:80px;" title="Изменение числа запросов в Яндексе">${hasGoogle ? 'Яндекс' : 'Спрос'}</th>
+                    ${hasGoogle ? `<th style="text-align:center; width:80px;" title="То же изменение по Google Trends — проверка чужой выборкой. Абсолютных чисел у Google нет, только направление.">Google</th>` : ''}
                     ${ownHeader('stout', 'STOUT')}
                     ${ownHeader('rommer', 'ROMMER')}
                 </tr></thead><tbody>`;
@@ -14869,7 +14915,7 @@ const app = {
         rows.forEach(r => {
             if (r.section !== lastSection) {
                 lastSection = r.section;
-                h += `<tr><td colspan="5" style="background:var(--surface-light); font-weight:700; color:var(--text-sec); font-size:12px; padding:6px 8px;">${r.section}. ${esc(r.sectionTitle)}</td></tr>`;
+                h += `<tr><td colspan="${hasGoogle ? 6 : 5}" style="background:var(--surface-light); font-weight:700; color:var(--text-sec); font-size:12px; padding:6px 8px;">${r.section}. ${esc(r.sectionTitle)}</td></tr>`;
             }
             const leadShare = r.brandTotal ? (r.leader[1] / r.brandTotal * 100) : 0;
             const lead = r.leader
@@ -14891,6 +14937,7 @@ const app = {
                 <td><b style="${open ? 'color:var(--primary);' : ''}">${open ? '▾ ' : ''}${esc(r.title)}</b>${sub}</td>
                 <td>${lead}</td>
                 <td style="text-align:center;">${deltaCell(deltaOf(r.id))}</td>
+                ${hasGoogle ? `<td style="text-align:center;">${gDeltaCell(r.id)}</td>` : ''}
                 <td style="text-align:center;">${r.ownIn.includes('stout') || r.stout ? badge(r.stout, r.ownCount.stout, r.brandTotal) : '<span style="color:var(--text-sec);" title="нет позиций в группе">·</span>'}</td>
                 <td style="text-align:center;">${r.ownIn.includes('rommer') || r.rommer ? badge(r.rommer, r.ownCount.rommer, r.brandTotal) : '<span style="color:var(--text-sec);" title="нет позиций в группе">·</span>'}</td>
             </tr>`;
@@ -15948,12 +15995,13 @@ const app = {
                     return null;
                 }
             })();
-            const [brands, wordstat, pulse, gas, companies, prices] = await Promise.all([
-                get('wordstat_brands'), get('wordstat'), get('wordstat_pulse'), get('gas'), get('companies'), get('prices')
+            const [brands, wordstat, pulse, gas, companies, prices, trends] = await Promise.all([
+                get('wordstat_brands'), get('wordstat'), get('wordstat_pulse'), get('gas'), get('companies'), get('prices'),
+                get('google_trends')
             ]);
             this._analyticsTerms = await terms;
             this._chartBrands = await chartBrands;
-            this._analytics = { brands, wordstat, pulse, gas, companies, prices };
+            this._analytics = { brands, wordstat, pulse, gas, companies, prices, trends };
             this._loadingAnalytics = false;
             if (this.OWNER_ONLY_TABS.indexOf(this._adminTab) >= 0) this.renderAdminMain();
         })();
@@ -16853,7 +16901,7 @@ const app = {
      */
     dashBuildBlocks: function () {
         const B = {};
-        const { brands, wordstat, pulse, gas, prices } = this._analytics;
+        const { brands, wordstat, pulse, gas, prices, trends } = this._analytics;
 
         const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
         const num = n => Number(n || 0).toLocaleString('ru-RU');
@@ -17064,6 +17112,7 @@ const app = {
                     ${src('🏷️', 'Марки в запросах', brands && brands.updated)}
                     ${src('📅', 'Недельный пульс', pulse && pulse.updated)}
                     ${src('🔥', 'Догазификация', gas && gas.updated)}
+                    ${src('🌐', 'Google Trends', trends && trends.updated)}
                 </div>
             </div>`);
 
@@ -19726,7 +19775,12 @@ const app = {
             inner += `<div style="font-size:12px; color:var(--text-sec);">Помесячной истории по этой группе пока нет: её собирает режим <b>brands</b>.</div>`;
         }
 
-        return `<tr><td colspan="5" style="background:var(--surface-light); padding:12px 14px;">${inner}</td></tr>`;
+        // Колонок в таблице шесть, когда собран Google Trends, и пять, пока
+        // его файла нет: раскрытая строка должна тянуться на всю ширину,
+        // иначе таблица уезжает вправо на пустую ячейку.
+        const gt = (this._analytics && this._analytics.trends) || null;
+        const cols = (gt && gt.cats && Object.keys(gt.cats).length) ? 6 : 5;
+        return `<tr><td colspan="${cols}" style="background:var(--surface-light); padding:12px 14px;">${inner}</td></tr>`;
     },
 
     /**

@@ -1,0 +1,48 @@
+name: Google Trends
+
+# Динамика спроса по Google — столбец «Google» в таблице «Наши места по
+# категориям» (вкладка «Аналитика» в админке). Проверяет яндексовую динамику
+# чужой выборкой; абсолютных чисел у Google нет, см. шапку AutoTrends.py.
+#
+# 6-го числа, после снимка Wordstat (3-го) и рейтингов марок (5-го): к этому
+# моменту прошлый месяц закрыт у обоих источников, и столбцы в таблице
+# описывают один и тот же период.
+#
+# Ключей и секретов нет: Trends открыт без авторизации. Зато он ограничивает
+# частоту обращений, поэтому 47 категорий собираются минут восемь — паузы
+# между запросами заложены в самом скрипте.
+on:
+  schedule:
+    - cron: '0 6 6 * *'
+  workflow_dispatch:
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      # Зависимостей нет: скрипт ходит в Trends через urllib.
+      - name: Run Google Trends collector
+        run: python AutoTrends.py
+      - name: Commit and push changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action Bot"
+          git add analytics/google_trends.json
+          if git diff --staged --quiet; then
+            echo "Данные Google Trends не изменились."
+          else
+            git commit -m "Автообновление данных Google Trends"
+            for i in {1..5}; do
+              git pull --rebase origin main && git push origin main && exit 0
+              git rebase --abort || true
+              sleep 5
+            done
+            exit 1
+          fi
