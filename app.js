@@ -23338,6 +23338,78 @@ const app = {
     },
 
     /**
+     * Подложки листов, прочитанных распознаванием, — в планы этого расчёта.
+     *
+     * Файл плана монтажник уже отдал вкладке «Распознать»; заставлять его
+     * выбирать тот же PDF второй раз в редакторе — лишний шаг ровно там, где
+     * человек чаще всего и бросает разметку. Картинки уезжают на тот же
+     * сервер подложек, куда их кладёт «Сохранить» редактора (plans.php), а в
+     * смете остаётся только имя файла: сотни килобайт на этаж в состоянии не
+     * держим — ровно от этого в своё время и уходили.
+     *
+     * shots — [{ b64 }] по этажам, снизу вверх. Возвращает число принятых
+     * подложек; ноль значит «не вышло», и монтажник загрузит план как раньше,
+     * руками. Молча: перенос комнат от этого не должен срываться.
+     */
+    adoptPlanBackdrops: async function (shots) {
+        const list = (shots || []).filter(s => s && s.b64);
+        if (!list.length || !this.canUseDesign()) return 0;
+        if (!this.state.calc_id) { this.ensureCalcId(true); this.saveState(); }
+
+        // Разметка уже есть — затирать её молча нельзя, в ней ручная работа.
+        const old = this.state.plans;
+        const marked = old && (old.floors || []).some(f =>
+            f && (((f.zones || []).length) || ((f.rads || []).length)));
+        if (marked && !await this.confirm(
+            'У этого объекта уже размечены планы этажей. Заменить подложки листами ' +
+            'с распознавания? Зоны, радиаторы и приборы придётся разметить заново.')) return 0;
+
+        const token = await this.recognitionToken();
+        if (!token) return 0;
+        // Ключ папки подложек на сервере: у объекта он один и переживает
+        // замену листов — иначе прежние картинки остались бы там навсегда.
+        let key = (old && /^[a-f0-9]{32}$/.test(old.key || '')) ? old.key : null;
+        if (!key) {
+            const a = new Uint8Array(16);
+            crypto.getRandomValues(a);
+            key = Array.prototype.map.call(a, b => (b < 16 ? '0' : '') + b.toString(16)).join('');
+        }
+
+        const sizeOf = url => new Promise((ok, err) => {
+            const im = new Image();
+            im.onload = () => ok({ w: im.naturalWidth, h: im.naturalHeight });
+            im.onerror = () => err(new Error('картинка не читается'));
+            im.src = url;
+        });
+
+        const floors = [];
+        for (let i = 0; i < list.length; i++) {
+            try {
+                const size = await sizeOf('data:image/jpeg;base64,' + list[i].b64);
+                const r = await fetch(this.PLANS_ENDPOINT, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                    body: JSON.stringify({ action: 'put', key: key, floor: floors.length + 1,
+                        ext: 'jpg', data: list[i].b64 })
+                });
+                const j = await r.json().catch(() => ({}));
+                if (!r.ok || !j.file) throw new Error(j.error || ('сервер ответил ' + r.status));
+                floors.push({ imgFile: j.file, w: size.w, h: size.h, pxPerM: 0, zones: [], rads: [] });
+            } catch (e) {
+                console.warn('[планы] подложка ' + (i + 1) + ' не перенесена:', e.message);
+            }
+        }
+        if (!floors.length) return 0;
+
+        this.state.plans = { key: key, floors: floors };
+        this.saveState();
+        this.pushPlansToEditor();
+        if (typeof this.renderPlanChecks === 'function') this.renderPlanChecks();
+        if (typeof this.renderPlanAreaNote === 'function') this.renderPlanAreaNote();
+        return floors.length;
+    },
+
+    /**
      * Обратный ход: редактор сохранил планы — забираем их в смету.
      * Возвращает true, если разметка действительно изменилась.
      */

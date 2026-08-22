@@ -64,6 +64,10 @@
   button.on { background: var(--primary); color: #fff; border-color: var(--primary-dim); }
   button.on:hover { background: var(--primary-dim); }
   button.ghost { background: transparent; color: var(--text-sec); border-color: var(--border-soft); }
+  /* Главное действие панели: делает разом то, на что ниже пять кнопок. */
+  button.go { background: var(--ok); border-color: var(--ok); color: #fff; font-weight: 600; }
+  button.go:hover { background: var(--ok); border-color: #fff; }
+  button.go:disabled { opacity: .5; cursor: default; }
   button.ghost:hover { background: var(--surface-light); color: var(--text-main); }
   input[type=text] { background: #2a2a2a; border-color: #222; cursor: text; }
   input[type=text]:focus { outline: none; border-color: var(--primary); }
@@ -169,8 +173,10 @@
   <label class="ghost" id="b_upload" style="padding:6px 12px;border-radius:8px;font-weight:600;font-size:13px;cursor:pointer">
     Загрузить план <input type="file" multiple accept="image/*,.pdf,application/pdf" style="display:none" onchange="loadImage(this)">
   </label>
+  <button id="b_automark" class="go" onclick="autoMarkAll()" title="Масштаб, зоны, радиаторы и коллектор — по всем этажам сразу, и сохранить">Разметить всё</button>
   <button id="b_scale" onclick="setMode('scale')">Масштаб</button>
-  <button id="b_autorooms" onclick="autoRooms()" title="Найти все комнаты по стенам и создать зоны ТП по комнатам расчёта">Распознать комнаты</button>
+  <button id="b_autoscale" onclick="autoScale()" title="Подобрать масштаб по площадям комнат подробного расчёта">Масштаб по расчёту</button>
+  <button id="b_autorooms" onclick="autoRooms()" title="Найти все комнаты по стенам и создать зоны по комнатам расчёта: тёплый пол, котельная, санузлы">Распознать комнаты</button>
   <button id="b_room" onclick="setMode('room')">Зона: по клику</button>
   <button id="b_rect" onclick="setMode('rect')">Зона: прямоугольник</button>
   <button id="b_poly" onclick="setMode('poly')">Зона: контур</button>
@@ -564,12 +570,19 @@ function applyPlanCanvas(c) {
   // имя появится заново после «Сохранить».
   f.imgFile = null;
   f.w = c.width; f.h = c.height; f.pxPerM = 0; f.zones = [];
-  delete imgCache[cur];
   delete imgFailed[cur];
   delete maskCache[cur];
   delete winCache[cur];
-  hint('План загружен. Кликните две точки известного отрезка — режим масштаба уже включён.');
+  // Канвас уже нарисован — кладём его в кэш как есть: и первая отрисовка
+  // быстрее, и карта стен строится сразу, не дожидаясь, пока браузер
+  // раскодирует обратно тот же JPEG.
+  imgCache[cur] = c;
   draw(); renderZones();
+  // Масштаб — единственное число разметки, которого нет ни на чертеже, ни в
+  // расчёте. Комнаты этажа посчитаны — подбираем его по их площадям, и лист
+  // сразу готов к «Распознать комнаты». Не вышло — как раньше, вручную.
+  if (autoScale(true)) { if (mode !== 'select') setMode('select'); return; }
+  hint('План загружен. Кликните две точки известного отрезка — режим масштаба уже включён.');
   // Следующий шаг после загрузки всегда один и тот же, поэтому режим
   // масштаба включаем сами: нажимать «Масштаб» вручную незачем. Проверка
   // на текущий режим обязательна — setMode переключает, и повторный вызов
@@ -1530,11 +1543,314 @@ function pip(p, pts) {  // точка внутри полигона (ray casting
   return inn;
 }
 
-/** «Распознать комнаты»: зоны ТП по комнатам подробного расчёта.
+/** Сброс всего, что считалось от масштаба: метки комнат живут на маске, окна
+ *  и двери — в своём кэше. Без этого смена масштаба оставляла бы на этаже
+ *  комнаты и окна, отмеренные по прежнему числу. */
+function resetScaleCaches() {
+  var m = maskCache[cur];
+  if (m) { m.labels = null; m.labCnt = null; m.labEdge = null; m.labMin = null; m.labN = 0; }
+  delete winCache[cur];
+  DOORS = [];
+}
+
+/** Медиана: одна ошибочная комната не должна утащить за собой масштаб. */
+function median(a) {
+  var v = a.slice().sort(function (x, y) { return x - y; });
+  if (!v.length) return 0;
+  return v.length % 2 ? v[(v.length - 1) / 2]
+                      : (v[v.length / 2 - 1] + v[v.length / 2]) / 2;
+}
+
+/** Площади найденных на плане комнат (м²) при пробном масштабе.
+ *  Сегментация сама зависит от масштаба — labelRooms отделяет комнаты по
+ *  проёмам радиусом, заданным в метрах, — поэтому метки сбрасываются на
+ *  каждый прогон, а прежний масштаб возвращается на место. */
+function roomAreasAt(ppmTry) {
+  var f = F(), was = f.pxPerM, out = [];
+  if (!getMask()) return out;
+  f.pxPerM = ppmTry;
+  resetScaleCaches();
+  try { out = enumerateRooms().map(function (r) { return r.m2; }); }
+  catch (e) { console.error('[plan_editor] scale rooms:', e); }
+  f.pxPerM = was;
+  resetScaleCaches();
+  return out;
+}
+
+/** Общий множитель площадей: самое плотное скопление отношений «комната
+ *  расчёта к комнате плана».
+ *
+ *  Пары не сводятся по порядку размера: на плане всегда находятся помещения,
+ *  которых в расчёте нет (коридоры, гардеробные, лоджии), и одно лишнее сбило
+ *  бы весь ряд. Берём ВСЕ отношения: верные ложатся кучно вокруг истинного
+ *  множителя, случайные рассыпаются. Окно шириной ±8% по стороне помещения
+ *  (±17% по площади) с наибольшим числом отношений и даёт ответ. */
+function fitAreaRatio(measured, targets) {
+  var rs = [];
+  measured.forEach(function (a) {
+    if (a > 0) targets.forEach(function (b) { if (b > 0) rs.push(b / a); });
+  });
+  if (rs.length < 2) return null;
+  rs.sort(function (x, y) { return x - y; });
+  var bi = 0, bj = 0;
+  for (var i = 0; i < rs.length; i++) {
+    var hi = rs[i] * 1.17, j = i;
+    while (j + 1 < rs.length && rs[j + 1] <= hi) j++;
+    if (j - i > bj - bi) { bi = i; bj = j; }
+  }
+  return median(rs.slice(bi, bj + 1));
+}
+
+/** Сколько комнат плана сошлись с расчётом при этом множителе — мера доверия
+ *  к масштабу. Комната расчёта занята одной комнатой плана: две одинаковые
+ *  спальни не должны считаться за одно совпадение дважды. */
+function agreeCount(measured, targets, ratio) {
+  var used = {}, ok = 0;
+  measured.forEach(function (a) {
+    var bestJ = -1, bestE = 1;
+    targets.forEach(function (b, j) {
+      if (used[j] || !(b > 0)) return;
+      var e = Math.abs(a * ratio - b) / b;
+      if (e < bestE) { bestE = e; bestJ = j; }
+    });
+    if (bestJ >= 0 && bestE <= 0.12) { used[bestJ] = 1; ok++; }
+  });
+  return ok;
+}
+
+/** Масштаб по площадям комнат расчёта: сколько пикселей плана в метре.
+ *
+ *  Единственное число разметки, которого нет ни на чертеже, ни в расчёте, —
+ *  и без него не работают ни авторазметка комнат, ни расстановка радиаторов.
+ *  Считаем от обратного: помещения на плане уже находятся по стенам, их
+ *  площади в расчёте известны, остаётся подобрать множитель.
+ *
+ *  Одного прогона мало: при заведомо неверном масштабе комнаты слипаются
+ *  через проёмы или рассыпаются на куски. Поэтому идём лесенкой пробных
+ *  масштабов, у каждого меряем согласие с расчётом, а лучший уточняем ещё
+ *  дважды — уже на его собственной сегментации. */
+function guessScale() {
+  var targets = calcRooms.filter(function (r) {
+    return (+r.floor || 1) === cur + 1 && r.area > 0;
+  }).map(function (r) { return r.area; });
+  if (targets.length < 2) return null;
+  var best = null;
+  [40, 70, 110, 170, 260].forEach(function (ppmTry) {
+    var meas = roomAreasAt(ppmTry);
+    var ratio = fitAreaRatio(meas, targets);
+    if (!ratio) return;
+    var ppm = ppmTry / Math.sqrt(ratio), ok = agreeCount(meas, targets, ratio);
+    if (ppm < 10 || ppm > 600) return;
+    if (!best || ok > best.ok) best = { ppm: ppm, ok: ok };
+  });
+  if (!best) return null;
+  for (var k = 0; k < 2; k++) {
+    var meas2 = roomAreasAt(best.ppm);
+    var ratio2 = fitAreaRatio(meas2, targets);
+    if (!ratio2) break;
+    var ppm2 = best.ppm / Math.sqrt(ratio2), ok2 = agreeCount(meas2, targets, ratio2);
+    if (ppm2 < 10 || ppm2 > 600 || ok2 < best.ok) break;
+    var settled = Math.abs(ppm2 - best.ppm) / best.ppm < 0.02;
+    best = { ppm: ppm2, ok: ok2 };
+    if (settled) break;
+  }
+  best.total = targets.length;
+  // Три сошедшиеся комнаты (или все, если их всего две) — граница, ниже
+  // которой это уже не подбор, а совпадение.
+  return best.ok >= Math.min(3, targets.length) ? best : null;
+}
+
+/** Чем проверить подобранный масштаб: ширина дверных проёмов. Величина
+ *  известна каждому монтажнику — 0,8–0,9 м, и разъехавшийся масштаб виден по
+ *  ней сразу, в отличие от площадей, по которым он и подбирался. */
+function doorWidthM() {
+  try { detectWindows(); } catch (e) { return 0; }
+  var f = F();
+  if (!DOORS.length || !f.pxPerM) return 0;
+  return median(DOORS.map(function (d) { return d.w / f.pxPerM; }));
+}
+
+/** Кнопка «Масштаб по расчёту», она же автоподбор при загрузке плана.
+ *  silent — молчать о неудаче: при загрузке плана комнат в расчёте может и
+ *  не быть, ругаться тут не на что. */
+function autoScale(silent) {
+  var g = null;
+  try { g = guessScale(); } catch (e) { console.error('[plan_editor] scale:', e); }
+  if (!g) {
+    if (!silent) hint('Масштаб по расчёту подобрать не удалось. Задайте его кнопкой ' +
+      '«Масштаб»: две точки отрезка с известной длиной. Для подбора нужны хотя бы три ' +
+      'комнаты этажа в подробном расчёте и читаемые стены на подложке.');
+    return false;
+  }
+  // Проверяем не тем, чем подбирали: площади можно свести к чему угодно, если
+  // комнаты в расчёте вообще от другого объекта, а ширина дверного проёма —
+  // величина известная. Вышло полтора метра — подобрался не масштаб, а
+  // совпадение, и такой лучше не ставить вовсе.
+  var f = F(), was = f.pxPerM;
+  f.pxPerM = g.ppm; resetScaleCaches();
+  var dw = doorWidthM();
+  f.pxPerM = was; resetScaleCaches();
+  if (dw && (dw < 0.6 || dw > 1.3)) {
+    if (!silent) hint('Масштаб по расчёту не принят: при нём дверные проёмы плана выходят ' +
+      dw.toFixed(2).replace('.', ',') + ' м вместо обычных 0,8–0,9. Похоже, комнаты в ' +
+      'расчёте не от этого этажа. Задайте масштаб кнопкой «Масштаб».');
+    return false;
+  }
+  // При загрузке отменять нечего: снимок 'plan' уже сделан и масштаб в нём.
+  if (!silent) pushUndo('scale');
+  f.pxPerM = g.ppm;
+  resetScaleCaches();
+  renderZones(); draw(); updateGuide();
+  hint('<span class=ok>Масштаб подобран по площадям комнат расчёта: сошлось ' + g.ok +
+    ' из ' + g.total + '.</span> ' +
+    (dw ? 'Проверьте: дверные проёмы получились ' + dw.toFixed(2).replace('.', ',') +
+      ' м — если это не так, задайте масштаб кнопкой «Масштаб». '
+        : 'Проверьте его кнопкой «Масштаб» по любому известному размеру. ') +
+    'Дальше — «Распознать комнаты».');
+  return true;
+}
+
+/** Подложка на месте, а масштаба у этажа нет — подбираем сам.
+ *
+ *  Нужно для планов, пришедших не из файла, а из распознавания: их подложку
+ *  кладёт калькулятор, applyPlanCanvas в этом случае не работает. Один раз на
+ *  этаж: не подобрался — значит, монтажник задаст его вручную, и навязываться
+ *  на каждой перерисовке незачем. Через таймер, потому что зовут отсюда из
+ *  draw(), а autoScale сам draw() и вызывает. */
+var scaleTried = {};
+function tryAutoScaleOnce() {
+  var f = F();
+  if (!f || !f.img || f.pxPerM || scaleTried[cur] || !imgCache[cur]) return;
+  scaleTried[cur] = true;
+  setTimeout(function () { autoScale(true); }, 0);
+}
+
+/** Подложка этажа в кэше картинок: маску по ней строит getMask, а он берёт
+ *  только готовую. Для текущего этажа это делает draw(), для остальных — никто:
+ *  их разметка идёт «вслепую», без открытия вкладки. */
+function ensureImage(fi) {
+  return new Promise(function (ok) {
+    var f = DATA.floors[fi];
+    if (!f || !f.img) { ok(false); return; }
+    if (imgCache[fi]) { ok(true); return; }
+    var im = new Image();
+    if (f.img.indexOf('data:') !== 0) im.crossOrigin = 'anonymous';
+    im.onload = function () { imgCache[fi] = im; ok(true); };
+    im.onerror = function () { ok(false); };
+    im.src = f.img;
+  });
+}
+
+/**
+ * «Разметить всё»: масштаб → комнаты → радиаторы → коллектор → сохранение,
+ * по всем этажам подряд.
+ *
+ * Ничего нового кнопка не считает — зовёт те же autoScale, autoRooms, autoRads
+ * и saveAll. Но по отдельности их пять, идут они в строгом порядке и на каждом
+ * этаже заново, а бросают разметку ровно на середине этого порядка.
+ *
+ * Уже размеченное не сносится: autoRooms пропускает комнаты, где зона есть,
+ * autoRads — окна, под которыми уже стоит радиатор. Поэтому нажать её можно и
+ * после ручных правок, и второй раз подряд.
+ */
+var autoBusy = false;
+function autoMarkAll() {
+  if (autoBusy) return;
+  if (!DATA.floors.some(function (f) { return f.img; })) {
+    alert('Сначала загрузите план этажа.'); return;
+  }
+  autoBusy = true;
+  var btn = document.getElementById('b_automark');
+  if (btn) btn.disabled = true;
+  var was = cur, zones = 0, rads = 0, colls = 0, bad = [];
+  // Возвращаем обещание: кнопке оно не нужно, но по нему видно, когда разметка
+  // кончилась, — этим пользуется стенд, и это же понадобится, если запускать
+  // разметку не рукой.
+  var chain = Promise.resolve();
+  DATA.floors.forEach(function (f, fi) {
+    chain = chain.then(function () {
+      if (!f.img) return null;
+      cur = fi;
+      hint('Размечаю ' + (fi + 1) + '-й этаж из ' + DATA.floors.length + '…');
+      return ensureImage(fi).then(function (okImg) {
+        var name = (fi + 1) + '-й этаж';
+        if (!okImg) { bad.push(name + ' — подложка не открылась'); return; }
+        if (!f.pxPerM) autoScale(true);
+        if (!f.pxPerM) { bad.push(name + ' — не подобрался масштаб'); return; }
+        var z0 = f.zones.length, r0 = (f.rads || []).length;
+        autoRooms();
+        autoRads();
+        zones += f.zones.length - z0;
+        rads += (f.rads || []).length - r0;
+        // Коллектор ТП ставим в котельную — там он и стоит. Котельной на
+        // этаже нет, а тёплый пол есть — место неочевидно, точку ставит
+        // монтажник, и об этом надо сказать вслух.
+        var hasTp = f.zones.some(function (z) { return z.type === 'tp'; });
+        var bz = null;
+        f.zones.forEach(function (z) { if (z.type === 'boiler') bz = z; });
+        if (hasTp && !f.coll) {
+          if (bz) {
+            var c = centroid(bz.pts);
+            f.coll = { x: Math.round(c[0]), y: Math.round(c[1]) };
+            colls++;
+          } else {
+            bad.push(name + ' — некуда поставить коллектор ТП: котельная не отмечена');
+          }
+        }
+      });
+    });
+  });
+  return chain.then(function () {
+    cur = was;
+    if (mode !== 'select') setMode('select');
+    renderTabs(); renderZones(); draw(); updateGuide();
+    return saveAll();      // сохранение считает трассы, подводки и контуры стен
+  }).then(function () {
+    var done = zones + rads + colls;
+    hint((done
+      ? '<span class=ok>Разметка готова и сохранена.</span> Зон: ' + zones +
+        ', радиаторов: ' + rads + (colls ? ', коллекторов ТП: ' + colls : '') + '. '
+      : '<span class=ok>Сохранено.</span> Новых зон и радиаторов не нашлось. ') +
+      (bad.length ? '<b>Осталось руками:</b> ' + bad.join('; ') + '. ' : '') +
+      'Проверьте зоны и радиаторы — и «Листы проекта» в калькуляторе.');
+  })['catch'](function (e) {
+    console.error('[plan_editor] авторазметка:', e);
+    hint('Разметить всё не удалось: ' + (e && e.message ? e.message : e) +
+      '. Пройдите шаги по одному — кнопками выше.');
+  }).then(function () {
+    autoBusy = false;
+    if (btn) btn.disabled = false;
+  });
+}
+
+/** Какими зонами комната подробного расчёта ложится на план.
+ *
+ *  Назначение помещения важнее системы: котельная и санузел дают зону своего
+ *  типа — по ним собираются компоновка котельной и листы водоснабжения с
+ *  канализацией. Тёплый пол в том же помещении добавляется второй зоной по
+ *  тому же контуру: убрать его нельзя, из геометрии выпадут петли, по которым
+ *  смета считает трубу. */
+function zoneKindsOfRoom(r) {
+  var out = [], nm = (r && r.name) || '';
+  if (/котельн|топочн|бойлерн/i.test(nm)) out.push('boiler');
+  else if (wcCardOf(nm)) out.push('wc');
+  if (((r && r.sys) || []).indexOf('tp') >= 0) out.push('tp');
+  return out;
+}
+
+/** Отмечена ли котельная хоть на одном этаже: в доме она одна. */
+function hasBoilerZone() {
+  return DATA.floors.some(function (fl) {
+    return (fl.zones || []).some(function (z) { return z.type === 'boiler'; });
+  });
+}
+
+/** «Распознать комнаты»: зоны по комнатам подробного расчёта — тёплый пол,
+ *  котельная и санузлы, тип берётся из самой комнаты (zoneKindsOfRoom).
  *  Сопоставление по площади (лучшие пары, допуск 25% или 2 м²); без расчёта —
- *  зоны для всех найденных комнат. Уже размеченные комнаты не трогаются. */
+ *  зоны ТП для всех найденных комнат. Уже размеченные комнаты не трогаются. */
 function autoRooms() {
-  if (!F().pxPerM) { alert('Сначала задайте масштаб.'); return; }
+  if (!F().pxPerM) { alert('Сначала задайте масштаб: кнопкой «Масштаб по расчёту» или «Масштаб».'); return; }
   var rooms = [];
   try { rooms = enumerateRooms(); } catch (e) { console.error('[plan_editor] rooms:', e); }
   if (!rooms.length) {
@@ -1546,10 +1862,10 @@ function autoRooms() {
     return !F().zones.some(function (z) { return pip(c, z.pts); });
   });
   var targets = calcRooms.filter(function (r) {
-    return r.sys.indexOf('tp') >= 0 && (+r.floor || 1) === cur + 1;
+    return (+r.floor || 1) === cur + 1 && zoneKindsOfRoom(r).length;
   });
   pushUndo('zones');
-  var made = 0, missed = [];
+  var made = 0, missed = [], cnt = {}, boiler = hasBoilerZone();
   if (targets.length) {
     var pairs = [];
     targets.forEach(function (t, ti) {
@@ -1562,9 +1878,16 @@ function autoRooms() {
       var t = targets[p[1]];
       if (p[0] > Math.max(2, 0.25 * t.area)) return;
       tU[p[1]] = 1; cU[p[2]] = 1;
-      F().zones.push({ type: 'tp', name: t.name,
-        pts: simplifyZone(free[p[2]].pts, F().pxPerM || 100) });
-      made++;
+      var pts = simplifyZone(free[p[2]].pts, F().pxPerM || 100);
+      zoneKindsOfRoom(t).forEach(function (kind) {
+        // Вторую котельную не заводим: на этаже её запрещает addZone, а в
+        // доме она одна — по ней собирается компоновка.
+        if (kind === 'boiler' && boiler) return;
+        if (kind === 'boiler') boiler = true;
+        F().zones.push({ type: kind, name: t.name, pts: pts });
+        cnt[kind] = (cnt[kind] || 0) + 1;
+        made++;
+      });
     });
     targets.forEach(function (t, ti) { if (!tU[ti]) missed.push(t.name); });
   }
@@ -1573,17 +1896,26 @@ function autoRooms() {
       F().zones.push({ type: 'tp', name: '', pts: simplifyZone(c.pts, F().pxPerM || 100) });
       made++;
     });
+    cnt = { tp: made };
     missed = [];
   }
+  // Санузел подписан именем из расчёта — приборы по его карточке встают сами
+  if (cnt.wc && fixAuto) refreshAutoFixtures();
   renderZones(); draw();
-  hint('<span class=ok>Найдено комнат: ' + rooms.length + ', создано зон ТП: ' + made + '.</span>' +
+  var NAMES = { tp: 'тёплый пол', boiler: 'котельная', wc: 'санузлы' };
+  var parts = ['tp', 'boiler', 'wc'].filter(function (k) { return cnt[k]; })
+    .map(function (k) { return NAMES[k] + ' ' + cnt[k]; });
+  hint('<span class=ok>Найдено комнат: ' + rooms.length + ', создано зон: ' +
+    (parts.length ? parts.join(', ') : '0') + '.</span>' +
     (missed.length ? ' Не совпали по площади: ' + missed.join(', ') + ' — обведите вручную.' : '') +
+    (hasBoilerZone() ? '' : ' Котельную отметьте сами (тип зоны «Котельная») — ' +
+      'без неё проект не выпускается.') +
     ' Лишние зоны удаляйте крестиком, имена правятся в списке.');
 }
 
 /** Кнопка «Под окна»: расставить радиаторы по найденным окнам */
 function autoRads() {
-  if (!F().pxPerM) { alert('Сначала задайте масштаб.'); return; }
+  if (!F().pxPerM) { alert('Сначала задайте масштаб: кнопкой «Масштаб по расчёту» или «Масштаб».'); return; }
   var wins = floorWindows();
   if (!wins.length) {
     hint('Окна распознать не удалось (нечёткий план?) — расставьте радиаторы кликами.');
@@ -1690,8 +2022,13 @@ function loadImage(inp) {
     });
   });
   if (files.length > 1) chain.then(function () {
-    hint('Загружено файлов: ' + files.length +
-      '. Задайте масштаб на каждом этаже (вкладки сверху).');
+    // Масштаб на каждом этаже подбирается сам; напоминаем только про те,
+    // где не вышло, — иначе подсказка гонит делать уже сделанное.
+    var left = DATA.floors.filter(function (fl) { return fl.img && !fl.pxPerM; }).length;
+    hint('Загружено файлов: ' + files.length + '. ' + (left
+      ? 'Задайте масштаб на этажах, где он не подобрался: ' + left +
+        ' из ' + DATA.floors.length + ' (вкладки сверху).'
+      : 'Масштаб подобран на всех этажах — проверьте его и размечайте комнаты.'));
   });
 }
 
@@ -1868,6 +2205,7 @@ function draw() {
     im.src = f.img; return;
   }
   var im2 = imgCache[cur];
+  tryAutoScaleOnce();
   if (im2) {
     cv.width = 1200; cv.height = Math.round(1200 * f.h / f.w);
   } else { cv.width = 1200; cv.height = 850; }
@@ -2393,6 +2731,7 @@ cv.addEventListener('click', function (e) {
       if (m > 0) {
         pushUndo('scale');
         F().pxPerM = d / m;
+        resetScaleCaches();
         hint('<span class=ok>Масштаб задан.</span> Теперь обведите зоны.');
       }
       scalePts = []; scaleCur = null; setMode('select');
@@ -2933,20 +3272,21 @@ function stepTip(s, L) {
   var f = F();
   var wcZones = f.zones.filter(function (z) { return z.type === 'wc'; });
   var TXT = {
-    plan: 'Загрузите план этажа: фото, скан или PDF. Можно выбрать сразу несколько файлов — каждый станет своим этажом.',
-    scale: 'Задайте масштаб: нажмите «Масштаб», затем кликните две точки отрезка с известной длиной и введите её в метрах. Без масштаба площади зон не посчитать.',
-    tp: 'Нажмите «Распознать комнаты» — все комнаты найдутся по стенам, а зоны ТП создадутся и подпишутся по комнатам подробного расчёта. Поправить можно вручную: «Зона: по клику» внутри комнаты или «Зона: контур». Нет тёплого пола на этаже — переходите к радиаторам.',
+    plan: 'Загрузите план этажа: фото, скан или PDF. Можно выбрать сразу несколько файлов — каждый станет своим этажом. Дальше всё остальное делает кнопка «Разметить всё»: масштаб, зоны, радиаторы, коллектор и сохранение — по всем этажам сразу. Шаги ниже остаются, чтобы проверить и поправить сделанное.',
+    scale: 'Масштаб обычно подбирается сам при загрузке плана — по площадям комнат подробного расчёта; кнопка «Масштаб по расчёту» повторяет подбор. Если комнат в расчёте нет или стены на подложке не читаются, задайте вручную: «Масштаб», две точки отрезка с известной длиной и его длина в метрах. Без масштаба площади зон не посчитать.',
+    tp: 'Нажмите «Распознать комнаты» — все комнаты найдутся по стенам, а зоны создадутся и подпишутся по комнатам подробного расчёта: тёплый пол, котельная и санузлы сразу своим типом. Поправить можно вручную: «Зона: по клику» внутри комнаты или «Зона: контур». Нет тёплого пола на этаже — переходите к радиаторам.',
     rad: 'Нажмите «Под окна» — радиаторы расставятся по найденным окнам. Лишние убираются кликом по значку, недостающие добавляются кликом в режиме «Радиаторы». Нет радиаторов на этаже — переходите дальше.',
     coll: 'Нажмите «Коллектор» и кликните, где он будет стоять (обычно в котельной). От коллектора на листе «Тёплый пол» нарисуются подводки ко всем петлям, а длины петель посчитаются вместе с ними.',
-    boiler: 'Отдельной кнопки у котельной нет: это тип зоны. Нажмите «Котельная» в полоске шагов — список типов переключится сам — и кликните внутри помещения котельной. Его размеры уйдут на лист «Компоновка котельной». Отмечается один раз, на любом этаже.',
+    boiler: 'Если в подробном расчёте есть помещение «Котельная», её отмечает кнопка «Распознать комнаты» — вместе с остальными зонами. Не нашлась (нет такой комнаты в расчёте или площадь разошлась) — нажмите «Котельная» в полоске шагов, список типов переключится сам, и кликните внутри помещения. Его размеры уйдут на лист «Компоновка котельной». Отмечается один раз, на любом этаже.',
     wc: 'В расчёте есть санузлы (' + calcWc.map(function (w) { return w.name; }).join(', ') +
-      '). Нажмите «Санузлы» в полоске шагов, кликните внутри помещения и впишите его имя как в расчёте — ' +
+      '). Кнопка «Распознать комнаты» обводит и подписывает их сама. Не нашлись — нажмите «Санузлы» в полоске шагов, кликните внутри помещения и впишите его имя как в расчёте — ' +
       'приборы и стояк канализации расставятся сами, а листы водоснабжения и канализации соберутся по ним. ' +
       'Нужен особый прибор — переключите «Приборы: вручную» и добавьте кликом.' +
-      (wcZones.length ? '<br><b>Обведено зон: ' + wcZones.length + ', подписано: 0.</b>' : ''),
+      (wcZones.length ? '<br><b>Обведено зон: ' + wcZones.length + ', подписано: ' +
+        wcZones.filter(function (z) { return wcCardOf(z.name); }).length + '.</b>' : ''),
     names: 'Подпишите зоны именами комнат: клик по комнате в списке «Комнаты из расчёта» справа подставит имя первой безымянной зоне.'
   };
-  var BTN = { plan: 'b_upload', scale: 'b_scale', tp: 'b_autorooms', rad: 'b_autorad',
+  var BTN = { plan: 'b_upload', scale: 'b_autoscale', tp: 'b_autorooms', rad: 'b_autorad',
               coll: 'b_coll', boiler: 'ztype', wc: 'ztype', names: 'b_save' };
   var DEMO = { scale: 'scale', tp: 'room', boiler: 'room', wc: 'room' };
   return {
@@ -3087,7 +3427,7 @@ function stepDefs() {
 
   var L = [];
   L.push({ id: 'plan', t: 'План', ok: !!f.img, btn: ['b_upload'] });
-  L.push({ id: 'scale', t: 'Масштаб', ok: !!f.pxPerM, btn: ['b_scale'], mode: 'scale' });
+  L.push({ id: 'scale', t: 'Масштаб', ok: !!f.pxPerM, btn: ['b_autoscale', 'b_scale'], mode: 'scale' });
   L.push({ id: 'tp', t: 'Тёплый пол', ok: hasTp, type: 'tp', mode: 'room',
            btn: ['b_autorooms', 'b_room', 'b_rect', 'b_poly', 'ztype'] });
   L.push({ id: 'rad', t: 'Радиаторы', ok: (f.rads || []).length > 0, mode: 'rad',
@@ -3095,9 +3435,9 @@ function stepDefs() {
   if (hasTp) L.push({ id: 'coll', t: 'Коллектор ТП', ok: !!f.coll, mode: 'coll',
                       btn: ['b_coll'] });
   L.push({ id: 'boiler', t: 'Котельная', ok: hasBoiler, type: 'boiler', mode: 'room',
-           btn: ['b_room', 'b_rect', 'b_poly', 'ztype'] });
+           btn: ['b_autorooms', 'b_room', 'b_rect', 'b_poly', 'ztype'] });
   if (calcWc.length) L.push({ id: 'wc', t: 'Санузлы', ok: wcNamed > 0, type: 'wc', mode: 'room',
-                              btn: ['b_room', 'b_rect', 'b_poly', 'ztype', 'b_fixauto', 'b_wc', 'wctype'] });
+                              btn: ['b_autorooms', 'b_room', 'b_rect', 'b_poly', 'ztype', 'b_fixauto', 'b_wc', 'wctype'] });
   // Подписывают зоны в правой колонке, кнопки шапки для этого не нужны — но
   // пустая шапка выглядит поломкой, да и имена обычно правят заодно с
   // самими зонами. Поэтому инструменты зон тут остаются.
