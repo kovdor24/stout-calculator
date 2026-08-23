@@ -1021,7 +1021,7 @@ const app = {
     currentAuthTab: 'login',
     pendingRegistration: null,
     adminData: { users: [], estimates: [], recentEstimates: [], userEstimates: [] },
-    state: { objectType: 'house', flatPosition: 'middle', flatCorner: false, flatHotRiser: true, flatRiser: 'riser', flatRooms: 2, flatRoomsManual: false, flatHouse: 'brick', flatBaths: 1, flatSewer: false, flatUfhKind: 'electric', flatUfhCover: 'tile', flatUfhCtrl: 'mech', flatUfhZones: 1, waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, waterFilterLevel: 'none', waterReducer: false, waterMeter: false, waterLeakGuard: true, waterFrame: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, rigOff: {}, qtyOverrides: {}, darkMode: false, area: 0, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 0, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', tankMount: 'floor', tankHeat: 'cos', tankVol: null, tankSwapMount: null, tankSwapHeat: null, tankSwapVol: null, ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', boilerSeriesManual: false, elBoilerPower: null, elPowerLimit: 15, elPowerLimitOff: false, elPhase: '380', elTariff: 6, elTariffNight: 3, elTariffMode: 'day_night', showElCost: false, showGasCost: false, gasTariffMode: 'main', gasTariff: null, gasTariffManual: false, lpgTariff: 26, polisKit: 'gbm', radBottomKit: 'gtube', hydroType: 'combo', pipeType: 'insulated', ufhPipeMaterial: 'pex', waterPipeMaterial: 'pex', ufhBaseType: 'mat', radManifoldType: 'standard', waterManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, boilerAuto: false, boilerAutoLevel: 'auto', leakProtect: false, leakSensors: null, feedType: 'manual', airControl: false, airDeviceType: 'sensor', airLink: 'wired', airSensors: null, ctrlPanel: false, servoAutoSwapped: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, worksDiscount: 0, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', towelWarmer: { enabled: false, type: 'electric', count: null, modelId: 'SHQ-J2RR-008050', color: 'all', series: 'all' }, roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, sectionScheme: {}, last_saved_date: "", ufhMixType: 'std', ufhDT: null, sewerClampsType: 'standard', sewerClampsD58Type: 'standard', boilerFrameType: 'profile_single', expansionTankMountType: 'standard', pipeMountType: 'hidden', boilerFrameFastenerType: 'anchor', mountPlateSingleType: 'SAC-0022-600001', mountPlateDouble100Type: 'SAC-0022-600100', mountPlateDouble150Type: 'SAC-0022-600150', radRegime: 'r8060', servoType: null, snowMelt: false, snowZones: [], snowCtrl: 'sensor', snowInBoilerPower: true, showSnowPanel: false, snowPipe: 'thin' },
+    state: { objectType: 'house', flatPosition: 'middle', flatCorner: false, flatHotRiser: true, flatRiser: 'riser', flatRooms: 2, flatRoomsManual: false, flatResManual: false, flatHouse: 'brick', flatBaths: 1, flatSewer: false, flatUfhKind: 'electric', flatUfhCover: 'tile', flatUfhCtrl: 'mech', flatUfhZones: 1, waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, waterFilterLevel: 'none', waterReducer: false, waterMeter: false, waterLeakGuard: true, waterFrame: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, rigOff: {}, qtyOverrides: {}, darkMode: false, area: 0, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 0, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', tankMount: 'floor', tankHeat: 'cos', tankVol: null, tankSwapMount: null, tankSwapHeat: null, tankSwapVol: null, ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', boilerSeriesManual: false, elBoilerPower: null, elPowerLimit: 15, elPowerLimitOff: false, elPhase: '380', elTariff: 6, elTariffNight: 3, elTariffMode: 'day_night', showElCost: false, showGasCost: false, gasTariffMode: 'main', gasTariff: null, gasTariffManual: false, lpgTariff: 26, polisKit: 'gbm', radBottomKit: 'gtube', hydroType: 'combo', pipeType: 'insulated', ufhPipeMaterial: 'pex', waterPipeMaterial: 'pex', ufhBaseType: 'mat', radManifoldType: 'standard', waterManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, boilerAuto: false, boilerAutoLevel: 'auto', leakProtect: false, leakSensors: null, feedType: 'manual', airControl: false, airDeviceType: 'sensor', airLink: 'wired', airSensors: null, ctrlPanel: false, servoAutoSwapped: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, worksDiscount: 0, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', towelWarmer: { enabled: false, type: 'electric', count: null, modelId: 'SHQ-J2RR-008050', color: 'all', series: 'all' }, roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, sectionScheme: {}, last_saved_date: "", ufhMixType: 'std', ufhDT: null, sewerClampsType: 'standard', sewerClampsD58Type: 'standard', boilerFrameType: 'profile_single', expansionTankMountType: 'standard', pipeMountType: 'hidden', boilerFrameFastenerType: 'anchor', mountPlateSingleType: 'SAC-0022-600001', mountPlateDouble100Type: 'SAC-0022-600100', mountPlateDouble150Type: 'SAC-0022-600150', radRegime: 'r8060', servoType: null, snowMelt: false, snowZones: [], snowCtrl: 'sensor', snowInBoilerPower: true, showSnowPanel: false, snowPipe: 'thin' },
 
     lastSavedStateString: "",
 
@@ -31198,7 +31198,7 @@ const app = {
 
         // Полный сброс данных расчета
         this.state = {
-            objectType: 'house', flatPosition: 'middle', flatCorner: false, flatHotRiser: true, flatRiser: 'riser', flatRooms: 2, flatRoomsManual: false, flatHouse: 'brick', flatBaths: 1, flatSewer: false, flatUfhKind: 'electric', flatUfhCover: 'tile', flatUfhCtrl: 'mech', flatUfhZones: 1, waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, waterFilterLevel: 'none', waterReducer: false, waterMeter: false, waterLeakGuard: true, waterFrame: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: currentShowScheme, optItems: {}, qtyOverrides: {}, darkMode: currentDarkMode, area: 0, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 0, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: (currentAccType === 'pro'), collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', tankMount: 'floor', tankHeat: 'cos', tankVol: null, tankSwapMount: null, tankSwapHeat: null, tankSwapVol: null, ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', boilerSeriesManual: false, elBoilerPower: null, elPowerLimit: 15, elPowerLimitOff: false, elPhase: '380', elTariff: 6, elTariffNight: 3, elTariffMode: 'day_night', showElCost: false, showGasCost: false, gasTariffMode: 'main', gasTariff: null, gasTariffManual: false, lpgTariff: 26, polisKit: 'gbm', radBottomKit: 'gtube', hydroType: 'combo', pipeType: 'insulated', ufhPipeMaterial: 'pex', waterPipeMaterial: 'pex', ufhBaseType: 'mat', radManifoldType: 'standard', waterManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, boilerAuto: false, boilerAutoLevel: 'auto', leakProtect: false, leakSensors: null, feedType: 'manual', airControl: false, airDeviceType: 'sensor', airLink: 'wired', airSensors: null, ctrlPanel: false, servoAutoSwapped: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, worksDiscount: 0, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', towelWarmer: { enabled: false, type: 'electric', count: null, modelId: 'SHQ-J2RR-008050', color: 'all', series: 'all' }, roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, sectionScheme: {}, last_saved_date: "", sewerClampsType: 'standard', sewerClampsD58Type: 'standard', boilerFrameType: 'profile_single', expansionTankMountType: 'standard', pipeMountType: 'hidden', boilerFrameFastenerType: 'anchor', mountPlateSingleType: 'SAC-0022-600001', mountPlateDouble100Type: 'SAC-0022-600100', mountPlateDouble150Type: 'SAC-0022-600150',
+            objectType: 'house', flatPosition: 'middle', flatCorner: false, flatHotRiser: true, flatRiser: 'riser', flatRooms: 2, flatRoomsManual: false, flatResManual: false, flatHouse: 'brick', flatBaths: 1, flatSewer: false, flatUfhKind: 'electric', flatUfhCover: 'tile', flatUfhCtrl: 'mech', flatUfhZones: 1, waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, waterFilterLevel: 'none', waterReducer: false, waterMeter: false, waterLeakGuard: true, waterFrame: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: currentShowScheme, optItems: {}, qtyOverrides: {}, darkMode: currentDarkMode, area: 0, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 0, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: (currentAccType === 'pro'), collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', tankMount: 'floor', tankHeat: 'cos', tankVol: null, tankSwapMount: null, tankSwapHeat: null, tankSwapVol: null, ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', boilerSeriesManual: false, elBoilerPower: null, elPowerLimit: 15, elPowerLimitOff: false, elPhase: '380', elTariff: 6, elTariffNight: 3, elTariffMode: 'day_night', showElCost: false, showGasCost: false, gasTariffMode: 'main', gasTariff: null, gasTariffManual: false, lpgTariff: 26, polisKit: 'gbm', radBottomKit: 'gtube', hydroType: 'combo', pipeType: 'insulated', ufhPipeMaterial: 'pex', waterPipeMaterial: 'pex', ufhBaseType: 'mat', radManifoldType: 'standard', waterManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, boilerAuto: false, boilerAutoLevel: 'auto', leakProtect: false, leakSensors: null, feedType: 'manual', airControl: false, airDeviceType: 'sensor', airLink: 'wired', airSensors: null, ctrlPanel: false, servoAutoSwapped: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, worksDiscount: 0, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', towelWarmer: { enabled: false, type: 'electric', count: null, modelId: 'SHQ-J2RR-008050', color: 'all', series: 'all' }, roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, sectionScheme: {}, last_saved_date: "", sewerClampsType: 'standard', sewerClampsD58Type: 'standard', boilerFrameType: 'profile_single', expansionTankMountType: 'standard', pipeMountType: 'hidden', boilerFrameFastenerType: 'anchor', mountPlateSingleType: 'SAC-0022-600001', mountPlateDouble100Type: 'SAC-0022-600100', mountPlateDouble150Type: 'SAC-0022-600150',
             // ВОЗВРАЩАЕМ АВТОРИЗАЦИЮ И ТАРИФ НА МЕСТО
             tgUser: currentTgUser,
             accountType: currentAccType,
@@ -32050,7 +32050,9 @@ const app = {
             this.state.tankLoadScheme = 'valve';
             // Приборы на стояке — бокового подключения
             this.applyRiserRadType();
-            // Окна — по числу комнат, как их считают в квартире
+            // Окна — по числу комнат, жильцы — по площади: в квартире это
+            // считается, а не спрашивается.
+            this.state.flatResManual = false;
             this.syncFlatWindows();
         }
         this.saveState();
@@ -32348,6 +32350,7 @@ const app = {
     syncFlatWindows: function () {
         if (!this.isFlat()) return;
         this.syncFlatRooms();
+        this.syncFlatRes();
         // Окна правят руками там, где расклад нетиповой: угловая комната с двумя
         // окнами, кухня без окна, эркер. Правило «комната плюс кухня» такого не
         // знает, поэтому заданное руками не перебиваем. Флаг тот же, что у дома
@@ -32429,6 +32432,25 @@ const app = {
      * изменений, которые жалко потерять, там не бывает.
      */
     FLAT_BATHS_MAX: 3,
+
+    /**
+     * Сколько человек живёт — по площади квартиры.
+     *
+     * Спрашивать отдельно незачем: площадь уже задана, а связь простая — один
+     * жилец плюс по одному на каждые полные 50 м². Однушка 40 м² — один, 60 м²
+     * — двое, сотня — трое. Правило грубое, но для объёма бака этого хватает, а
+     * кому не подходит — стрелки на месте, заданное руками не перебивается.
+     */
+    flatResFromArea: function () {
+        const a = parseFloat(this.state.area) || 0;
+        return Math.min(10, 1 + Math.floor(a / 50));
+    },
+
+    syncFlatRes: function () {
+        if (!this.isFlat()) return;
+        if (this.state.flatResManual) return;
+        this.state.res = this.flatResFromArea();
+    },
 
     flatBaths: function () {
         const n = parseInt(this.state.flatBaths);
@@ -32520,6 +32542,40 @@ const app = {
         return n + (isBottom ? ' (нижнее подключение)' : ' (боковое подключение)');
     },
 
+    /**
+     * Нумерация разделов в квартире — заново, по порядку.
+     *
+     * Номера разделов общие с домом, а в квартире половина из них не выводится:
+     * котельная, обвязка, внешнее водоснабжение. В смете оставались дыры —
+     * 3, 4, 5, 6, 8, 9, — как будто разделы потерялись.
+     *
+     * Считаем номер верхнего уровня заново, по порядку появления на экране, и
+     * подставляем только в подпись. Сам title не трогаем: на нём завязаны и
+     * переключатели разделов, и сохранённые сметы, и КП. Подразделы едут за
+     * своим разделом: «5.1» при разделе 5 → 3 становится «3.1».
+     *
+     * Счётчик общий на отрисовку, а вкладки «Оборудование» и «Работы» рисуются
+     * по очереди — каждая нумеруется от единицы со своими разделами.
+     */
+    _flatSecMap: null,
+    _flatSecNext: 1,
+
+    resetFlatSecNumbers: function () {
+        this._flatSecMap = {};
+        this._flatSecNext = 1;
+    },
+
+    flatSecLabel: function (text) {
+        if (!this.isFlat() || !text) return text;
+        const str = String(text);
+        const m = str.match(/^(\d+)(?=\D|$)/);
+        if (!m) return str;
+        const base = m[1];
+        if (!this._flatSecMap) this.resetFlatSecNumbers();
+        if (this._flatSecMap[base] === undefined) this._flatSecMap[base] = this._flatSecNext++;
+        return this._flatSecMap[base] + str.slice(base.length);
+    },
+
     setFlatPosition: function (pos) {
         this.state.flatPosition = ['first', 'middle', 'last'].includes(pos) ? pos : 'middle';
         this.saveState();
@@ -32546,6 +32602,9 @@ const app = {
         // Быстрый режим квартиры: вместо списка приборов — жильцы и санузлы
         const simpleWater = this.flatSimpleWater();
         if (document.body) document.body.classList.toggle('flat-water-simple', simpleWater);
+        // Класс режима расчёта — чтобы CSS мог прятать то, что спрашивают только
+        // в подробном (тип труб канализации и подобное).
+        if (document.body) document.body.classList.toggle('calc-detailed', !!this.state.detailedRooms);
         if (simpleWater) {
             if (this.state.water) this.syncFlatWaterMode();
             const bathsEl = document.getElementById('val_flat_baths');
@@ -45358,8 +45417,10 @@ const app = {
         });
         this.renderWaterPlanChecks();
     },
-    updRes: function (d) { let n = this.state.res + d; if (n < 1) n = 1; if (n > 10) n = 10; this.state.res = n; this.syncUI(); this.render(); },
-    setRes: function (v) { let n = parseInt(v); if (isNaN(n) || n < 1) n = 1; if (n > 10) n = 10; this.state.res = n; this.syncUI(); this.render(); },
+    // В квартире число жильцов считается от площади; тронул стрелки — считать
+    // перестаём, дальше значение только своё.
+    updRes: function (d) { let n = (parseInt(this.state.res) || 0) + d; if (n < 1) n = 1; if (n > 10) n = 10; this.state.res = n; if (this.isFlat()) this.state.flatResManual = true; this.saveState(); this.syncUI(); this.render(); },
+    setRes: function (v) { let n = parseInt(v); if (isNaN(n) || n < 1) n = 1; if (n > 10) n = 10; this.state.res = n; if (this.isFlat()) this.state.flatResManual = true; this.saveState(); this.syncUI(); this.render(); },
     // В подробном режиме источник истины по тёплому полу — сами комнаты: и площадь ТП
     // (syncRoomsToState), и число термостатов (autoCalcZones) считаются из r.sys. Ползунок
     // площади ТП менял только state.tp1/tp2, комнаты оставались без признака 'tp' — и при
@@ -47466,6 +47527,7 @@ const app = {
         app.lastWorksSum = 0;
         app.originalEqSum = 0;
         app.originalWorksSum = 0;
+        this.resetFlatSecNumbers();
         this.currentEquipmentList = [];
         this.currentWorksList = [];
         app.tempWarns = []; // Массив для сбора предупреждений о дефиците мощности
@@ -47823,9 +47885,6 @@ const app = {
 
                 let lookupId = finalItem.originalId || finalItem.id;
                 let isOpt = !!this.state.optItems[lookupId];
-                if (!isOpt) {
-                    app.originalEqSum = (app.originalEqSum || 0) + Math.round(originalPrice * finalQty);
-                }
 
                 finalItem.price = Math.round(finalPrice);
 
@@ -47852,7 +47911,24 @@ const app = {
                 if (!this.flatSkipsSection(currentSectionTitle)) {
                     this.currentSpec.push({ ...finalItem, q: finalQty, group: itemGroup });
                 }
-                this.calcFinalTotal += Math.round(originalPrice * finalQty);
+
+                // Итоги считаем здесь, после обеих проверок «этого в квартире
+                // нет», — раньше они стояли выше, и котельная, не попавшая в
+                // смету, всё равно набегала в «Рекомендованную цену»: 644 994 ₽
+                // при итоге 366 682 ₽ и нулевой скидке.
+                //
+                // Раздел, которого в квартире нет, всё же может воскреснуть:
+                // flushBill выводит его целиком, если монтажник руками положил
+                // туда позицию. Поэтому суммы такого раздела копим отдельно и
+                // отдаём в общий итог только когда он и правда вышел.
+                const _origAdd = Math.round(originalPrice * finalQty);
+                if (this.flatSkipsSection(secTitle)) {
+                    _pendingFinalSum += _origAdd;
+                    if (!isOpt) _pendingOrigSum += _origAdd;
+                } else {
+                    this.calcFinalTotal += _origAdd;
+                    if (!isOpt) app.originalEqSum = (app.originalEqSum || 0) + _origAdd;
+                }
 
                 // Одинаковые позиции внутри одного подраздела складываем в одну строку.
                 // Раньше слияние включалось только при выключенной группировке (forceMerge),
@@ -47981,6 +48057,10 @@ const app = {
         // терялись — «Создать новую смету» показывала пусто).
         const _flushedSections = new Set();
 
+        // Суммы раздела, который в квартире по умолчанию не выводится. Уходят в
+        // общий итог только если flushBill всё-таки вывел раздел (см. ниже).
+        let _pendingOrigSum = 0, _pendingFinalSum = 0;
+
         const flushBill = (title, warn) => {
             _flushedSections.add(title);
             currentSectionTitle = title;
@@ -48026,11 +48106,19 @@ const app = {
             // своего оборудования намеренно — если монтажник руками положил
             // что-то в такой раздел, это его решение, и терять строку молча
             // нельзя: раздел тогда выводится целиком.
-            if (this.flatSkipsSection(title)
-                && !(this.state.userAddedEq || []).some(eq => (eq.section || '9. Дополнительные материалы') === title)) {
-                bill = [];
-                sectionHasAnalogItems = false;
-                return;
+            if (this.flatSkipsSection(title)) {
+                const _revived = (this.state.userAddedEq || [])
+                    .some(eq => (eq.section || '9. Дополнительные материалы') === title);
+                if (_revived) {
+                    this.calcFinalTotal += _pendingFinalSum;
+                    app.originalEqSum = (app.originalEqSum || 0) + _pendingOrigSum;
+                }
+                _pendingOrigSum = 0; _pendingFinalSum = 0;
+                if (!_revived) {
+                    bill = [];
+                    sectionHasAnalogItems = false;
+                    return;
+                }
             }
 
             if (bill.length === 0) {
@@ -48047,7 +48135,7 @@ const app = {
             const isRevealed = this.state.revealedToggles && this.state.revealedToggles.includes(title);
             if (isDisabled) {
                 if (this.state.viewMode === 'equipment') {
-                    let titleHtml = title + (warn ? `<div class="warn-box">${warn}</div>` : "");
+                    let titleHtml = this.flatSecLabel(title) + (warn ? `<div class="warn-box">${warn}</div>` : "");
                     h += `<tr class="row-sec disabled-section" onclick="app.toggleRevealToggle('${title.replace(/'/g, "\\'")}', event)"><td colspan="9">
                         <div class="row-sec-header-wrap">
                             <span class="row-sec-title" data-title="${title}">${titleHtml}</span>
@@ -48167,7 +48255,7 @@ const app = {
             let groupTotals = {};
             bill.forEach(i => { if (i.group) { if (!groupTotals[i.group]) groupTotals[i.group] = 0; groupTotals[i.group] += i.sum; } });
             let secTotal = 0, rows = "";
-            let titleHtml = title + (warn ? `<div class="warn-box">${warn}</div>` : "");
+            let titleHtml = this.flatSecLabel(title) + (warn ? `<div class="warn-box">${warn}</div>` : "");
 
             // Per-section аналог
             const _globalAnalog = this.state.brandMode === 'rommer';
@@ -48217,7 +48305,7 @@ const app = {
                     let headStyle = "";
                     if (isSubSection) { headStyle = `style="background:var(--surface-light); border: ${dashStyle}; border-bottom: none; color:var(--text-main);"`; if (isCollapsed) headStyle = `style="background:var(--surface-light); border: ${dashStyle}; color:var(--text-main);"`; }
                     let titleColSpan = showSku ? 5 : 4;
-                    rows += `<tr class="group-header" ${headStyle} onclick="app.toggleGroup('${i.group}')" title="Свернуть/Развернуть"><td colspan="${titleColSpan}" style="text-align:left; padding-left:10px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"><b>${arrow} ${icon} ${i.group}</b></td><td class="col-unit" style="color:#9CA3AF; font-size:10px;">${txtUnit}</td><td class="col-qty" style="font-weight:700;">${txtQty}</td><td class="col-price"></td><td class="col-sum">${txtSum}</td></tr>`;
+                    rows += `<tr class="group-header" ${headStyle} onclick="app.toggleGroup('${i.group}')" title="Свернуть/Развернуть"><td colspan="${titleColSpan}" style="text-align:left; padding-left:10px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"><b>${arrow} ${icon} ${app.flatSecLabel(i.group)}</b></td><td class="col-unit" style="color:#9CA3AF; font-size:10px;">${txtUnit}</td><td class="col-qty" style="font-weight:700;">${txtQty}</td><td class="col-price"></td><td class="col-sum">${txtSum}</td></tr>`;
                     lastGroup = i.group;
                     // Замечание, адресованное самому подразделу, — сразу под его
                     // заголовком. Раньше предупреждения умели показываться только
@@ -48489,7 +48577,7 @@ const app = {
                     // Рендерим только заголовок группы с выключенным переключателем
                     h += `<tr class="row-sec disabled-section" onclick="app.toggleRevealToggle('${g.replace(/'/g, "\\'")}', event)"><td colspan="9">
                         <div class="row-sec-header-wrap">
-                            <span class="row-sec-title" data-title="${g}">${g}</span>
+                            <span class="row-sec-title" data-title="${g}">${app.flatSecLabel(g)}</span>
                             <div class="row-sec-toggle-wrap no-print" onclick="event.stopPropagation()" style="${isRevealed ? '' : 'display: none;'}">
                                 <label class="switch">
                                     <input type="checkbox" onchange="app.toggleSection('${g.replace(/'/g, "\\'")}', event)">
@@ -48504,7 +48592,7 @@ const app = {
                 // Главный заголовок секции с включенным переключателем
                 h += `<tr class="row-sec" onclick="app.toggleRevealToggle('${g.replace(/'/g, "\\'")}', event)"><td colspan="9">
                     <div class="row-sec-header-wrap">
-                        <span class="row-sec-title" data-title="${g}">${g}</span>
+                        <span class="row-sec-title" data-title="${g}">${app.flatSecLabel(g)}</span>
                         <div class="row-sec-toggle-wrap no-print" onclick="event.stopPropagation()" style="${isRevealed ? '' : 'display: none;'}">
                             <label class="switch">
                                 <input type="checkbox" checked onchange="app.toggleSection('${g.replace(/'/g, "\\'")}', event)">

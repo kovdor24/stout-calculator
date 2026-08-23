@@ -12593,6 +12593,13 @@ body.object-flat #blk_object_type {
     display: none;
 }
 
+/* Обычная или бесшумная — вопрос подробного режима: в быстром канализация
+   просто включается, трубы берутся бесшумные (стояк в квартире идёт рядом с
+   жилыми комнатами). Показ самого блока опций — в syncObjectTypeUI. */
+body.object-flat:not(.calc-detailed) #blk_flat_sewer_opts {
+    display: none !important;
+}
+
 body.object-flat #blk_flat_sewer {
     display: block;
 }
