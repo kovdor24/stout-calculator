@@ -631,6 +631,23 @@
                 </div>
             </div>
 
+            <!-- Как приборы присоединены к дому. Это главный вопрос квартирного
+                 отопления: от него зависит, покупается ли коллектор с трассой или
+                 только обвязка прибора. Виден только в квартирном режиме. -->
+            <div id="blk_flat_riser">
+                <div class="control-item" style="margin-bottom: 12px;">
+                    <span class="lbl" style="display:block; margin-bottom: 6px;">Приборы подключены</span>
+                    <div class="tabs" id="flat_riser_tabs" style="font-size:11px;">
+                        <div class="tab flat-riser-tab active" data-fr="riser" onclick="app.setFlatRiser('riser')"
+                            title="Стояки проходят сквозь квартиру, радиаторы висят на них. Так устроено большинство домов.">К стоякам</div>
+                        <div class="tab flat-riser-tab" data-fr="own" onclick="app.setFlatRiser('own')"
+                            title="Новостройка: в квартиру заходит своя пара труб от этажного узла, разводка лучами от коллектора.">Своя разводка</div>
+                    </div>
+                    <div id="flat_riser_hint"
+                        style="margin-top:8px; font-size:11px; line-height:1.5; color:var(--text-sec);"></div>
+                </div>
+            </div>
+
             <!-- Свойства квартиры: этаж и угловая. Стоят сразу под площадью — это
                  её уточнение, а не отдельная тема: теплопотери квартиры определяются
                  не метражом, а тем, сколько сторон выходит на улицу. Виден блок

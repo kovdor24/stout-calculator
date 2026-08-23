@@ -12587,12 +12587,20 @@ body.object-flat #blk_object_type {
 /* Параметры квартиры и её узел ввода отопления — наоборот, видны только в
    квартирном режиме */
 #blk_flat_params,
+#blk_flat_riser,
 #blk_flat_hot_riser_row {
     display: none;
 }
 
-body.object-flat #blk_flat_params {
+body.object-flat #blk_flat_params,
+body.object-flat #blk_flat_riser {
     display: block;
+}
+
+/* Тройниковая или коллекторная — это про разводку от коллектора. На стояках
+   выбирать нечего, поэтому переключатель прячем. */
+body.object-flat.on-riser #blk_rad_scheme {
+    display: none !important;
 }
 
 body.object-flat #blk_flat_hot_riser_row {
