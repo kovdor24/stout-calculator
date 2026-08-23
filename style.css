@@ -12622,6 +12622,16 @@ body.object-flat #blk_flat_params {
     display: block;
 }
 
+/* Быстрый режим квартиры: две цифры вместо списка приборов */
+body.object-flat.flat-water-simple #blk_flat_water_simple {
+    display: flex !important;
+}
+
+body.object-flat.flat-water-simple #zones_list,
+body.object-flat.flat-water-simple #btn_add_zone {
+    display: none !important;
+}
+
 /* Жильцы, рециркуляция и загрузка бойлера — вопросы дома с котлом.
    Объём бака в квартире считается по приборам санузла (app.flatWhVolume),
    рециркуляции при баке в том же санузле не бывает, а бойлера косвенного

@@ -1614,8 +1614,40 @@
                             type="checkbox" id="chk_water" onchange="app.toggleWater(this.checked, event)"><span
                             class="slider"></span></label></div>
                 <div id="blk_water_zones" style="display:none; flex-direction:column; gap:10px; margin-top:10px;">
+
+                    <!-- Быстрый режим квартиры: две цифры вместо списка приборов.
+                         Планировка квартиры типовая, и по числу санузлов состав
+                         точек предсказуем — кухня с мойкой и посудомойкой, первый
+                         санузел с ванной и стиральной машиной, второй с душем.
+                         Кому нужно иначе — подробный режим, там точки поштучно.
+                         Показывается по классу body.flat-water-simple. -->
+                    <div id="blk_flat_water_simple" style="display:none; flex-direction:column; gap:10px;">
+                        <div class="control-card"
+                            style="width:100%; display:flex; flex-direction:row; justify-content:space-between; padding:12px 15px; align-items:center;">
+                            <span class="lbl" style="font-size:12px;">Кол-во жильцов</span>
+                            <div class="stepper" style="width:100px;">
+                                <button class="step-btn" onclick="app.updRes(-1)">−</button>
+                                <div class="step-val editable-val" id="val_res_flat" contenteditable="true"
+                                    onblur="app.setRes(this.innerText)"
+                                    onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">3</div>
+                                <button class="step-btn" onclick="app.updRes(1)">+</button>
+                            </div>
+                        </div>
+                        <div class="control-card"
+                            style="width:100%; display:flex; flex-direction:row; justify-content:space-between; padding:12px 15px; align-items:center;">
+                            <span class="lbl" style="font-size:12px;"
+                                title="Кухня считается всегда, отдельно её указывать не нужно.">Кол-во санузлов</span>
+                            <div class="stepper" style="width:100px;">
+                                <button class="step-btn" onclick="app.updFlatBaths(-1)">−</button>
+                                <div class="step-val" id="val_flat_baths">1</div>
+                                <button class="step-btn" onclick="app.updFlatBaths(1)">+</button>
+                            </div>
+                        </div>
+                        <div class="info-card" id="desc_flat_water" style="font-size:11px;"></div>
+                    </div>
+
                     <div id="zones_list"></div>
-                    <button
+                    <button id="btn_add_zone"
                         style="margin: 5px auto 5px auto; display: block; width: fit-content; padding: 5px 16px; font-size: 11px; font-weight: 700; background: var(--primary-light); border: 1px dashed var(--primary); color: var(--primary); border-radius: 20px; cursor: pointer; transition: 0.2s;"
                         onclick="app.addZone()"
                         onmouseover="this.style.background='var(--primary)'; this.style.color='#fff';"
