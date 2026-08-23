@@ -12691,3 +12691,22 @@ body.object-flat #blk_floor_mat_content {
     font-size: 17px;
     line-height: 1;
 }
+
+/* Значок обесцвечиваем, пока кнопка не выбрана: соседние значки шапки серые, и
+   цветная эмодзи среди них тянула взгляд сильнее, чем включённая кнопка.
+   Обесцвечиваем сам значок, а не кнопку: фильтр на кнопке приглушил бы и рамку,
+   и она перестала бы совпадать с соседними. */
+.hdr-obj-ico {
+    display: block;
+    transition: filter 0.2s, opacity 0.2s;
+}
+
+.hdr-obj-switch .btn-ctrl:not(.is-on) .hdr-obj-ico {
+    filter: grayscale(1);
+    opacity: 0.55;
+}
+
+.hdr-obj-switch .btn-ctrl:not(.is-on):hover .hdr-obj-ico {
+    filter: none;
+    opacity: 1;
+}
