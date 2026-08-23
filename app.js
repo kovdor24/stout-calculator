@@ -1021,7 +1021,7 @@ const app = {
     currentAuthTab: 'login',
     pendingRegistration: null,
     adminData: { users: [], estimates: [], recentEstimates: [], userEstimates: [] },
-    state: { objectType: 'house', flatPosition: 'middle', flatCorner: false, flatHeatInlet: true, flatHotRiser: true, flatUfhKind: 'electric', flatUfhCover: 'tile', flatUfhCtrl: 'mech', flatUfhZones: 1, waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, waterFilterLevel: 'none', waterReducer: false, waterMeter: false, waterLeakGuard: true, waterFrame: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, rigOff: {}, qtyOverrides: {}, darkMode: false, area: 0, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 0, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', tankMount: 'floor', tankHeat: 'cos', tankVol: null, tankSwapMount: null, tankSwapHeat: null, tankSwapVol: null, ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', boilerSeriesManual: false, elBoilerPower: null, elPowerLimit: 15, elPowerLimitOff: false, elPhase: '380', elTariff: 6, elTariffNight: 3, elTariffMode: 'day_night', showElCost: false, showGasCost: false, gasTariffMode: 'main', gasTariff: null, gasTariffManual: false, lpgTariff: 26, polisKit: 'gbm', radBottomKit: 'gtube', hydroType: 'combo', pipeType: 'insulated', ufhPipeMaterial: 'pex', waterPipeMaterial: 'pex', ufhBaseType: 'mat', radManifoldType: 'standard', waterManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, boilerAuto: false, boilerAutoLevel: 'auto', leakProtect: false, leakSensors: null, feedType: 'manual', airControl: false, airDeviceType: 'sensor', airLink: 'wired', airSensors: null, ctrlPanel: false, servoAutoSwapped: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, worksDiscount: 0, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', towelWarmer: { enabled: false, type: 'electric', count: null, modelId: 'SHQ-J2RR-008050', color: 'all', series: 'all' }, roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, sectionScheme: {}, last_saved_date: "", ufhMixType: 'std', ufhDT: null, sewerClampsType: 'standard', sewerClampsD58Type: 'standard', boilerFrameType: 'profile_single', expansionTankMountType: 'standard', pipeMountType: 'hidden', boilerFrameFastenerType: 'anchor', mountPlateSingleType: 'SAC-0022-600001', mountPlateDouble100Type: 'SAC-0022-600100', mountPlateDouble150Type: 'SAC-0022-600150', radRegime: 'r8060', servoType: null, snowMelt: false, snowZones: [], snowCtrl: 'sensor', snowInBoilerPower: true, showSnowPanel: false, snowPipe: 'thin' },
+    state: { objectType: 'house', flatPosition: 'middle', flatCorner: false, flatHeatInlet: true, flatHotRiser: true, flatUfhKind: 'electric', flatUfhCover: 'tile', flatUfhCtrl: 'mech', flatUfhZones: 1, flatWhVol: null, waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, waterFilterLevel: 'none', waterReducer: false, waterMeter: false, waterLeakGuard: true, waterFrame: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, rigOff: {}, qtyOverrides: {}, darkMode: false, area: 0, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 0, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', tankMount: 'floor', tankHeat: 'cos', tankVol: null, tankSwapMount: null, tankSwapHeat: null, tankSwapVol: null, ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', boilerSeriesManual: false, elBoilerPower: null, elPowerLimit: 15, elPowerLimitOff: false, elPhase: '380', elTariff: 6, elTariffNight: 3, elTariffMode: 'day_night', showElCost: false, showGasCost: false, gasTariffMode: 'main', gasTariff: null, gasTariffManual: false, lpgTariff: 26, polisKit: 'gbm', radBottomKit: 'gtube', hydroType: 'combo', pipeType: 'insulated', ufhPipeMaterial: 'pex', waterPipeMaterial: 'pex', ufhBaseType: 'mat', radManifoldType: 'standard', waterManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, boilerAuto: false, boilerAutoLevel: 'auto', leakProtect: false, leakSensors: null, feedType: 'manual', airControl: false, airDeviceType: 'sensor', airLink: 'wired', airSensors: null, ctrlPanel: false, servoAutoSwapped: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, worksDiscount: 0, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', towelWarmer: { enabled: false, type: 'electric', count: null, modelId: 'SHQ-J2RR-008050', color: 'all', series: 'all' }, roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, sectionScheme: {}, last_saved_date: "", ufhMixType: 'std', ufhDT: null, sewerClampsType: 'standard', sewerClampsD58Type: 'standard', boilerFrameType: 'profile_single', expansionTankMountType: 'standard', pipeMountType: 'hidden', boilerFrameFastenerType: 'anchor', mountPlateSingleType: 'SAC-0022-600001', mountPlateDouble100Type: 'SAC-0022-600100', mountPlateDouble150Type: 'SAC-0022-600150', radRegime: 'r8060', servoType: null, snowMelt: false, snowZones: [], snowCtrl: 'sensor', snowInBoilerPower: true, showSnowPanel: false, snowPipe: 'thin' },
 
     lastSavedStateString: "",
 
@@ -31189,7 +31189,7 @@ const app = {
 
         // Полный сброс данных расчета
         this.state = {
-            objectType: 'house', flatPosition: 'middle', flatCorner: false, flatHeatInlet: true, flatHotRiser: true, flatUfhKind: 'electric', flatUfhCover: 'tile', flatUfhCtrl: 'mech', flatUfhZones: 1, waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, waterFilterLevel: 'none', waterReducer: false, waterMeter: false, waterLeakGuard: true, waterFrame: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: currentShowScheme, optItems: {}, qtyOverrides: {}, darkMode: currentDarkMode, area: 0, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 0, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: (currentAccType === 'pro'), collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', tankMount: 'floor', tankHeat: 'cos', tankVol: null, tankSwapMount: null, tankSwapHeat: null, tankSwapVol: null, ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', boilerSeriesManual: false, elBoilerPower: null, elPowerLimit: 15, elPowerLimitOff: false, elPhase: '380', elTariff: 6, elTariffNight: 3, elTariffMode: 'day_night', showElCost: false, showGasCost: false, gasTariffMode: 'main', gasTariff: null, gasTariffManual: false, lpgTariff: 26, polisKit: 'gbm', radBottomKit: 'gtube', hydroType: 'combo', pipeType: 'insulated', ufhPipeMaterial: 'pex', waterPipeMaterial: 'pex', ufhBaseType: 'mat', radManifoldType: 'standard', waterManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, boilerAuto: false, boilerAutoLevel: 'auto', leakProtect: false, leakSensors: null, feedType: 'manual', airControl: false, airDeviceType: 'sensor', airLink: 'wired', airSensors: null, ctrlPanel: false, servoAutoSwapped: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, worksDiscount: 0, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', towelWarmer: { enabled: false, type: 'electric', count: null, modelId: 'SHQ-J2RR-008050', color: 'all', series: 'all' }, roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, sectionScheme: {}, last_saved_date: "", sewerClampsType: 'standard', sewerClampsD58Type: 'standard', boilerFrameType: 'profile_single', expansionTankMountType: 'standard', pipeMountType: 'hidden', boilerFrameFastenerType: 'anchor', mountPlateSingleType: 'SAC-0022-600001', mountPlateDouble100Type: 'SAC-0022-600100', mountPlateDouble150Type: 'SAC-0022-600150',
+            objectType: 'house', flatPosition: 'middle', flatCorner: false, flatHeatInlet: true, flatHotRiser: true, flatUfhKind: 'electric', flatUfhCover: 'tile', flatUfhCtrl: 'mech', flatUfhZones: 1, flatWhVol: null, waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, waterFilterLevel: 'none', waterReducer: false, waterMeter: false, waterLeakGuard: true, waterFrame: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: currentShowScheme, optItems: {}, qtyOverrides: {}, darkMode: currentDarkMode, area: 0, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 0, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: (currentAccType === 'pro'), collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', tankMount: 'floor', tankHeat: 'cos', tankVol: null, tankSwapMount: null, tankSwapHeat: null, tankSwapVol: null, ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', boilerSeriesManual: false, elBoilerPower: null, elPowerLimit: 15, elPowerLimitOff: false, elPhase: '380', elTariff: 6, elTariffNight: 3, elTariffMode: 'day_night', showElCost: false, showGasCost: false, gasTariffMode: 'main', gasTariff: null, gasTariffManual: false, lpgTariff: 26, polisKit: 'gbm', radBottomKit: 'gtube', hydroType: 'combo', pipeType: 'insulated', ufhPipeMaterial: 'pex', waterPipeMaterial: 'pex', ufhBaseType: 'mat', radManifoldType: 'standard', waterManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, boilerAuto: false, boilerAutoLevel: 'auto', leakProtect: false, leakSensors: null, feedType: 'manual', airControl: false, airDeviceType: 'sensor', airLink: 'wired', airSensors: null, ctrlPanel: false, servoAutoSwapped: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, worksDiscount: 0, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', towelWarmer: { enabled: false, type: 'electric', count: null, modelId: 'SHQ-J2RR-008050', color: 'all', series: 'all' }, roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, sectionScheme: {}, last_saved_date: "", sewerClampsType: 'standard', sewerClampsD58Type: 'standard', boilerFrameType: 'profile_single', expansionTankMountType: 'standard', pipeMountType: 'hidden', boilerFrameFastenerType: 'anchor', mountPlateSingleType: 'SAC-0022-600001', mountPlateDouble100Type: 'SAC-0022-600100', mountPlateDouble150Type: 'SAC-0022-600150',
             // ВОЗВРАЩАЕМ АВТОРИЗАЦИЮ И ТАРИФ НА МЕСТО
             tgUser: currentTgUser,
             accountType: currentAccType,
@@ -31995,6 +31995,39 @@ const app = {
         return this.isFlat() && this.flatUfhKind() === 'electric';
     },
 
+    // ===== Водонагреватель квартиры =====
+    //
+    // Бойлер косвенного нагрева в квартире не поставить: греть его нечем — котла
+    // нет, а врезаться в общедомовое отопление ради горячей воды нельзя. Поэтому
+    // здесь электрический накопительный, и подбирается он не по мощности, как
+    // бойлер под котёл, а по объёму: сколько человек и есть ли ванна.
+    //
+    // Объёмы взяты по практике, а не по нормативу расхода: норматив даёт цифры
+    // для дома с рециркуляцией, а в квартире важно другое — хватит ли бака на
+    // подряд идущие души. Душ это примерно 30 л горячей на человека, ванна — 50.
+    flatWhVolume: function () {
+        const manual = parseInt(this.state.flatWhVol) || 0;
+        if (manual) return manual;
+        const res = Math.max(1, parseInt(this.state.res) || 1);
+        const bath = (this.state.waterZones || []).some(z => ((z.fixtures || {}).bath || 0) > 0);
+        if (res <= 1) return bath ? 50 : 30;
+        if (res === 2) return bath ? 80 : 50;
+        if (res === 3) return bath ? 100 : 80;
+        return 100;
+    },
+
+    flatWaterHeater: function () {
+        const pool = (catalog.water_heaters_el || []).slice().sort((x, y) => x.vol - y.vol);
+        if (!pool.length) return null;
+        const need = this.flatWhVolume();
+        return pool.find(x => x.vol >= need) || pool[pool.length - 1];
+    },
+
+    setFlatWhVol: function (v) {
+        this.state.flatWhVol = v ? parseInt(v) : null;
+        this.saveState(); this.syncUI(); this.render();
+    },
+
     setFlatUfhKind: function (kind) {
         if (kind === 'water' && this.state.flatPosition !== 'first') return;
         this.state.flatUfhKind = (kind === 'water') ? 'water' : 'electric';
@@ -32099,6 +32132,22 @@ const app = {
         });
         const zEl = document.getElementById('val_flat_ufh_zones');
         if (zEl) zEl.textContent = parseInt(this.state.flatUfhZones) || 1;
+        // Горячая вода: в квартире её греет не бойлер под котёл, а свой прибор
+        const hwLbl = document.getElementById('lbl_hw');
+        if (hwLbl) hwLbl.textContent = (type === 'flat')
+            ? 'Горячая вода (водонагреватель)' : 'Горячая вода (Бойлер)';
+        const whVol = parseInt(this.state.flatWhVol) || 0;
+        document.querySelectorAll('.flat-wh-vol-tab').forEach(t => {
+            const on = (t.dataset.wv === 'auto') ? !whVol : (+t.dataset.wv === whVol);
+            t.className = on ? 'tab flat-wh-vol-tab active' : 'tab flat-wh-vol-tab';
+        });
+        const whHint = document.getElementById('flat_wh_hint');
+        if (whHint) {
+            const wh = this.flatWaterHeater();
+            whHint.innerHTML = wh
+                ? `Подобран <b>${wh.vol} л</b>, ${wh.kw} кВт. Нагрев с холодной до 60 °C — ${wh.heat}. Предохранительный клапан и крепёж у Haier в комплекте.`
+                : '';
+        }
         if (document.body) document.body.classList.toggle('ufh-electric', this.usesElectricUfh());
     },
 
@@ -48018,6 +48067,40 @@ const app = {
             }
         };
 
+        // === 1. ВОДОНАГРЕВАТЕЛЬ (квартира) ===
+        //
+        // Отдельный раздел, а не ветка домового: там водонагреватель греется от
+        // котла и живёт в одном разделе с ним, а здесь котла нет вовсе.
+        if (this.isFlat() && this.state.hotWater) {
+            currentSectionTitle = "1. Водонагреватель";
+            const wh = this.flatWaterHeater();
+            if (wh) {
+                const grpW = "1.1. Электрический водонагреватель";
+                addToBill(wh, 1, this.autoTip(wh.name, [
+                    `<b>Почему такой объём:</b> ${wh.vol} л — это ${this.state.flatWhVol ? 'заданный вручную объём' : 'подбор по числу жильцов и наличию ванны'}. Душ забирает около 30 л горячей воды на человека, ванна — около 50.`,
+                    `<b>Нагрев:</b> ${wh.heat} с холодной до 60 °C при мощности ${wh.kw} кВт. Это важнее объёма: бак на 100 л, который греется четыре часа, второй душ подряд не выдаст.`,
+                    `<b>Питание:</b> ${(parseFloat(String(wh.kw).replace(',', '.')) || 0) > 2.2
+                        ? 'мощность выше 2,2 кВт — нужна отдельная линия с автоматом и УЗО, обычную розетку так грузить нельзя.'
+                        : 'обычная розетка выдерживает такую мощность, отдельная линия не нужна.'}`,
+                    `<b>В комплекте:</b> предохранительный клапан и крепёж — отдельными позициями они не считаются.`
+                ]), grpW);
+
+                const kit = catalog.water_heater_kit || [];
+                if (kit.length >= 3) {
+                    addToBill(kit[0], 2, this.autoTip(kit[0].name, [
+                        `<b>Зачем:</b> Отсекают прибор по холодной и по горячей и разбираются по американке — снять водонагреватель на чистку от накипи, не разрезая подводку.`
+                    ]), grpW);
+                    addToBill(kit[1], 1, "", grpW);
+                    addToBill(kit[2], 1, this.autoTip(kit[2].name, [
+                        `<b>Зачем:</b> Обратный клапан в предохранительной группе запирает воду в баке. При нагреве с 10 до 60 °C она расширяется примерно на 2 % объёма, деваться ей некуда, и предохранительный клапан стравливает в канализацию при каждом нагреве. Бак принимает этот прирост.`,
+                        `<b>Признак, что его нет:</b> капель из предохранительного клапана после каждого нагрева. Это не поломка клапана, это отсутствие бака.`,
+                        `<b>Место:</b> на холодной линии между обратным клапаном и водонагревателем.`
+                    ]), grpW);
+                }
+            }
+            flushBill("1. Водонагреватель");
+        }
+
         // === 1. КОТЁЛ + ВОДОНАГРЕВАТЕЛЬ ===
         currentSectionTitle = "1. Котёл + водонагреватель";
         // Связка «строка раздела 1 → её обвязка в разделе 2». Нужна двум местам:
@@ -53794,6 +53877,11 @@ const app = {
         }
         if (this.isFlat() && this.state.flatHeatInlet) {
             addToWorks("Монтаж узла ввода отопления в квартиру", 1, 12000, "компл", "1.6 Ввод отопления в квартиру");
+        }
+        if (this.isFlat() && this.state.hotWater) {
+            const gWh = "1.7 Водонагреватель";
+            addToWorks("Монтаж электрического водонагревателя", 1, 6000, "шт", gWh);
+            addToWorks("Обвязка водонагревателя (краны, бак, подводки)", 1, 5000, "компл", gWh);
         }
         if (this.usesElectricUfh()) {
             const aEl = Math.max(0, parseFloat(this.state.tp1) || 0);

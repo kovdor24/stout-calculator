@@ -12601,6 +12601,15 @@ body.object-flat #blk_flat_hot_riser_row {
     display: flex !important;
 }
 
+/* Объём водонагревателя — вопрос только квартиры */
+#blk_flat_wh {
+    display: none;
+}
+
+body.object-flat #blk_flat_wh {
+    display: block;
+}
+
 /* Тёплый пол квартиры: блок настроек виден только там */
 #blk_flat_ufh {
     display: none;

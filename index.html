@@ -1501,9 +1501,26 @@
             </div>
 
             <div class="control-item toggle-item">
-                <div class="label-row"><span class="lbl">Горячая вода (Бойлер)</span><label class="switch"><input
+                <div class="label-row"><span class="lbl" id="lbl_hw">Горячая вода (Бойлер)</span><label class="switch"><input
                             type="checkbox" id="chk_hw" onchange="app.toggleHW(this.checked, event)"><span
                             class="slider"></span></label></div>
+
+                <!-- Объём водонагревателя. Только в квартире: в доме воду греет
+                     бойлер от котла, и объём там подбирается по мощности. -->
+                <div id="blk_flat_wh" style="margin-top:10px;">
+                    <span class="lbl" style="display:block; margin-bottom: 6px; font-size:12px;">Объём водонагревателя</span>
+                    <div class="tabs" id="flat_wh_vol_tabs" style="font-size:11px;">
+                        <div class="tab flat-wh-vol-tab active" data-wv="auto" onclick="app.setFlatWhVol(null)"
+                            title="По числу жильцов и наличию ванны: душ — около 30 л горячей на человека, ванна — около 50.">Авто</div>
+                        <div class="tab flat-wh-vol-tab" data-wv="30" onclick="app.setFlatWhVol(30)">30 л</div>
+                        <div class="tab flat-wh-vol-tab" data-wv="50" onclick="app.setFlatWhVol(50)">50 л</div>
+                        <div class="tab flat-wh-vol-tab" data-wv="80" onclick="app.setFlatWhVol(80)">80 л</div>
+                        <div class="tab flat-wh-vol-tab" data-wv="100" onclick="app.setFlatWhVol(100)">100 л</div>
+                    </div>
+                    <div id="flat_wh_hint"
+                        style="margin-top:8px; font-size:11px; line-height:1.5; color:var(--text-sec);"></div>
+                </div>
+
                 <div id="blk_res"
                     style="display:none; flex-direction:column; gap:10px; margin-top:10px; background:#F8FAFC; padding:12px; border-radius:8px; border:1px solid #E5E7EB;">
                     <div style="display:flex; justify-content:space-between; align-items:center;"><span class="lbl"
