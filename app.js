@@ -10965,6 +10965,14 @@ const app = {
     clearInstallerSettingsOnLogout: function () {
         clearTimeout(this._installerSettingsPushTimer);
         try { localStorage.removeItem('stout_installer_settings'); } catch (e) { }
+        // Прочитанные и скрытые уведомления теперь тоже свойство учётной записи: за общим
+        // компьютером следующий вошедший не должен наследовать чужой разобранный колокольчик
+        clearTimeout(this._notifStatePushTimer);
+        try {
+            localStorage.removeItem('stout_read_notifications');
+            localStorage.removeItem('stout_dismissed_notifications');
+        } catch (e) { }
+        this._notifUserColsMissing = false;
         this._installerSettingsCloudSynced = false;
         this._installerSettingsCloudPulling = false;
         this._installerCloudUserId = null;
@@ -11382,13 +11390,8 @@ const app = {
             // Получаем пользователя из БД
             let uRow = null;
             const { data: { session } } = await supabaseClient.auth.getSession();
-            if (session) {
-                let { data } = await supabaseClient.from('users').select('id, email, account_type, demo_ends_at, distributor_id, auth_user_id').eq('auth_user_id', session.user.id).maybeSingle();
-                uRow = data;
-            } else if (tgUser.authUserId) {
-                let { data } = await supabaseClient.from('users').select('id, email, account_type, demo_ends_at, distributor_id, auth_user_id').eq('auth_user_id', tgUser.authUserId).maybeSingle();
-                uRow = data;
-            }
+            const authIdForNotif = session ? session.user.id : (tgUser.authUserId || null);
+            if (authIdForNotif) uRow = await this.fetchMeRowForNotifications(authIdForNotif);
 
             if (!uRow) return;
             // Кто мы — нужно окну переписки (renderUserChat): по этому id отличаем свои
@@ -11412,8 +11415,9 @@ const app = {
 
             // Обрабатываем уведомления
             const notifications = [];
-            const readIds = JSON.parse(localStorage.getItem('stout_read_notifications') || '[]');
-            const dismissedIds = JSON.parse(localStorage.getItem('stout_dismissed_notifications') || '[]');
+            const notifState = this.mergeNotifStateFromCloud(uRow.notif_state);
+            const readIds = notifState.read;
+            const dismissedIds = notifState.dismissed;
 
             // Ищем привязанные shared_invoice_id если есть сметы
             if (estimates && estimates.length > 0) {
@@ -11536,8 +11540,16 @@ const app = {
             // 1.5. УВЕДОМЛЕНИЕ О НАЗНАЧЕНИИ МЕНЕДЖЕРА-ДИСТРИБЬЮТОРА — только пуш внутри
             // калькулятора (без email), появляется один раз при привязке к каждому конкретному
             // дистрибьютору (id завязан на distributor_id, поэтому при смене менеджера админом
-            // придёт новое непрочитанное уведомление, а не то же самое)
-            if (uRow.distributor_id) {
+            // придёт новое непрочитанное уведомление, а не то же самое).
+            // Живёт двое суток с момента привязки (users.distributor_assigned_at, дату ставит
+            // триггер в базе). Раньше условием было само наличие distributor_id, а время бралось
+            // из new Date() — карточка собиралась заново при каждом опросе и вечно висела наверху
+            // списка с сегодняшним временем, будто её только что прислали. Контакты менеджера
+            // никуда не денутся: они всегда в «Мой профиль» → «Ваш менеджер».
+            const distAssignedAt = uRow.distributor_assigned_at ? new Date(uRow.distributor_assigned_at) : null;
+            const distNotifFresh = !!(distAssignedAt && !isNaN(distAssignedAt.getTime())
+                && Date.now() - distAssignedAt.getTime() < this.DIST_NOTIF_WINDOW_MS);
+            if (uRow.distributor_id && distNotifFresh) {
                 try {
                     const { data: dist } = await supabaseClient.from('distributors').select('company_name, manager_name').eq('id', uRow.distributor_id).maybeSingle();
                     if (dist) {
@@ -11548,7 +11560,7 @@ const app = {
                             projectName: '🤝 Назначен менеджер',
                             status: 'info',
                             comment: `Вам назначен менеджер: ${dist.company_name}${dist.manager_name ? ' (' + dist.manager_name + ')' : ''}. Контакты — в разделе «Мой профиль» → «Ваш менеджер».`,
-                            time: new Date().toISOString(),
+                            time: distAssignedAt.toISOString(),
                             isRead: readIds.includes(distNotifId)
                         });
                     }
@@ -11740,7 +11752,7 @@ const app = {
                                 const openNow = this.adminChatIsOpenFor(r.sender_id);
                                 if (openNow && !readIds.includes(r.id)) {
                                     readIds.push(r.id);
-                                    localStorage.setItem('stout_read_notifications', JSON.stringify(readIds));
+                                    this.markNotifState('read', r.id);
                                 }
                                 notifications.push({
                                     id: r.id,
@@ -12690,10 +12702,10 @@ const app = {
         if (this._notifTab === 'chat') {
             const incomingIds = items.filter(m => m.sender_id !== meId).map(m => m.id);
             this.markAdminMessagesRead(incomingIds);
-            const readIds = JSON.parse(localStorage.getItem('stout_read_notifications') || '[]');
+            const readIds = this.notifStateLocal().read;
             const fresh = incomingIds.filter(id => !readIds.includes(id));
             if (fresh.length) {
-                localStorage.setItem('stout_read_notifications', JSON.stringify(readIds.concat(fresh)));
+                this.markNotifState('read', fresh);
                 (this._notifications || []).forEach(n => { if (fresh.includes(n.id)) n.isRead = true; });
                 this.fetchNotifications();
             }
@@ -12790,13 +12802,7 @@ const app = {
     // Клик по уведомлению «Ответ монтажника» у админа — открываем панель управления
     // сразу на вкладке «Сообщения» и на диалоге с этим человеком
     openAdminReplyChat: function (userId, notifId) {
-        if (notifId) {
-            const readIds = JSON.parse(localStorage.getItem('stout_read_notifications') || '[]');
-            if (!readIds.includes(notifId)) {
-                readIds.push(notifId);
-                localStorage.setItem('stout_read_notifications', JSON.stringify(readIds));
-            }
-        }
+        if (notifId) this.markNotifState('read', notifId);
         this.closeNotificationsModal();
         this._adminTab = 'messages';
         this._adminChatId = userId;
@@ -12810,11 +12816,7 @@ const app = {
 
     handleNotificationClick: function (notificationId, estimateId, openTab) {
         // Отмечаем как прочитанное
-        const readIds = JSON.parse(localStorage.getItem('stout_read_notifications') || '[]');
-        if (!readIds.includes(notificationId)) {
-            readIds.push(notificationId);
-            localStorage.setItem('stout_read_notifications', JSON.stringify(readIds));
-        }
+        this.markNotifState('read', notificationId);
         this.markAdminMessagesRead(notificationId);
 
         // Обновляем бейдж
@@ -12843,16 +12845,8 @@ const app = {
     // пока не появится новый повод с другим id (новое сообщение/статус)
     dismissNotification: function (notificationId, event) {
         if (event) event.stopPropagation();
-        const dismissedIds = JSON.parse(localStorage.getItem('stout_dismissed_notifications') || '[]');
-        if (!dismissedIds.includes(notificationId)) {
-            dismissedIds.push(notificationId);
-            localStorage.setItem('stout_dismissed_notifications', JSON.stringify(dismissedIds));
-        }
-        const readIds = JSON.parse(localStorage.getItem('stout_read_notifications') || '[]');
-        if (!readIds.includes(notificationId)) {
-            readIds.push(notificationId);
-            localStorage.setItem('stout_read_notifications', JSON.stringify(readIds));
-        }
+        this.markNotifState('dismissed', notificationId);
+        this.markNotifState('read', notificationId);
         this.markAdminMessagesRead(notificationId);
         // Перерисовываем список только если модалка открыта — крестик может быть нажат
         // и на всплывающей карточке в углу, тогда открывать модалку нельзя
@@ -13035,11 +13029,7 @@ const app = {
                 await this.sendUserReply(n.id, text, true);
             }
 
-            const readIds = JSON.parse(localStorage.getItem('stout_read_notifications') || '[]');
-            if (!readIds.includes(n.id)) {
-                readIds.push(n.id);
-                localStorage.setItem('stout_read_notifications', JSON.stringify(readIds));
-            }
+            this.markNotifState('read', n.id);
             this.markAdminMessagesRead(n.id);
 
             const replyRow = toast.querySelector('.msg-toast-reply');
@@ -13086,16 +13076,8 @@ const app = {
                 if (error) console.warn('[respondInvoiceReminder] Ошибка записи отказа:', error);
             }
 
-            const dismissedIds = JSON.parse(localStorage.getItem('stout_dismissed_notifications') || '[]');
-            if (!dismissedIds.includes(notifId)) {
-                dismissedIds.push(notifId);
-                localStorage.setItem('stout_dismissed_notifications', JSON.stringify(dismissedIds));
-            }
-            const readIds = JSON.parse(localStorage.getItem('stout_read_notifications') || '[]');
-            if (!readIds.includes(notifId)) {
-                readIds.push(notifId);
-                localStorage.setItem('stout_read_notifications', JSON.stringify(readIds));
-            }
+            this.markNotifState('dismissed', notifId);
+            this.markNotifState('read', notifId);
 
             await this.fetchNotifications();
             this.refreshNotificationsView();
@@ -13105,15 +13087,116 @@ const app = {
         }
     },
 
+    // ═══════════ Прочитано / скрыто у уведомлений — свойство учётной записи ═══════════
+    // Раньше оба списка лежали только в localStorage, то есть принадлежали браузеру:
+    // на втором устройстве, в другом браузере, после чистки данных сайта или
+    // переустановки PWA всё уже разобранное всплывало заново. Теперь они же хранятся
+    // в users.notif_state (jsonb вида {read:[...], dismissed:[...]}), а localStorage
+    // остаётся кэшем — он работает у неавторизованных и на случай, если колонку в
+    // Supabase ещё не создали. При каждом опросе списки сливаются в обе стороны.
+    NOTIF_STATE_LIMIT: 500,
+    // Сколько живёт уведомление о назначенном менеджере (см. fetchNotifications, п. 1.5)
+    DIST_NOTIF_WINDOW_MS: 2 * 24 * 60 * 60 * 1000,
+
+    // Своя строка в users для колокольчика. Колонки distributor_assigned_at и notif_state
+    // появились позже самого калькулятора: если миграцию в Supabase ещё не выполнили,
+    // запрос с ними падает целиком — и уведомления пропадают вообще у всех. Поэтому при
+    // ошибке «нет такой колонки» разово переходим на короткий список полей.
+    NOTIF_USER_COLS: 'id, email, account_type, demo_ends_at, distributor_id, auth_user_id',
+    NOTIF_USER_COLS_EXT: 'id, email, account_type, demo_ends_at, distributor_id, auth_user_id, distributor_assigned_at, notif_state',
+    fetchMeRowForNotifications: async function (authUserId) {
+        if (!this._notifUserColsMissing) {
+            const { data, error } = await supabaseClient.from('users')
+                .select(this.NOTIF_USER_COLS_EXT).eq('auth_user_id', authUserId).maybeSingle();
+            if (!error) return data;
+            const reason = (error.code || '') + ' ' + (error.message || '');
+            // Сеть моргнула — просто пропускаем опрос, короткий список не поможет
+            if (!/42703|column|does not exist/i.test(reason)) return null;
+            this._notifUserColsMissing = true;
+            console.warn('[fetchNotifications] В users нет колонок distributor_assigned_at / notif_state — работаем без них:', reason);
+        }
+        const { data } = await supabaseClient.from('users')
+            .select(this.NOTIF_USER_COLS).eq('auth_user_id', authUserId).maybeSingle();
+        return data;
+    },
+
+    notifStateLocal: function () {
+        let read = [], dismissed = [];
+        try { read = JSON.parse(localStorage.getItem('stout_read_notifications') || '[]'); } catch (e) { read = []; }
+        try { dismissed = JSON.parse(localStorage.getItem('stout_dismissed_notifications') || '[]'); } catch (e) { dismissed = []; }
+        return {
+            read: Array.isArray(read) ? read : [],
+            dismissed: Array.isArray(dismissed) ? dismissed : []
+        };
+    },
+    saveNotifStateLocal: function (state) {
+        const lim = this.NOTIF_STATE_LIMIT;
+        try {
+            localStorage.setItem('stout_read_notifications', JSON.stringify(state.read.slice(-lim)));
+            localStorage.setItem('stout_dismissed_notifications', JSON.stringify(state.dismissed.slice(-lim)));
+        } catch (e) {
+            console.warn('[saveNotifStateLocal] Не удалось записать состояние уведомлений:', e);
+        }
+    },
+    // Помечает уведомление (или пачку) прочитанным / скрытым: сразу локально, в облако —
+    // с задержкой, чтобы «Прочитать все» не превращалось в очередь запросов
+    markNotifState: function (key, ids) {
+        const list = Array.isArray(ids) ? ids : [ids];
+        const state = this.notifStateLocal();
+        let changed = false;
+        list.forEach(id => {
+            if (id && !state[key].includes(id)) { state[key].push(id); changed = true; }
+        });
+        if (!changed) return false;
+        this.saveNotifStateLocal(state);
+        this.pushNotifStateToCloud();
+        return true;
+    },
+    pushNotifStateToCloud: function () {
+        clearTimeout(this._notifStatePushTimer);
+        this._notifStatePushTimer = setTimeout(async () => {
+            const uid = this._meRow && this._meRow.id;
+            if (!uid || this._notifUserColsMissing) return;
+            const lim = this.NOTIF_STATE_LIMIT;
+            const state = this.notifStateLocal();
+            try {
+                const { error } = await supabaseClient.from('users').update({
+                    notif_state: { read: state.read.slice(-lim), dismissed: state.dismissed.slice(-lim) }
+                }).eq('id', uid);
+                if (error) throw error;
+            } catch (e) {
+                console.warn('[pushNotifStateToCloud] Не удалось сохранить состояние уведомлений в аккаунт:', e);
+            }
+        }, 1200);
+    },
+    // Слияние при каждом опросе: с нового устройства приезжает разобранное из облака,
+    // а накопленное здесь до перехода на аккаунт — уезжает наверх. Списки подрезаются
+    // до NOTIF_STATE_LIMIT последних, иначе они растут без границы.
+    mergeNotifStateFromCloud: function (cloud) {
+        const local = this.notifStateLocal();
+        const remote = (cloud && typeof cloud === 'object') ? cloud : {};
+        const merged = { read: [], dismissed: [] };
+        let cloudLacks = false, localLacks = false;
+        ['read', 'dismissed'].forEach(key => {
+            const r = Array.isArray(remote[key]) ? remote[key] : [];
+            const seen = new Set(r);
+            merged[key] = r.slice();
+            local[key].forEach(id => {
+                if (!seen.has(id)) { seen.add(id); merged[key].push(id); cloudLacks = true; }
+            });
+            if (merged[key].length !== local[key].length) localLacks = true;
+        });
+        if (localLacks) this.saveNotifStateLocal(merged);
+        if (cloudLacks) this.pushNotifStateToCloud();
+        return {
+            read: merged.read.slice(-this.NOTIF_STATE_LIMIT),
+            dismissed: merged.dismissed.slice(-this.NOTIF_STATE_LIMIT)
+        };
+    },
+
     markAllNotificationsRead: function () {
         const notifications = this._notifications || [];
-        const readIds = JSON.parse(localStorage.getItem('stout_read_notifications') || '[]');
-        notifications.forEach(n => {
-            if (!readIds.includes(n.id)) {
-                readIds.push(n.id);
-            }
-        });
-        localStorage.setItem('stout_read_notifications', JSON.stringify(readIds));
+        this.markNotifState('read', notifications.map(n => n.id));
         this.markAdminMessagesRead(notifications.map(n => n.id));
         this.fetchNotifications();
         this.refreshNotificationsView(); // перерисовываем
@@ -13125,15 +13208,10 @@ const app = {
         const notifications = this._notifications || [];
         if (!notifications.length) return;
         if (!await app.confirm('Удалить все уведомления из списка?')) return;
-        const dismissedIds = JSON.parse(localStorage.getItem('stout_dismissed_notifications') || '[]');
-        const readIds = JSON.parse(localStorage.getItem('stout_read_notifications') || '[]');
-        notifications.forEach(n => {
-            if (!dismissedIds.includes(n.id)) dismissedIds.push(n.id);
-            if (!readIds.includes(n.id)) readIds.push(n.id);
-        });
-        localStorage.setItem('stout_dismissed_notifications', JSON.stringify(dismissedIds));
-        localStorage.setItem('stout_read_notifications', JSON.stringify(readIds));
-        this.markAdminMessagesRead(notifications.map(n => n.id));
+        const clearedIds = notifications.map(n => n.id);
+        this.markNotifState('dismissed', clearedIds);
+        this.markNotifState('read', clearedIds);
+        this.markAdminMessagesRead(clearedIds);
         await this.fetchNotifications();
         this.refreshNotificationsView();
     },
@@ -22140,8 +22218,8 @@ const app = {
     // Схема подключения автоматики тёплого пола: своя система, свой лист.
     // Композиция — функциональная схема подключения из паспорта STE-3050
     // (п. 3.5), расположение клемм — по фотографии платы (стр. 3).
-    renderUfhScheme: function () {
-        if (!window.projectScheme || !window.projectScheme.ufhScheme || !window.projectSheets) return '';
+    ufhSchemeArt: function () {
+        if (!window.projectScheme || !window.projectScheme.ufhScheme || !window.projectSheets) return null;
         const spec = this.currentSpec || [];
         const nameOf = i => (i && i.name ? String(i.name) : '');
         const rows = spec.filter(i => /^\s*4\.3/.test(i.group || ''));
@@ -22167,15 +22245,9 @@ const app = {
             auto: this.thermaticFull()
         };
         if (!ufh.blocks && !ufh.stats) return '';
-        const a = window.projectScheme.ufhScheme(ufh);
-        const font = window.projectSheets.FONT ||
-            "'ISOCPEUR','GOST type A','Arial Narrow',sans-serif";
-        return `<div class="automation-scheme" onclick="app.openSchemeFullscreen(this.querySelector('svg'))" title="Открыть на весь экран">` +
-            `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${a.w} ${a.h}">` +
-            `<rect x="0" y="0" width="${a.w}" height="${a.h}" fill="#fff" stroke="none"/>` +
-            `<g stroke-linecap="square" font-family="${font}" font-size="3.67">${a.svg}</g></svg>` +
-            `<button type="button" class="scheme-zoom-btn" aria-label="На весь экран">⛶ На весь экран</button></div>`;
+        return window.projectScheme.ufhScheme(ufh);
     },
+    renderUfhScheme: function () { return this._renderArt(this.ufhSchemeArt()); },
     /**
      * Схема узла снеготаяния — над разделом «4.4 Снеготаяние».
      *
@@ -22183,10 +22255,10 @@ const app = {
      * контуром со сноской: узел с двумя насосными группами, теплообменником и
      * уличным коллектором в полосу отводов не помещается. Здесь у него свой лист.
      */
-    renderSnowScheme: function () {
+    snowSchemeArt: function () {
         const sc = this.snowCalc;
-        if (!sc || sc.impossible) return '';
-        if (!window.projectScheme || !window.projectScheme.snowScheme || !window.projectSheets) return '';
+        if (!sc || sc.impossible) return null;
+        if (!window.projectScheme || !window.projectScheme.snowScheme || !window.projectSheets) return null;
         const a = window.projectScheme.snowScheme({
             kw: Math.round(sc.Q * 10) / 10, area: sc.area, loops: sc.loops,
             // Узлы одинаковые, поэтому чертёж один на все — но с числом узлов и
@@ -22203,15 +22275,9 @@ const app = {
             // базовый уровень смесителем тоже не управляет.
             auto: this.thermaticFull(), servo: this.thermaticFull()
         });
-        if (!a) return '';
-        const font = (window.projectSheets.FONT) ||
-            "'ISOCPEUR','GOST type A','Arial Narrow',sans-serif";
-        return `<div class="automation-scheme" onclick="app.openSchemeFullscreen(this.querySelector('svg'))" title="Открыть на весь экран">` +
-            `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${a.w} ${a.h}">` +
-            `<rect x="0" y="0" width="${a.w}" height="${a.h}" fill="#fff" stroke="none"/>` +
-            `<g stroke-linecap="square" font-family="${font}" font-size="3.67">${a.svg}</g></svg>` +
-            `<button type="button" class="scheme-zoom-btn" aria-label="На весь экран">⛶ На весь экран</button></div>`;
+        return a || null;
     },
+    renderSnowScheme: function () { return this._renderArt(this.snowSchemeArt()); },
     /**
      * Узел обвязки коллекторов водоснабжения — над разделом «5.1. Внутреннее
      * водоснабжение». Включается тем же тумблером «Схема», что и
@@ -22246,11 +22312,40 @@ const app = {
             no: 'img/nodes/water_manifold_sheet_norec_notap.jpg'
         }
     },
-    renderWaterScheme: function () {
-        if (!this.state.water) return '';
+    /**
+     * Готовые листы узлов, которые смета показывает картинкой.
+     *
+     * Условия показа собраны здесь, а render*Scheme только разворачивают
+     * выбранное в разметку: лист в проекте и картинка в смете обязаны быть
+     * одним и тем же листом. Отсюда же они уходят в комплект (payload
+     * .nodeSheets) — рисовать вектором то, что уже вынуто из проекта-образца,
+     * незачем.
+     */
+    projectNodeSheetUrls: function () {
+        const spec = this.currentSpec || [];
+        const inRads = i => /^\s*3[.\s]/.test(i.group || '');
+        const nameOf = i => String(i.name || '');
+        const panels = spec.filter(i => inRads(i) && /панельн/i.test(nameOf(i)));
+        const isVentil = i => /ventil|вентил/i.test(nameOf(i));
         const tap = this.state.waterInput && (parseInt(this.state.outdoorFaucet) || 0) > 0;
-        return this._renderSheetImage(
-            this.WATER_SHEETS[this.state.recirc ? 'rec' : 'norec'][tap ? 'tap' : 'no']);
+        return {
+            ufh: (this.state.tp1 > 0 || this.state.tp2 > 0) ? this.UFH_SHEET : null,
+            // Лист про лучевую разводку: без самого коллектора его не показываем
+            radManifold: spec.some(i => inRads(i) && /коллектор/i.test(nameOf(i)) &&
+                !/шкаф|кронштейн/i.test(nameOf(i))) ? this.RAD_SHEET : null,
+            // Способ подключения нужен и на листе проекта: у нижнего и бокового
+            // подключения разные узлы, и подписать их надо по-разному.
+            radPanels: [
+                panels.some(isVentil) ? { kind: 'bottom', url: this.RAD_PANEL_SHEETS.bottom } : null,
+                panels.some(i => !isVentil(i)) ? { kind: 'side', url: this.RAD_PANEL_SHEETS.side } : null
+            ].filter(Boolean),
+            water: this.state.water
+                ? this.WATER_SHEETS[this.state.recirc ? 'rec' : 'norec'][tap ? 'tap' : 'no']
+                : null
+        };
+    },
+    renderWaterScheme: function () {
+        return this._renderSheetImage(this.projectNodeSheetUrls().water);
     },
     /**
      * Обвязка распределительного узла ХВС — под заголовком раздела
@@ -22407,7 +22502,7 @@ const app = {
      */
     UFH_SHEET: 'img/nodes/ufh_manifold_sheet.jpg',
     renderUfhNodeScheme: function () {
-        return (this.state.tp1 > 0 || this.state.tp2 > 0) ? this._renderSheetImage(this.UFH_SHEET) : '';
+        return this._renderSheetImage(this.projectNodeSheetUrls().ufh);
     },
     /**
      * Узел обвязки панельного радиатора — под заголовком раздела
@@ -22428,13 +22523,8 @@ const app = {
         side: 'img/nodes/rad_panel_side_sheet.jpg'
     },
     renderRadPanelScheme: function () {
-        const spec = this.currentSpec || [];
-        const panels = spec.filter(i => /^\s*3[.\s]/.test(i.group || '') &&
-            /панельн/i.test(String(i.name || '')));
-        if (!panels.length) return '';
-        const isVentil = i => /ventil|вентил/i.test(String(i.name || ''));
-        return (panels.some(isVentil) ? this._renderSheetImage(this.RAD_PANEL_SHEETS.bottom) : '') +
-            (panels.some(i => !isVentil(i)) ? this._renderSheetImage(this.RAD_PANEL_SHEETS.side) : '');
+        return this.projectNodeSheetUrls().radPanels
+            .map(p => this._renderSheetImage(p.url)).join('');
     },
     /**
      * Узел обвязки коллектора радиаторного отопления — над подразделом
@@ -22448,12 +22538,9 @@ const app = {
     RAD_SHEET: 'img/nodes/rad_manifold_sheet.jpg',
     renderRadNodeScheme: function () {
         // Коллектор радиаторов лежит в подразделе труб («3.3. Трубы отопления»),
-        // а в слитой смете — прямо в разделе «3.». Ищем по обоим исполнениям:
-        // гребёнка «Коллектор радиаторный N вых.» и сборка «Коллекторный блок».
-        const spec = this.currentSpec || [];
-        const has = spec.some(i => /^\s*3[.\s]/.test(i.group || '') &&
-            /коллектор/i.test(String(i.name || '')) && !/шкаф|кронштейн/i.test(String(i.name || '')));
-        return has ? this._renderSheetImage(this.RAD_SHEET) : '';
+        // а в слитой смете — прямо в разделе «3.»; обоими исполнениями занят
+        // projectNodeSheetUrls.
+        return this._renderSheetImage(this.projectNodeSheetUrls().radManifold);
     },
     /**
      * Обёртка листа-картинки для сметы. Лист завёрнут в <svg>, а не вставлен
@@ -22503,9 +22590,9 @@ const app = {
             `<image x="0" y="0" width="${a.w}" height="${a.h}" preserveAspectRatio="xMidYMid meet" href="${url}"/></svg>` +
             `<button type="button" class="scheme-zoom-btn" aria-label="На весь экран">⛶ На весь экран</button></div>`;
     },
-    renderAutomationScheme: function () {
+    automationSchemeArt: function () {
         const tc = this.thermaticConfig;
-        if (!tc || !window.projectScheme || !window.projectScheme.automation || !window.projectSheets) return '';
+        if (!tc || !window.projectScheme || !window.projectScheme.automation || !window.projectSheets) return null;
         // Артикулы подобранных позиций — постер показывает фото именно того
         // оборудования, которое лежит в смете (img/<артикул>.jpg)
         const spec = this.currentSpec || [];
@@ -22579,16 +22666,52 @@ const app = {
         }
         // У приборов разные клеммы, значит и лист свой у каждого. Общая у них
         // только графика — палитра, значки и колодки (см. project_scheme.js).
-        const a = (tc.model === 'basic' && window.projectScheme.automation1002)
+        return (tc.model === 'basic' && window.projectScheme.automation1002)
             ? window.projectScheme.automation1002(tc, items)
             : window.projectScheme.automation(tc, items);
-        const font = window.projectSheets.FONT ||
+    },
+    renderAutomationScheme: function () { return this._renderArt(this.automationSchemeArt()); },
+    /**
+     * Обёртка чертежа для сметы: схема приходит из project_scheme.js как
+     * {w, h, svg} и показывается тем же блоком, что листы-картинки, — с
+     * полноэкранным просмотром по клику. Тот же чертёж без обёртки уходит на
+     * лист проекта (projectArtSheets): рисовать его там заново незачем.
+     */
+    _renderArt: function (a) {
+        if (!a || !a.svg) return '';
+        const font = (window.projectSheets && window.projectSheets.FONT) ||
             "'ISOCPEUR','GOST type A','Arial Narrow',sans-serif";
         return `<div class="automation-scheme" onclick="app.openSchemeFullscreen(this.querySelector('svg'))" title="Открыть на весь экран">` +
             `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${a.w} ${a.h}">` +
             `<rect x="0" y="0" width="${a.w}" height="${a.h}" fill="#fff" stroke="none"/>` +
             `<g stroke-linecap="square" font-family="${font}" font-size="3.67">${a.svg}</g></svg>` +
             `<button type="button" class="scheme-zoom-btn" aria-label="На весь экран">⛶ На весь экран</button></div>`;
+    },
+    /**
+     * Схемы сметы — в комплект листов проекта.
+     *
+     * Смета рисует у своих разделов три чертежа, которых в комплекте не было:
+     * подключение автоматики котельной, подключение автоматики напольного
+     * отопления и узел снеготаяния. Это те же самые чертежи, тем же
+     * project_scheme.js: на лист уходит их SVG, а рамку, штамп и заголовок
+     * дорисовывает страница листов.
+     *
+     * mk — марка раздела, в который лист встаёт: автоматика котельной в ТМ,
+     * тёплый пол и снеготаяние в О.
+     */
+    projectArtSheets: function () {
+        const out = [];
+        const add = (mk, title, art) => {
+            if (art && art.svg) out.push({ mk: mk, title: title, w: art.w, h: art.h, svg: art.svg });
+        };
+        const safe = (mk, title, fn) => {
+            try { add(mk, title, fn.call(this)); }
+            catch (e) { console.warn('[проект] лист «' + title + '» не собран:', e.message); }
+        };
+        safe('tm', 'Схема подключения автоматики котельной', this.automationSchemeArt);
+        safe('o', 'Схема подключения автоматики напольного отопления', this.ufhSchemeArt);
+        safe('o', 'Схема узла снеготаяния', this.snowSchemeArt);
+        return out;
     },
     _renderSchemeLayers: function (spec) {
         const s = this.state;
@@ -29507,6 +29630,13 @@ const app = {
             // уставки расходомеров — соседний лист того же раздела «О».
             ufhHydro: this.buildUfhHydraulicsData(),
             scheme: this.buildSchemeConfig(),
+            // Готовые листы узлов, вынутые из проектов-образцов: те же самые,
+            // что смета показывает картинкой над своими разделами. Рисовать их
+            // в комплекте заново незачем — оформление у листа проекта задано
+            // жёстко, и снимок отвечает ему точнее любой перерисовки.
+            nodeSheets: this.projectNodeSheetUrls(),
+            // Схемы автоматики и снеготаяния — те же чертежи, что в смете
+            artSheets: this.projectArtSheets(),
             // Данные для листа «Общие данные»: показатели по этажам и
             // технические указания собираются по тем же параметрам, по каким
             // считалась смета — отдельного ввода не требуют.
@@ -29548,13 +29678,27 @@ const app = {
         // проекции приборов для компоновки котельной и вида спереди
         payload.equip = await fetch('img/equip/equip.json')
             .then(r => r.ok ? r.json() : null).catch(() => null);
-        try { localStorage.setItem('project_sheets_payload', JSON.stringify(payload)); }
-        catch (e) {
-            // Чаще всего это переполнение хранилища снимком — пробуем без него
-            payload.boiler3d = null;
-            try { localStorage.setItem('project_sheets_payload', JSON.stringify(payload)); }
-            catch (e2) { app.alert("Не удалось передать смету на листы."); return; }
+        // Переполнение хранилища: скидываем самое тяжёлое по очереди, начиная с
+        // того, без чего комплект теряет меньше всего. Схемы автоматики — это
+        // готовый SVG, снимки узлов — картинки строкой; расчёт и позиции
+        // остаются в любом случае.
+        const _drop = [
+            () => { payload.boiler3d = null; },
+            () => { payload.artSheets = []; },
+            () => { payload.node3d = null; }
+        ];
+        let _saved = false;
+        for (let i = 0; i <= _drop.length && !_saved; i++) {
+            try {
+                localStorage.setItem('project_sheets_payload', JSON.stringify(payload));
+                _saved = true;
+            } catch (e) {
+                if (i === _drop.length) break;
+                console.warn('[проект] хранилище переполнено, убираю лишнее:', e.message);
+                _drop[i]();
+            }
         }
+        if (!_saved) { app.alert("Не удалось передать смету на листы."); return; }
         // Планы этажей страница листов читает из того же передаточного ключа,
         // что и редактор. Соседняя вкладка с другим объектом могла оставить
         // там свои — кладём планы именно этой сметы.

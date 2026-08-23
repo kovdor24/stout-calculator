@@ -377,6 +377,61 @@
       '</g></svg>';
   }
 
+  /**
+   * Лист-картинка: готовый лист проекта-образца (img/nodes/*_sheet.jpg) в поле
+   * рамки.
+   *
+   * Такие узлы смета уже показывает целиком, и перерисовывать их вектором ни к
+   * чему: оформление проектной документации задано жёстко, а «похожий» чертёж
+   * ему не отвечает. У снимка снята рамка ГОСТ и штамп, поэтому отношение
+   * сторон у него ровно поля рамки (3351x2433 = 1,377 против 395/287).
+   *
+   * Кладём в полосу над штампом, а не на всё поле: у снимков внизу идёт
+   * примечание во всю ширину, и на полном поле оно уехало бы под штамп.
+   * Оттого по бокам остаются белые поля миллиметров по десять — это дешевле,
+   * чем резать чужой лист.
+   */
+  function imageSheet(opts) {
+    opts = opts || {};
+    if (!opts.url) return '';
+    var boxH = STAMP.t - FR.t, boxW = FR.r - FR.l;
+    var h = boxH, w = h * (opts.ratio || 1.3773);
+    if (w > boxW) { w = boxW; h = w / (opts.ratio || 1.3773); }
+    var body = '<image href="' + esc(opts.url) + '" x="' + n(FR.l + (boxW - w) / 2) +
+      '" y="' + n(FR.t + (boxH - h) / 2) + '" width="' + n(w) + '" height="' + n(h) +
+      '" preserveAspectRatio="xMidYMid meet"/>';
+    return sheet({ code: opts.code, sheet: opts.sheet, body: body });
+  }
+
+  /**
+   * Лист-чертёж: готовая схема из project_scheme.js ({w, h, svg}) в поле рамки.
+   *
+   * Схемы автоматики, тёплого пола и снеготаяния уже нарисованы для сметы —
+   * на лист уходит тот же самый чертёж, вписанный в поле под заголовком.
+   * Масштаб единый по обеим сторонам: чертёж нельзя тянуть по одной оси,
+   * условные обозначения на нём перестанут быть круглыми.
+   */
+  function artSheet(opts) {
+    opts = opts || {};
+    var a = opts.art;
+    if (!a || !a.svg) return '';
+    var top = BODY_TOP + 2;
+    var boxW = FR.r - FR.l - 8, boxH = STAMP.t - top - 3;
+    // Крупнее натуральной величины не тянем: схемы нарисованы в миллиметрах
+    // листа, и при увеличении вместе с ними распухли бы шрифты и толщины линий.
+    var k = Math.min(boxW / (a.w || 1), boxH / (a.h || 1), 1);
+    if (!(k > 0)) return '';
+    var x = FR.l + 4 + (boxW - a.w * k) / 2, y = top + (boxH - a.h * k) / 2;
+    var head = opts.title
+      ? text((FR.l + FR.r) / 2, 12.3, opts.title, { size: 5.47, anchor: 'middle', weight: 'bold' })
+      : '';
+    return sheet({
+      code: opts.code, sheet: opts.sheet,
+      body: head + '<g transform="translate(' + n(x) + ' ' + n(y) + ') scale(' + n(k) +
+        ')">' + a.svg + '</g>'
+    });
+  }
+
   // ─── Готовый лист: спецификация ────────────────────────────────────────
   // Состав колонок — как в проектах-образцах: после наименования идут
   // артикул и производитель, по ним позицию заказывают без сверки с прайсом.
@@ -1102,7 +1157,8 @@
 
   window.projectSheets = {
     A3: A3, FRAME: FRAME, FR: FR, STAMP: STAMP, SIDE: SIDE, ROW_H: ROW_H,
-    sheet: sheet, table: table, specification: specification,
+    sheet: sheet, imageSheet: imageSheet, artSheet: artSheet,
+    table: table, specification: specification,
     fromEquipment: fromEquipment,
     titleSheet: titleSheet, generalData: generalData, stampBig: stampBig,
     heatLossSheets: heatLossSheets,
