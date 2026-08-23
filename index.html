@@ -423,11 +423,13 @@
                             <polyline points="17 21 17 13 7 13 7 21"></polyline>
                             <polyline points="7 3 7 8 15 8"></polyline>
                         </svg>
-                    <!-- Removed button to load from cloud as it is now in the Profile tab -->
+                    </button>
+                    <!-- Кнопка загрузки из облака убрана: она теперь в профиле -->
                 </div>
 
-                <div class="header-divider"></div>
-
+                <!-- От дискеты до темы — один блок: сохранить, загрузить код,
+                     сбросить, тема. Черта между сохранением и кодом делила его
+                     надвое без причины — эти кнопки об одном и том же. -->
                 <button class="btn-ctrl" onclick="app.loadFromCode()" title="Загрузить код">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                         stroke-linecap="round" stroke-linejoin="round">
