@@ -12623,8 +12623,10 @@ body.object-flat #blk_flat_params {
 }
 
 /* Тройниковая или коллекторная — это про разводку от коллектора. На стояках
-   выбирать нечего, поэтому переключатель прячем. */
-body.object-flat.on-riser #blk_rad_scheme {
+   выбирать нечего, поэтому переключатель прячем вместе с его заголовком: он
+   отдельным <h4> и сам по себе не скрывается. */
+body.object-flat.on-riser #blk_rad_scheme,
+body.object-flat.on-riser #lbl_rad_scheme {
     display: none !important;
 }
 
@@ -12671,6 +12673,14 @@ body.object-flat #blk_flat_rooms_card {
    нетиповой — угловая комната с двумя окнами, кухня без окна, эркер. Стрелки на
    месте, как у комнат. */
 
+/* Режим системы (80/60 или 75/65) и выбор теплоносителя — вопросы к котельной.
+   Режим задаёт тепловой узел дома, а не монтажник, и влияет он на расход,
+   диаметры магистралей и насос — в квартире их нет вовсе. Теплоноситель
+   заливает дом, он общий на весь стояк, и своей воды или гликоля там не бывает. */
+body.object-flat #blk_rad_regime,
+body.object-flat #lbl_rad_regime,
+body.object-flat #blk_coolant_wrap,
+body.object-flat #lbl_coolant,
 body.object-flat #blk_outdoor_faucet_row,
 body.object-flat #blk_water_meter_row,
 body.object-flat #blk_heating_feed_row,

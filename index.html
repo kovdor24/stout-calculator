@@ -659,33 +659,6 @@
             </div>
 
 
-            <!-- Свойства квартиры: этаж и угловая. Стоят сразу под площадью — это
-                 её уточнение, а не отдельная тема: теплопотери квартиры определяются
-                 не метражом, а тем, сколько сторон выходит на улицу. Виден блок
-                 только в квартирном режиме (style.css, body.object-flat). -->
-            <div id="blk_flat_params">
-                <div class="control-item" style="margin-bottom: 12px;">
-                    <span class="lbl" style="display:block; margin-bottom: 6px;">Этаж</span>
-                    <div class="tabs" id="flat_position_tabs">
-                        <div class="tab flat-pos-tab" data-fpos="first" onclick="app.setFlatPosition('first')"
-                            title="Под полом подвал, подполье или проезд — пол считается наружным ограждением.">Первый</div>
-                        <div class="tab flat-pos-tab active" data-fpos="middle" onclick="app.setFlatPosition('middle')"
-                            title="Сверху и снизу такие же квартиры: через перекрытия тепло никуда не уходит.">Средний</div>
-                        <div class="tab flat-pos-tab" data-fpos="last" onclick="app.setFlatPosition('last')"
-                            title="Над потолком холодный чердак или кровля — потолок считается наружным ограждением.">Последний</div>
-                    </div>
-                </div>
-                <div class="control-item toggle-item" style="margin-bottom: 15px;">
-                    <div class="label-row">
-                        <span class="lbl"
-                            title="Две наружные стены вместо одной. Теплопотери выше примерно в полтора раза, и радиаторы вырастают соответственно.">Угловая квартира</span>
-                        <label class="switch"><input type="checkbox" id="chk_flat_corner"
-                                onchange="app.setFlatCorner(this.checked)"><span
-                                class="slider"></span></label>
-                    </div>
-                </div>
-            </div>
-
             <!-- Верхнюю пунктирную линию класса .toggle-item гасим: она приходилась
                  ровно под «Планом помещений» и отрезала его от площади, к которой он
                  относится. Черта снизу остаётся — она отделяет весь блок. -->
@@ -772,6 +745,33 @@
                 </div>
             </div>
             <div id="blk_fast_obj_params_content" style="display:none;">
+                <!-- Свойства квартиры: этаж и угловая. Лежат внутри «Параметров
+                         объекта», рядом с регионом и материалами: это того же рода
+                         уточнения, а на виду в колонке они занимали место у самых
+                         частых настроек. Блок виден только в квартирном режиме
+                         (style.css, body.object-flat). -->
+                <div id="blk_flat_params">
+                    <div class="control-item" style="margin-bottom: 12px;">
+                        <span class="lbl" style="display:block; margin-bottom: 6px;">Этаж</span>
+                        <div class="tabs" id="flat_position_tabs">
+                            <div class="tab flat-pos-tab" data-fpos="first" onclick="app.setFlatPosition('first')"
+                                title="Под полом подвал, подполье или проезд — пол считается наружным ограждением.">Первый</div>
+                            <div class="tab flat-pos-tab active" data-fpos="middle" onclick="app.setFlatPosition('middle')"
+                                title="Сверху и снизу такие же квартиры: через перекрытия тепло никуда не уходит.">Средний</div>
+                            <div class="tab flat-pos-tab" data-fpos="last" onclick="app.setFlatPosition('last')"
+                                title="Над потолком холодный чердак или кровля — потолок считается наружным ограждением.">Последний</div>
+                        </div>
+                    </div>
+                    <div class="control-item toggle-item" style="margin-bottom: 15px;">
+                        <div class="label-row">
+                            <span class="lbl"
+                                title="Две наружные стены вместо одной. Теплопотери выше примерно в полтора раза, и радиаторы вырастают соответственно.">Угловая квартира</span>
+                            <label class="switch"><input type="checkbox" id="chk_flat_corner"
+                                    onchange="app.setFlatCorner(this.checked)"><span
+                                    class="slider"></span></label>
+                        </div>
+                    </div>
+                </div>
             <div class="control-item"><span class="lbl-sub">Регион строительства</span>
                 <div class="tabs" id="reg_tabs">
                     <div class="tab active" onclick="app.setRegion(130)">Сибирь</div>
