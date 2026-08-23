@@ -31839,6 +31839,10 @@ const app = {
             this.state.well = false;
             this.state.snowMelt = false;
             this.state.boilerAuto = false;
+            // Незамерзающий уличный кран — про крыльцо и грядки, не про квартиру.
+            // Гасим вместе с остальным: строка панели уйдёт по CSS, а сам кран
+            // остался бы в смете, и его никто бы уже не нашёл.
+            this.state.outdoorFaucet = 0;
         }
         this.saveState();
         this.syncUI();
@@ -52589,7 +52593,10 @@ const app = {
         currentSectionTitle = "6. Узел ввода ХВС";
         if (this.state.waterInput) {
             let ni = catalog.water_input_node;
-            let grp61 = "6.1. Ввод ХВС в дом";
+            // В квартире вода заходит не «в дом», а от общедомового стояка. Домовой
+            // заголовок оставляем дословно прежним: под ним в сохранённых сметах
+            // лежит свёрнутость подраздела, и переименование потеряло бы её.
+            let grp61 = this.isFlat() ? "6.1. Ввод воды в квартиру" : "6.1. Ввод ХВС в дом";
             ni.forEach(item => addToBill(item, 1, "", grp61));
 
             if (this.state.outdoorFaucet > 0) {

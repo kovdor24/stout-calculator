@@ -12593,6 +12593,7 @@ body.object-flat #blk_flat_params {
     display: block;
 }
 
+body.object-flat #blk_outdoor_faucet_row,
 body.object-flat #blk_fuel_type,
 body.object-flat #blk_floors_card,
 body.object-flat #blk_well_wrap,
