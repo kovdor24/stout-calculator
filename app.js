@@ -32241,6 +32241,12 @@ const app = {
     syncFlatWindows: function () {
         if (!this.isFlat()) return;
         this.syncFlatRooms();
+        // Окна правят руками там, где расклад нетиповой: угловая комната с двумя
+        // окнами, кухня без окна, эркер. Правило «комната плюс кухня» такого не
+        // знает, поэтому заданное руками не перебиваем. Флаг тот же, что у дома
+        // (winManual): его ставят и стрелки, и ввод числа, заводить второй
+        // значило бы держать два флага про одно и то же.
+        if (this.state.winManual) return;
         this.state.win = this.flatWindowsFromRooms();
     },
 
@@ -32249,6 +32255,9 @@ const app = {
         if (isNaN(n) || n < 1) n = 1;
         if (n > 6) n = 6;
         this.state.flatRooms = n;
+        // Комнат стало больше или меньше — окна считаем заново от них, даже если
+        // до этого их правили руками: смена числа комнат это решение крупнее.
+        this.state.winManual = false;
         // Задано руками — дальше площадь это значение не перебивает. Ноль руками
         // не ставится: он бывает только пока не задана площадь, и приходит из
         // автоподбора. Иначе «минус» на единице сбрасывал ручной режим, комнаты
@@ -32351,10 +32360,12 @@ const app = {
         // остались бы, а вместе с ними и приборы.
         if (type === 'flat') {
             this.syncFlatRooms();
-            const w = this.flatWindowsFromRooms();
-            if (this.state.win !== w) this.state.win = w;
+            if (!this.state.winManual) {
+                const w = this.flatWindowsFromRooms();
+                if (this.state.win !== w) this.state.win = w;
+            }
             const winEl = document.getElementById('val_win');
-            if (winEl) winEl.innerText = w;
+            if (winEl) winEl.innerText = parseInt(this.state.win) || 0;
         }
         if (type === 'flat') this.syncFlatWater();
         const sewerChk = document.getElementById('chk_flat_sewer');
@@ -52054,15 +52065,38 @@ const app = {
                     ]), grpT);
                 }
 
-                // Мощность против розетки. 2,5 кВт — предел линии на 16 А, и если
-                // пол её перебирает, монтажник должен узнать об этом из сметы, а
-                // не от электрика на объекте.
-                const warnEl = (totalW > 2200)
-                    ? `⚠️ <b>Нужна отдельная линия.</b> Суммарная мощность пола ${totalW} Вт — это больше, чем можно вешать на обычную розеточную группу. Нужен свой автомат и УЗО, кабель до щита в смете не учтён.`
-                    : null;
-                if (laidArea > areaEl + 0.4) {
-                    currentSectionTitle = "4. Электрический тёплый пол";
+                // Питание. Мат греет часами подряд, и розеточная группа под такую
+                // нагрузку не рассчитана; УЗО на 30 мА для кабеля в полу
+                // обязательно. Линий столько, сколько нужно по току: рабочий
+                // предел под автоматом C16 берём 13 А, остальное — вторая линия.
+                const ampsEl = totalW / 230;
+                const linesEl = Math.max(1, Math.ceil(ampsEl / 13));
+                const pw = catalog.ufh_el_power || [];
+                if (pw.length >= 3) {
+                    const grpP = "4.3. Питание тёплого пола";
+                    // Трасса от щита: щит в прихожей, пол в санузле и на кухне.
+                    // Считаем от площади квартиры и округляем до пяти метров —
+                    // точную длину монтажник поправит числом в строке.
+                    const runEl = Math.ceil((10 + (parseFloat(this.state.area) || 0) * 0.08) / 5) * 5;
+                    addToBill(pw[0], runEl * linesEl, this.autoTip(pw[0].name, [
+                        `<b>Зачем:</b> Отдельная линия от щита до терморегулятора. Сечение 2,5 мм² — под автомат на 16 А.`,
+                        `<b>Длина:</b> ${runEl} м на линию — оценка по площади квартиры, от щита в прихожей до санузла и кухни. Замерите по месту и поправьте количество.`
+                    ]), grpP);
+                    addToBill(pw[1], linesEl, this.autoTip(pw[1].name, [
+                        `<b>Зачем:</b> Защищает линию от перегрузки и короткого замыкания. Характеристика C — она терпит пусковой ток и не выбивает зря.`,
+                        (linesEl > 1
+                            ? `<b>Почему ${linesEl}:</b> суммарный ток пола ${ampsEl.toFixed(1)} А, на один автомат C16 столько вешать нельзя — пол разделён на ${linesEl} линии.`
+                            : `<b>Ток пола:</b> ${ampsEl.toFixed(1)} А — одной линии хватает.`)
+                    ]), grpP);
+                    addToBill(pw[2], linesEl, this.autoTip(pw[2].name, [
+                        `<b>Зачем:</b> Отключает линию при токе утечки 30 мА. Для нагревательного кабеля в полу это не рекомендация, а требование: кабель лежит в стяжке, в санузле, под плиткой, и пробой там опаснее всего.`,
+                        `<b>Номинал:</b> 25 А — на ступень выше автомата, как и положено: УЗО само от перегрузки не защищает, его прикрывает автомат.`
+                    ]), grpP);
                 }
+
+                const warnEl = (linesEl > 1)
+                    ? `⚠️ <b>Пол разделён на ${linesEl} линии.</b> Суммарная мощность ${totalW} Вт, ток ${ampsEl.toFixed(1)} А — на один автомат C16 столько не вешают. Автоматы, УЗО и кабель посчитаны на все линии; место в щите проверьте заранее.`
+                    : null;
                 flushBill("4. Электрический тёплый пол", warnEl);
             }
         }
@@ -54014,9 +54048,11 @@ const app = {
 
         // === 9. ДОПОЛНИТЕЛЬНЫЕ МАТЕРИАЛЫ (включая своё оборудование без привязки к разделу) ===
         currentSectionTitle = "9. Дополнительные материалы";
-        // Теплоноситель в квартире со стояками не покупают: систему заполняет дом,
-        // и залить в неё свою жидкость нельзя — она общая на весь стояк.
-        let cl = this.onRiser() ? null : catalog.coolants.find(c => c.type === this.state.coolant);
+        // Теплоносителя в квартире нет вовсе — ни при стояках, ни при своей
+        // разводке от этажного узла: в обоих случаях систему заполняет дом, и
+        // залить в неё свою жидкость нельзя, она общая. Сначала условие стояло
+        // на onRiser, и при «коллекторе в квартире» канистры возвращались.
+        let cl = this.isFlat() ? null : catalog.coolants.find(c => c.type === this.state.coolant);
         if (cl) {
             if (cl.type === 'pro65') {
                 let vP = vSys * 0.65; let vH = vSys * 0.35; let p1 = catalog.coolants[2]; let p2 = catalog.coolants[0];
@@ -54146,6 +54182,13 @@ const app = {
                 addToWorks("Монтаж нагревательного мата", Math.round(aEl), 900, "м²", gU);
                 addToWorks("Установка терморегулятора тёплого пола", zn, 2500, "шт", gU);
                 addToWorks("Штробление под терморегулятор и датчик пола", zn, 1500, "шт", gU);
+                const _w = this.currentEquipmentList
+                    .filter(x => String(x.group || '') === "4.1. Нагревательные маты")
+                    .reduce((s, x) => s + (x.watt || 0) * (x.q || 0), 0);
+                const _lines = Math.max(1, Math.ceil((_w / 230) / 13));
+                const _run = Math.ceil((10 + (parseFloat(this.state.area) || 0) * 0.08) / 5) * 5;
+                addToWorks("Прокладка кабеля питания до щита", _run * _lines, 250, "м.п.", gU);
+                addToWorks("Установка автомата и УЗО в щит", _lines, 1500, "линия", gU);
             }
         }
         // Работы квартирного узла ввода воды. Своя группа: «2.2 Монтаж узла ввода
@@ -54490,24 +54533,36 @@ const app = {
         // ещё не пересчитал с ним раскладку.
         this.queueEmptyFitPanelScale();
 
-        if (this.state.area <= 0 && !hasUserRows) {
+        // Заглушка вместо сметы — только когда считать действительно нечего.
+        // Раньше условие смотрело на одну площадь, и это выбрасывало посчитанное:
+        // водоснабжение и канализация считаются по санузлам, а не по метражу, и
+        // в квартире с заданным санузлом, но без площади смета обнулялась.
+        if (this.state.area <= 0 && !hasUserRows && !(this.currentEquipmentList || []).length) {
             // Кнопка быстрого старта стоит здесь же, в центре пустой сметы: место,
             // куда человек смотрит первым делом. Показываем её ровно тогда, когда
             // расчёт действительно пуст (открытая чужая смета с нулевой площадью —
             // не тот случай). Идентификатор нужен режиму обучения (tour.js).
+            // Значок и слова пустого экрана — по объекту: дом это дом, квартира
+            // это квартира, и «материалы» в квартире не про то.
+            const _flatEmpty = this.isFlat();
+            const _emptyIcon = _flatEmpty ? '🏢' : '🏠';
+            const _emptyWhat = _flatEmpty ? 'квартиры' : 'объекта';
+            const _emptyWhich = _flatEmpty
+                ? 'площадь, комнаты, отопление'
+                : 'площадь, отопление, материалы';
             const qsBtn = this.isCalcEmpty() ? `
                     <button type="button" id="quick_start_row" class="no-print" onclick="app.showQuickStart()"
                         style="display: inline-flex; align-items: center; justify-content: center; gap: 8px;
                                margin-top: 12px; font: inherit; font-size: 13px; font-weight: 600;
                                padding: 10px 18px; border-radius: 10px; border: 1px dashed var(--primary);
                                background: transparent; color: var(--primary); cursor: pointer;">
-                        <span style="font-size: 15px;">🏠</span>Быстрый старт: типовой объект
+                        <span style="font-size: 15px;">${_emptyIcon}</span>Быстрый старт: типовой объект
                     </button>` : '';
             h = `<tr class="empty-state-row"><td colspan="9">
                 <div class="empty-state-hint">
-                    <span class="empty-state-icon">🏠</span>
-                    <div class="empty-state-title">Параметры объекта не заданы</div>
-                    <div class="empty-state-text">Измените параметры объекта слева (площадь, отопление, материалы), чтобы начать подбор оборудования — либо нажмите «✨ ИИ-заполнение» и опишите объект словами.</div>${qsBtn}
+                    <span class="empty-state-icon">${_emptyIcon}</span>
+                    <div class="empty-state-title">Параметры ${_emptyWhat} не заданы</div>
+                    <div class="empty-state-text">Измените параметры слева (${_emptyWhich}), чтобы начать подбор оборудования — либо нажмите «✨ ИИ-заполнение» и опишите объект словами.</div>${qsBtn}
                 </div>
             </td></tr>`;
             sum = 0;

@@ -12667,15 +12667,9 @@ body.object-flat #blk_flat_rooms_card {
     display: flex;
 }
 
-/* Окна в квартире считаются от числа комнат, поэтому править их руками нельзя —
-   прячем стрелки, оставляем само число. */
-body.object-flat #blk_win_card .step-btn {
-    display: none;
-}
-
-body.object-flat #blk_win_card .step-val {
-    cursor: default;
-}
+/* Окна в квартире считаются от числа комнат, но правятся руками: расклад бывает
+   нетиповой — угловая комната с двумя окнами, кухня без окна, эркер. Стрелки на
+   месте, как у комнат. */
 
 body.object-flat #blk_outdoor_faucet_row,
 body.object-flat #blk_water_meter_row,
