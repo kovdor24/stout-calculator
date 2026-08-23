@@ -12584,16 +12584,33 @@ body.object-flat #blk_object_type {
     display: block !important;
 }
 
-/* Параметры квартиры — наоборот, видны только в квартирном режиме */
-#blk_flat_params {
+/* Параметры квартиры и её узел ввода отопления — наоборот, видны только в
+   квартирном режиме */
+#blk_flat_params,
+#blk_flat_hot_riser_row,
+#blk_flat_heat_inlet_wrap {
     display: none;
 }
 
-body.object-flat #blk_flat_params {
+body.object-flat #blk_flat_params,
+body.object-flat #blk_flat_heat_inlet_wrap {
     display: block;
 }
 
+body.object-flat #blk_flat_hot_riser_row {
+    display: flex !important;
+}
+
+/* Карточка «Окна» осталась в сетке одна: «Второй этаж» в квартире скрыт, и
+   вторая колонка держала пустое место справа от неё. */
+body.object-flat #blk_fast_grid {
+    grid-template-columns: 1fr;
+}
+
 body.object-flat #blk_outdoor_faucet_row,
+body.object-flat #blk_water_meter_row,
+body.object-flat #blk_heating_feed_row,
+body.object-flat #blk_water_frame_row,
 body.object-flat #blk_fuel_type,
 body.object-flat #blk_floors_card,
 body.object-flat #blk_well_wrap,
@@ -12608,3 +12625,8 @@ body.object-flat #blk_floor_mat_wrapper,
 body.object-flat #blk_floor_mat_content {
     display: none !important;
 }
+
+/* Счётчики в квартире не опция: без них начисляют по нормативу, и смета без них
+   неверна по деньгам. Тумблер спрятан, а состояние принудительно включает
+   app.setObjectType — иначе строка «Счётчик» осталась бы выключенной в старой
+   смете, переключённой на квартиру. */

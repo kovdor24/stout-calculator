@@ -609,41 +609,6 @@
                 </div>
             </div>
 
-            <!-- Параметры квартиры. Виден только в квартирном режиме — правило в
-                 style.css по классу body.object-flat. Дому эти вопросы не нужны:
-                 там наружу выходят все стены и обе горизонтали. -->
-            <div id="blk_flat_params">
-                <div class="control-item" style="margin-bottom: 12px;">
-                    <span class="lbl-sub" style="margin-bottom: 6px;">Этаж</span>
-                    <div class="tabs" id="flat_position_tabs">
-                        <div class="tab flat-pos-tab" data-fpos="first" onclick="app.setFlatPosition('first')"
-                            title="Под полом подвал, подполье или проезд — пол считается наружным ограждением.">Первый</div>
-                        <div class="tab flat-pos-tab active" data-fpos="middle" onclick="app.setFlatPosition('middle')"
-                            title="Сверху и снизу такие же квартиры: через перекрытия тепло никуда не уходит.">Средний</div>
-                        <div class="tab flat-pos-tab" data-fpos="last" onclick="app.setFlatPosition('last')"
-                            title="Над потолком холодный чердак или кровля — потолок считается наружным ограждением.">Последний</div>
-                    </div>
-                </div>
-                <div class="control-item toggle-item" style="margin-bottom: 12px;">
-                    <div class="label-row">
-                        <span class="lbl"
-                            title="Две наружные стены вместо одной. Теплопотери выше примерно в полтора раза, и радиаторы вырастают соответственно.">Угловая квартира</span>
-                        <label class="switch"><input type="checkbox" id="chk_flat_corner"
-                                onchange="app.toggleState('flatCorner', this.checked)"><span
-                                class="slider"></span></label>
-                    </div>
-                </div>
-                <div class="control-item toggle-item" style="margin-bottom: 15px;">
-                    <div class="label-row">
-                        <span class="lbl"
-                            title="Узел на вводе от общедомового стояка: два крана, косой фильтр на подаче, балансировочный клапан на обратке, манометр. Нужен там, где в квартиру заходит своя пара труб. Если приборы врезаны прямо в вертикальные стояки, узла нет — арматура считается у каждого радиатора.">Узел ввода отопления</span>
-                        <label class="switch"><input type="checkbox" id="chk_flat_heat_inlet"
-                                onchange="app.toggleState('flatHeatInlet', this.checked)"><span
-                                class="slider"></span></label>
-                    </div>
-                </div>
-            </div>
-
             <div class="control-item" id="blk_main_area" style="margin-bottom: 15px;">
                 <div class="label-row"><span class="lbl">Основная площадь</span><span class="val"><span
                             id="val_area" class="editable-val" contenteditable="true"
@@ -663,6 +628,33 @@
                     <span class="lbl">План помещений</span>
                     <button type="button" onclick="app.openPlanEditor()"
                         style="font: inherit; font-size: 12px; padding: 3px 10px; border-radius: 6px; border: 1px solid var(--border); background: transparent; color: inherit; cursor: pointer;">Загрузить</button>
+                </div>
+            </div>
+
+            <!-- Свойства квартиры: этаж и угловая. Стоят сразу под площадью — это
+                 её уточнение, а не отдельная тема: теплопотери квартиры определяются
+                 не метражом, а тем, сколько сторон выходит на улицу. Виден блок
+                 только в квартирном режиме (style.css, body.object-flat). -->
+            <div id="blk_flat_params">
+                <div class="control-item" style="margin-bottom: 12px;">
+                    <span class="lbl" style="display:block; margin-bottom: 6px;">Этаж</span>
+                    <div class="tabs" id="flat_position_tabs">
+                        <div class="tab flat-pos-tab" data-fpos="first" onclick="app.setFlatPosition('first')"
+                            title="Под полом подвал, подполье или проезд — пол считается наружным ограждением.">Первый</div>
+                        <div class="tab flat-pos-tab active" data-fpos="middle" onclick="app.setFlatPosition('middle')"
+                            title="Сверху и снизу такие же квартиры: через перекрытия тепло никуда не уходит.">Средний</div>
+                        <div class="tab flat-pos-tab" data-fpos="last" onclick="app.setFlatPosition('last')"
+                            title="Над потолком холодный чердак или кровля — потолок считается наружным ограждением.">Последний</div>
+                    </div>
+                </div>
+                <div class="control-item toggle-item" style="margin-bottom: 15px;">
+                    <div class="label-row">
+                        <span class="lbl"
+                            title="Две наружные стены вместо одной. Теплопотери выше примерно в полтора раза, и радиаторы вырастают соответственно.">Угловая квартира</span>
+                        <label class="switch"><input type="checkbox" id="chk_flat_corner"
+                                onchange="app.toggleState('flatCorner', this.checked)"><span
+                                class="slider"></span></label>
+                    </div>
                 </div>
             </div>
 
@@ -743,7 +735,7 @@
             </div>
 
             <div id="blk_fast_calc">
-                <div class="grid-2">
+                <div class="grid-2" id="blk_fast_grid">
                     <div class="control-card"><span class="lbl">Окна</span>
                         <div class="stepper"><button class="step-btn" onclick="app.updWin(-1)">−</button>
                             <div class="step-val editable-val" id="val_win" contenteditable="true"
@@ -1542,13 +1534,35 @@
                 </div>
             </div>
 
+            <!-- Узел ввода отопления: только в квартире, там он заменяет обвязку
+                 котельной. Стоит рядом с узлом ввода воды — это соседние по смыслу
+                 вещи, обе про то, чем квартира присоединяется к дому. -->
+            <div class="control-item toggle-item" id="blk_flat_heat_inlet_wrap">
+                <div class="label-row">
+                    <span class="lbl"
+                        title="Узел на вводе от общедомового стояка: два крана, косой фильтр на подаче, балансировочный клапан на обратке, манометр. Нужен там, где в квартиру заходит своя пара труб. Если приборы врезаны прямо в вертикальные стояки, узла нет — арматура считается у каждого радиатора.">Узел ввода отопления</span>
+                    <label class="switch"><input type="checkbox" id="chk_flat_heat_inlet"
+                            onchange="app.toggleState('flatHeatInlet', this.checked)"><span
+                            class="slider"></span></label>
+                </div>
+            </div>
+
             <div class="control-item toggle-item">
                 <div class="label-row">
-                    <span class="lbl">Узел ввода ХВС</span>
+                    <span class="lbl" id="lbl_water_input">Узел ввода ХВС</span>
                     <label class="switch"><input type="checkbox" id="chk_water_input"
                         onchange="app.toggleWaterInput(this.checked, event)"><span class="slider"></span></label>
                 </div>
                 <div id="blk_water_input_opts" style="display:none; flex-direction:column; gap:0; margin-top:10px; background:var(--surface-light); padding:10px 12px; border-radius:8px; border:1px solid var(--border);">
+                    <div id="blk_flat_hot_riser_row"
+                        style="display:flex; justify-content:space-between; align-items:center; padding:6px 0;">
+                        <span class="lbl" style="font-size:12px;"
+                            title="В доме два стояка — холодный и горячий, и на каждом свой счётчик с фильтром. Если ГВС в доме нет и воду греет свой водонагреватель, оставьте выключенным: узел посчитается на один ввод.">Стояк ГВС</span>
+                        <label class="switch">
+                            <input type="checkbox" id="chk_flat_hot_riser" onchange="app.toggleState('flatHotRiser', this.checked)">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
                     <div id="blk_outdoor_faucet_row"
                         style="display:flex; justify-content:space-between; align-items:center; padding:6px 0;">
                         <span class="lbl" style="font-size:12px;">Незамерзающий кран</span>
@@ -1582,7 +1596,8 @@
                             <span class="slider"></span>
                         </label>
                     </div>
-                    <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-top:1px solid var(--border);">
+                    <div id="blk_water_meter_row"
+                        style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-top:1px solid var(--border);">
                         <span class="lbl" style="font-size:12px;"
                             title="Учёт воды из городской сети. На скважине не нужен.">Счётчик воды</span>
                         <label class="switch">
@@ -1598,7 +1613,8 @@
                             <span class="slider"></span>
                         </label>
                     </div>
-                    <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-top:1px solid var(--border);">
+                    <div id="blk_water_frame_row"
+                        style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-top:1px solid var(--border);">
                         <span class="lbl" style="font-size:12px;"
                             title="Узел собирается на двух сантехнических шинах, а не по месту на стене: снимается и обслуживается целиком.">Монтажный каркас</span>
                         <label class="switch">
@@ -1606,7 +1622,7 @@
                             <span class="slider"></span>
                         </label>
                     </div>
-                    <div style="padding:6px 0; border-top:1px solid var(--border);">
+                    <div id="blk_heating_feed_row" style="padding:6px 0; border-top:1px solid var(--border);">
                         <div style="display:flex; justify-content:space-between; align-items:center;">
                             <span class="lbl" style="font-size:12px;">Подпитка отопления</span>
                             <label class="switch">
