@@ -12641,10 +12641,14 @@ body.ufh-electric #blk_ufh_ctrl {
     cursor: not-allowed;
 }
 
-/* Карточка «Окна» осталась в сетке одна: «Второй этаж» в квартире скрыт, и
-   вторая колонка держала пустое место справа от неё. */
-body.object-flat #blk_fast_grid {
-    grid-template-columns: 1fr;
+/* В сетке всегда две карточки: в доме «Окна» и «Второй этаж», в квартире
+   «Комнат» и «Окна». Лишнюю прячем по режиму. */
+#blk_flat_rooms_card {
+    display: none;
+}
+
+body.object-flat #blk_flat_rooms_card {
+    display: flex;
 }
 
 body.object-flat #blk_outdoor_faucet_row,

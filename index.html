@@ -636,12 +636,12 @@
                  только обвязка прибора. Виден только в квартирном режиме. -->
             <div id="blk_flat_riser">
                 <div class="control-item" style="margin-bottom: 12px;">
-                    <span class="lbl" style="display:block; margin-bottom: 6px;">Приборы подключены</span>
+                    <span class="lbl" style="display:block; margin-bottom: 6px;">Как разведено отопление</span>
                     <div class="tabs" id="flat_riser_tabs" style="font-size:11px;">
                         <div class="tab flat-riser-tab active" data-fr="riser" onclick="app.setFlatRiser('riser')"
-                            title="Стояки проходят сквозь квартиру, радиаторы висят на них. Так устроено большинство домов.">К стоякам</div>
+                            title="Загляните за радиатор: из пола или стены выходят вертикальные трубы, прибор висит прямо на них.">Стояки в комнатах</div>
                         <div class="tab flat-riser-tab" data-fr="own" onclick="app.setFlatRiser('own')"
-                            title="Новостройка: в квартиру заходит своя пара труб от этажного узла, разводка лучами от коллектора.">Своя разводка</div>
+                            title="В прихожей или санузле стоит шкаф с гребёнкой, от неё трубы расходятся по полу к каждому радиатору.">Коллектор в квартире</div>
                     </div>
                     <div id="flat_riser_hint"
                         style="margin-top:8px; font-size:11px; line-height:1.5; color:var(--text-sec);"></div>
@@ -669,7 +669,7 @@
                         <span class="lbl"
                             title="Две наружные стены вместо одной. Теплопотери выше примерно в полтора раза, и радиаторы вырастают соответственно.">Угловая квартира</span>
                         <label class="switch"><input type="checkbox" id="chk_flat_corner"
-                                onchange="app.toggleState('flatCorner', this.checked)"><span
+                                onchange="app.setFlatCorner(this.checked)"><span
                                 class="slider"></span></label>
                     </div>
                 </div>
@@ -753,6 +753,17 @@
 
             <div id="blk_fast_calc">
                 <div class="grid-2" id="blk_fast_grid">
+                    <!-- Комнаты — только в квартире: «двушка», «трёшка» это то, чем
+                         квартиру и называют, а площадь человек часто не помнит. Окна
+                         считаются отсюда же, их можно поправить руками. -->
+                    <div class="control-card" id="blk_flat_rooms_card"><span class="lbl">Комнат</span>
+                        <div class="stepper"><button class="step-btn" onclick="app.updFlatRooms(-1)">−</button>
+                            <div class="step-val editable-val" id="val_flat_rooms" contenteditable="true"
+                                onblur="app.setFlatRooms(this.innerText)"
+                                onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">2</div><button
+                                class="step-btn" onclick="app.updFlatRooms(1)">+</button>
+                        </div>
+                    </div>
                     <div class="control-card"><span class="lbl">Окна</span>
                         <div class="stepper"><button class="step-btn" onclick="app.updWin(-1)">−</button>
                             <div class="step-val editable-val" id="val_win" contenteditable="true"
