@@ -1507,10 +1507,49 @@
                             <button class="step-btn" onclick="app.updOutdoorFaucet(1)">+</button>
                         </div>
                     </div>
+                    <div style="padding:6px 0; border-top:1px solid var(--border);">
+                        <span class="lbl" style="font-size:12px; display:block; margin-bottom:6px;">Фильтрация</span>
+                        <div class="tabs" id="water_filter_tabs" style="font-size:11px;">
+                            <div class="tab water-filter-tab" data-flevel="none"
+                                onclick="app.setWaterFilterLevel('none')"
+                                title="Только косой фильтр грубой очистки в самом узле. Годится, когда вода из городской сети и претензий к ней нет.">Не нужна</div>
+                            <div class="tab water-filter-tab" data-flevel="basic"
+                                onclick="app.setWaterFilterLevel('basic')"
+                                title="Одна колба Big Blue 20&quot; с картриджем 20 мкм: песок, окалина, ржавчина из магистрали.">Базовая</div>
+                            <div class="tab water-filter-tab" data-flevel="premium"
+                                onclick="app.setWaterFilterLevel('premium')"
+                                title="Две колбы подряд: 20 мкм и следом 5 мкм. Вторая ступень снимает мелкую взвесь, из-за которой текут буксы смесителей и залипают термостаты душа.">Премиум</div>
+                        </div>
+                    </div>
                     <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-top:1px solid var(--border);">
-                        <span class="lbl" style="font-size:12px;">Система фильтрации (Big Blue)</span>
+                        <span class="lbl" style="font-size:12px;"
+                            title="Держит в доме постоянное давление 3–4 бара независимо от магистрали. Ночные скачки выше 6 бар рвут гибкую подводку.">Редуктор давления</span>
                         <label class="switch">
-                            <input type="checkbox" id="chk_big_blue" onchange="app.toggleState('bigBlueFilter', this.checked)">
+                            <input type="checkbox" id="chk_water_reducer" onchange="app.toggleState('waterReducer', this.checked)">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-top:1px solid var(--border);">
+                        <span class="lbl" style="font-size:12px;"
+                            title="Учёт воды из городской сети. На скважине не нужен.">Счётчик воды</span>
+                        <label class="switch">
+                            <input type="checkbox" id="chk_water_meter" onchange="app.toggleState('waterMeter', this.checked)">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-top:1px solid var(--border);">
+                        <span class="lbl" style="font-size:12px;"
+                            title="Датчики на полу плюс краны с электроприводом на вводе: поймав воду, система перекрывает её за несколько секунд.">Защита от протечки</span>
+                        <label class="switch">
+                            <input type="checkbox" id="chk_water_leak_guard" onchange="app.toggleState('waterLeakGuard', this.checked)">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-top:1px solid var(--border);">
+                        <span class="lbl" style="font-size:12px;"
+                            title="Узел собирается на двух сантехнических шинах, а не по месту на стене: снимается и обслуживается целиком.">Монтажный каркас</span>
+                        <label class="switch">
+                            <input type="checkbox" id="chk_water_frame" onchange="app.toggleState('waterFrame', this.checked)">
                             <span class="slider"></span>
                         </label>
                     </div>
