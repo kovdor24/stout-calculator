@@ -12588,8 +12588,19 @@ body.object-flat #blk_object_type {
    квартирном режиме */
 #blk_flat_params,
 #blk_flat_riser,
+#blk_flat_sewer,
 #blk_flat_hot_riser_row {
     display: none;
+}
+
+body.object-flat #blk_flat_sewer {
+    display: block;
+}
+
+/* Выбор труб переехал в свой блок «Канализация» — внутри водоснабжения он в
+   квартире был бы вторым местом с тем же вопросом. */
+body.object-flat #blk_sewer_type {
+    display: none !important;
 }
 
 body.object-flat #blk_flat_params {

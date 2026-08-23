@@ -1717,6 +1717,28 @@
                 </div>
             </div>
 
+            <!-- Канализация в квартире — отдельный выключатель, последним в колонке.
+                 Разводку от стояка делают не всегда: бывает, меняют только воду и
+                 приборы, а канализацию не трогают. В доме такого выбора нет, там
+                 она идёт вместе с санузлами. -->
+            <div class="control-item toggle-item" id="blk_flat_sewer">
+                <div class="label-row">
+                    <span class="lbl"
+                        title="Разводка от стояка к приборам: трубы, фитинги, крепёж, инсталляция унитаза. Считается по санузлам из блока «Водоснабжение».">Канализация</span>
+                    <label class="switch"><input type="checkbox" id="chk_flat_sewer"
+                            onchange="app.toggleFlatSewer(this.checked)"><span
+                            class="slider"></span></label>
+                </div>
+                <div id="blk_flat_sewer_opts" style="display:none; margin-top:10px;">
+                    <div class="tabs" id="flat_sewer_type_tabs" style="font-size:11px;">
+                        <div class="tab flat-sewer-tab" data-fst="economy" onclick="app.setSewerType('economy', event)"
+                            title="Бюджетные трубы Sinikon: обычная полипропиленовая канализация.">Обычная</div>
+                        <div class="tab flat-sewer-tab" data-fst="std" onclick="app.setSewerType('std', event)"
+                            title="Трубы STOUT PP: шумит заметно меньше, а в квартире стояк проходит рядом с жилыми комнатами.">Бесшумная</div>
+                    </div>
+                </div>
+            </div>
+
             <div class="control-item toggle-item" id="blk_well_wrap">
                 <div class="label-row">
                     <span class="lbl">Скважинный насос</span>
