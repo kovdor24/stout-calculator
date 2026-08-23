@@ -631,6 +631,34 @@
                 </div>
             </div>
 
+            <div id="blk_fast_calc">
+                <div class="grid-2" id="blk_fast_grid">
+                    <!-- Комнаты — только в квартире: «двушка», «трёшка» это то, чем
+                         квартиру и называют, а площадь человек часто не помнит. Окна
+                         считаются отсюда же, их можно поправить руками. -->
+                    <div class="control-card" id="blk_flat_rooms_card"><span class="lbl">Комнат</span>
+                        <div class="stepper"><button class="step-btn" onclick="app.updFlatRooms(-1)">−</button>
+                            <div class="step-val editable-val" id="val_flat_rooms" contenteditable="true"
+                                onblur="app.setFlatRooms(this.innerText)"
+                                onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">2</div><button
+                                class="step-btn" onclick="app.updFlatRooms(1)">+</button>
+                        </div>
+                    </div>
+                    <div class="control-card" id="blk_win_card"><span class="lbl">Окна</span>
+                        <div class="stepper"><button class="step-btn" onclick="app.updWin(-1)">−</button>
+                            <div class="step-val editable-val" id="val_win" contenteditable="true"
+                                onblur="app.setWin(this.innerText)"
+                                onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">10</div><button
+                                class="step-btn" onclick="app.updWin(1)">+</button>
+                        </div>
+                    </div>
+                    <div class="control-card" id="blk_floors_card"><span class="lbl">Второй этаж</span><label class="switch"><input
+                                type="checkbox" id="chk_floors" onchange="app.toggleFloors(this.checked)"><span
+                                class="slider"></span></label></div>
+                </div>
+            </div>
+
+
             <!-- Как приборы присоединены к дому. Это главный вопрос квартирного
                  отопления: от него зависит, покупается ли коллектор с трассой или
                  только обвязка прибора. Виден только в квартирном режиме. -->
@@ -643,8 +671,6 @@
                         <div class="tab flat-riser-tab" data-fr="own" onclick="app.setFlatRiser('own')"
                             title="В прихожей или санузле стоит шкаф с гребёнкой, от неё трубы расходятся по полу к каждому радиатору.">Коллектор в квартире</div>
                     </div>
-                    <div id="flat_riser_hint"
-                        style="margin-top:8px; font-size:11px; line-height:1.5; color:var(--text-sec);"></div>
                 </div>
             </div>
 
@@ -750,34 +776,6 @@
                     style="display:none; padding: 8px 12px; background: var(--surface-light); border: 1px solid #F59E0B; border-left: 4px solid #F59E0B; border-radius: 8px; font-size: 11px; color: var(--text-sec); line-height: 1.5;">
                 </div>
             </div>
-
-            <div id="blk_fast_calc">
-                <div class="grid-2" id="blk_fast_grid">
-                    <!-- Комнаты — только в квартире: «двушка», «трёшка» это то, чем
-                         квартиру и называют, а площадь человек часто не помнит. Окна
-                         считаются отсюда же, их можно поправить руками. -->
-                    <div class="control-card" id="blk_flat_rooms_card"><span class="lbl">Комнат</span>
-                        <div class="stepper"><button class="step-btn" onclick="app.updFlatRooms(-1)">−</button>
-                            <div class="step-val editable-val" id="val_flat_rooms" contenteditable="true"
-                                onblur="app.setFlatRooms(this.innerText)"
-                                onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">2</div><button
-                                class="step-btn" onclick="app.updFlatRooms(1)">+</button>
-                        </div>
-                    </div>
-                    <div class="control-card"><span class="lbl">Окна</span>
-                        <div class="stepper"><button class="step-btn" onclick="app.updWin(-1)">−</button>
-                            <div class="step-val editable-val" id="val_win" contenteditable="true"
-                                onblur="app.setWin(this.innerText)"
-                                onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">10</div><button
-                                class="step-btn" onclick="app.updWin(1)">+</button>
-                        </div>
-                    </div>
-                    <div class="control-card" id="blk_floors_card"><span class="lbl">Второй этаж</span><label class="switch"><input
-                                type="checkbox" id="chk_floors" onchange="app.toggleFloors(this.checked)"><span
-                                class="slider"></span></label></div>
-                </div>
-            </div>
-
 
             <div class="control-item toggle-item" id="blk_fast_obj_params_toggle_wrap"
                 style="display:none; border-top: none; padding-top: 0; margin-top: 16px; border-bottom: 1px dashed var(--border); padding-bottom: 16px; margin-bottom: 16px;">
@@ -1532,22 +1530,6 @@
                 <div class="label-row"><span class="lbl" id="lbl_hw">Горячая вода (Бойлер)</span><label class="switch"><input
                             type="checkbox" id="chk_hw" onchange="app.toggleHW(this.checked, event)"><span
                             class="slider"></span></label></div>
-
-                <!-- Объём водонагревателя. Только в квартире: в доме воду греет
-                     бойлер от котла, и объём там подбирается по мощности. -->
-                <div id="blk_flat_wh" style="margin-top:10px;">
-                    <span class="lbl" style="display:block; margin-bottom: 6px; font-size:12px;">Объём водонагревателя</span>
-                    <div class="tabs" id="flat_wh_vol_tabs" style="font-size:11px;">
-                        <div class="tab flat-wh-vol-tab active" data-wv="auto" onclick="app.setFlatWhVol(null)"
-                            title="По числу жильцов и наличию ванны: душ — около 30 л горячей на человека, ванна — около 50.">Авто</div>
-                        <div class="tab flat-wh-vol-tab" data-wv="30" onclick="app.setFlatWhVol(30)">30 л</div>
-                        <div class="tab flat-wh-vol-tab" data-wv="50" onclick="app.setFlatWhVol(50)">50 л</div>
-                        <div class="tab flat-wh-vol-tab" data-wv="80" onclick="app.setFlatWhVol(80)">80 л</div>
-                        <div class="tab flat-wh-vol-tab" data-wv="100" onclick="app.setFlatWhVol(100)">100 л</div>
-                    </div>
-                    <div id="flat_wh_hint"
-                        style="margin-top:8px; font-size:11px; line-height:1.5; color:var(--text-sec);"></div>
-                </div>
 
                 <div id="blk_res"
                     style="display:none; flex-direction:column; gap:10px; margin-top:10px; background:#F8FAFC; padding:12px; border-radius:8px; border:1px solid #E5E7EB;">

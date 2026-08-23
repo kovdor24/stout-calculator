@@ -12607,15 +12607,6 @@ body.object-flat #blk_flat_hot_riser_row {
     display: flex !important;
 }
 
-/* Объём водонагревателя — вопрос только квартиры */
-#blk_flat_wh {
-    display: none;
-}
-
-body.object-flat #blk_flat_wh {
-    display: block;
-}
-
 /* Тёплый пол квартиры: блок настроек виден только там */
 #blk_flat_ufh {
     display: none;
@@ -12649,6 +12640,16 @@ body.ufh-electric #blk_ufh_ctrl {
 
 body.object-flat #blk_flat_rooms_card {
     display: flex;
+}
+
+/* Окна в квартире считаются от числа комнат, поэтому править их руками нельзя —
+   прячем стрелки, оставляем само число. */
+body.object-flat #blk_win_card .step-btn {
+    display: none;
+}
+
+body.object-flat #blk_win_card .step-val {
+    cursor: default;
 }
 
 body.object-flat #blk_outdoor_faucet_row,
