@@ -1526,8 +1526,8 @@
                 </div>
             </div>
 
-            <div class="control-item toggle-item">
-                <div class="label-row"><span class="lbl" id="lbl_hw">Горячая вода (Бойлер)</span><label class="switch"><input
+            <div class="control-item toggle-item" id="blk_hw_wrap">
+                <div class="label-row" id="blk_hw_row"><span class="lbl" id="lbl_hw">Горячая вода (Бойлер)</span><label class="switch"><input
                             type="checkbox" id="chk_hw" onchange="app.toggleHW(this.checked, event)"><span
                             class="slider"></span></label></div>
 
@@ -1620,7 +1620,7 @@
             </div>
 
             <div class="control-item toggle-item">
-                <div class="label-row">
+                <div class="label-row" id="blk_water_input_row">
                     <span class="lbl" id="lbl_water_input">Узел ввода ХВС</span>
                     <label class="switch"><input type="checkbox" id="chk_water_input"
                         onchange="app.toggleWaterInput(this.checked, event)"><span class="slider"></span></label>
@@ -1631,7 +1631,7 @@
                         <span class="lbl" style="font-size:12px;"
                             title="В доме два стояка — холодный и горячий, и на каждом свой счётчик с фильтром. Если ГВС в доме нет и воду греет свой водонагреватель, оставьте выключенным: узел посчитается на один ввод.">Стояк ГВС</span>
                         <label class="switch">
-                            <input type="checkbox" id="chk_flat_hot_riser" onchange="app.toggleState('flatHotRiser', this.checked)">
+                            <input type="checkbox" id="chk_flat_hot_riser" onchange="app.toggleFlatHotRiser(this.checked)">
                             <span class="slider"></span>
                         </label>
                     </div>

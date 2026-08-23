@@ -32018,6 +32018,37 @@ const app = {
 
     onRiser: function () { return this.isFlat() && this.flatRiser() === 'riser'; },
 
+    /**
+     * Вода в квартире — один выключатель, а не три.
+     *
+     * В доме «Горячая вода», «Водоснабжение» и «Узел ввода» — разные темы: воду
+     * греет бойлер от котла, разводка идёт от своего коллектора, а ввод приходит
+     * с улицы. В квартире это одно и то же: включили воду — значит есть и ввод от
+     * стояков, и разводка по санузлам, и горячая.
+     *
+     * Откуда горячая — решает «Стояк ГВС»: есть он или нет. Нет — значит её греет
+     * свой водонагреватель, и он появляется в смете сам, без отдельной галочки.
+     */
+    syncFlatWater: function () {
+        if (!this.isFlat()) return;
+        const on = !!this.state.water;
+        // Ввод — часть водоснабжения: без него в квартиру не заходит ничего
+        this.state.waterInput = on;
+        // Горячая вода есть всегда, когда есть вода: либо от стояка, либо своя.
+        // От этого зависит разводка ГВС по точкам (раздел 5.2).
+        this.state.hotWater = on;
+    },
+
+    // Свой водонагреватель нужен там, где стояка ГВС нет
+    flatNeedsHeater: function () {
+        return this.isFlat() && !!this.state.water && !this.state.flatHotRiser;
+    },
+
+    toggleFlatHotRiser: function (on) {
+        this.state.flatHotRiser = !!on;
+        this.saveState(); this.syncUI(); this.render();
+    },
+
     // Канализация. В доме она идёт вместе с санузлами, в квартире включается
     // отдельно: бывает, что меняют только воду и приборы, а стояк с разводкой
     // не трогают вовсе.
@@ -32322,6 +32353,7 @@ const app = {
             const winEl = document.getElementById('val_win');
             if (winEl) winEl.innerText = w;
         }
+        if (type === 'flat') this.syncFlatWater();
         const sewerChk = document.getElementById('chk_flat_sewer');
         if (sewerChk) sewerChk.checked = !!this.state.flatSewer;
         const sewerOpts = document.getElementById('blk_flat_sewer_opts');
@@ -48279,7 +48311,7 @@ const app = {
         //
         // Отдельный раздел, а не ветка домового: там водонагреватель греется от
         // котла и живёт в одном разделе с ним, а здесь котла нет вовсе.
-        if (this.isFlat() && this.state.hotWater) {
+        if (this.flatNeedsHeater()) {
             currentSectionTitle = "1. Водонагреватель";
             const wh = this.flatWaterHeater();
             if (wh) {
@@ -54086,7 +54118,7 @@ const app = {
                 addToWorks("Подключение радиатора к стояку", _dev, 3000, "шт", "1.3 Монтаж радиаторного отопления");
             }
         }
-        if (this.isFlat() && this.state.hotWater) {
+        if (this.flatNeedsHeater()) {
             const gWh = "1.7 Водонагреватель";
             addToWorks("Монтаж электрического водонагревателя", 1, 6000, "шт", gWh);
             addToWorks("Обвязка водонагревателя (краны и подводки)", 1, 3500, "компл", gWh);
