@@ -22283,7 +22283,115 @@ const app = {
                 (2 - Math.abs(sh.taps - taps));
             if (score > bestScore) { bestScore = score; best = sh; }
         });
-        return this._renderSheetImage(best && best.url);
+        return this._renderSheetImage(best && best.url) + this.renderHvsNodeView();
+    },
+
+    /**
+     * Вид узла ввода ХВС в сборе — под листом ГОСТ, в той же строке.
+     *
+     * Лист-образец узел с редуктором и счётчиком не показывает: во всех трёх
+     * проектах, из которых вырезаны листы, слова «редуктор» нет вовсе, а
+     * счётчик встречается только в спецификациях (ТМ-16, ТМ-22, ТМ-24) — на
+     * самих видах его не рисовали. Дорисовать их в чужой чертёж нельзя:
+     * оформление проектной документации задано жёстко.
+     *
+     * Поэтому вид собран заново — тем же способом, каким авторы образцов
+     * делали свои: 3D-модель, ортогональная камера, прорисовка кромок
+     * (scratch/render_nodes.py). Кадры готовы на все двенадцать сочетаний
+     * опций узла, поэтому показывается ровно тот состав, что в смете, а не
+     * ближайший похожий.
+     */
+    HVS_VIEW_DIR: 'img/nodes/',
+    _hvsFrames: undefined,
+
+    // Ключ кадра читается как состав: f0/f1/f2 — ступеней магистральной
+    // фильтрации, m — счётчик, r — редуктор.
+    hvsFrameKey: function () {
+        const lvl = this.filterLevel();
+        return 'hvs_in_f' + (lvl === 'premium' ? 2 : lvl === 'basic' ? 1 : 0) +
+            (this.state.waterMeter ? 'm' : '') + (this.state.waterReducer ? 'r' : '');
+    },
+
+    // Описание кадров подгружается один раз. Нет файла — вида просто не будет,
+    // лист ГОСТ от этого никуда не денется.
+    loadHvsFrames: function () {
+        if (this._hvsFramesP) return this._hvsFramesP;
+        this._hvsFramesP = fetch(this.HVS_VIEW_DIR + 'hvs_in_frames.json')
+            .then(r => (r.ok ? r.json() : null))
+            .then(j => {
+                this._hvsFrames = j || null;
+                // Первый рендер прошёл без кадров — перерисовываем таблицу,
+                // иначе вид появится только со следующей правкой сметы.
+                if (j) this.render();
+                return this._hvsFrames;
+            })
+            .catch(() => { this._hvsFrames = null; return null; });
+        return this._hvsFramesP;
+    },
+
+    // Кадр узла в том виде, в каком его ждут листы проекта (projectNodeSheets):
+    // фронтальный вид, пропорции, точки выносок в долях кадра и маленькая
+    // изометрия «Общий вид узла».
+    hvsNodePhoto: function () {
+        const key = this.hvsFrameKey();
+        const f = this._hvsFrames && this._hvsFrames[key];
+        if (!f || !f.front || !f.front.w) return null;
+        const out = {
+            url: this.HVS_VIEW_DIR + key + '_front.jpg',
+            ratio: f.front.w / f.front.h,
+            marks: (f.front.marks || []).map(m => ({ t: m.t, x: m.x, y: m.y }))
+        };
+        if (f.iso && f.iso.w) {
+            out.iso = { url: this.HVS_VIEW_DIR + key + '_iso.jpg', ratio: f.iso.w / f.iso.h };
+        }
+        return out;
+    },
+
+    renderHvsNodeView: function () {
+        if (!this.state.waterInput) return '';
+        if (this._hvsFrames === undefined) { this.loadHvsFrames(); return ''; }
+        const idx = this._hvsFrames;
+        if (!idx) return '';
+        const f = idx[this.hvsFrameKey()];
+        if (!f || !f.front || !f.front.w) return '';
+        const W = f.front.w, H = f.front.h;
+        const marks = (f.front.marks || []).slice();
+        // Подписи — списком под кадром, как «Условные обозначения» на листе:
+        // выноски полками поперёк узла перечеркнули бы сам узел, а он здесь
+        // и есть главное.
+        const fs = Math.round(W / 62);              // кегль от ширины кадра
+        const lh = Math.round(fs * 1.65);
+        const cols = marks.length > 6 ? 2 : 1;
+        const rows = Math.ceil(marks.length / cols);
+        const legH = marks.length ? rows * lh + fs * 2.2 : 0;
+        const font = (window.projectSheets && window.projectSheets.FONT) ||
+            "'ISOCPEUR','GOST type A','Arial Narrow',sans-serif";
+        const esc = t => String(t == null ? '' : t)
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        let g = '';
+        marks.forEach((m, i) => {
+            const x = m.x * W, y = m.y * H;
+            // Кружок уводим от детали: вверх, если она в верхней половине
+            // кадра, вниз — если в нижней. Иначе номер садится прямо на неё.
+            const up = y < H * 0.55;
+            const oy = up ? -fs * 1.9 : fs * 1.9;
+            g += `<line x1="${x.toFixed(1)}" y1="${y.toFixed(1)}" x2="${x.toFixed(1)}" y2="${(y + oy).toFixed(1)}" stroke="#111" stroke-width="${(fs / 14).toFixed(2)}"/>`;
+            g += `<circle cx="${x.toFixed(1)}" cy="${(y + oy).toFixed(1)}" r="${(fs * 0.78).toFixed(1)}" fill="#fff" stroke="#111" stroke-width="${(fs / 12).toFixed(2)}"/>`;
+            g += `<text x="${x.toFixed(1)}" y="${(y + oy + fs * 0.36).toFixed(1)}" font-size="${fs}" text-anchor="middle" fill="#111">${i + 1}</text>`;
+        });
+        let leg = '';
+        marks.forEach((m, i) => {
+            const c = Math.floor(i / rows), r = i % rows;
+            const lx = 8 + c * (W / cols);
+            const ly = H + fs * 1.9 + r * lh;
+            leg += `<text x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" font-size="${fs}" fill="#111">${i + 1}. ${esc(m.t)}</text>`;
+        });
+        return `<div class="automation-scheme" onclick="app.openSchemeFullscreen(this.querySelector('svg'))" title="Открыть на весь экран">` +
+            `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H + legH}">` +
+            `<rect x="0" y="0" width="${W}" height="${H + legH}" fill="#fff" stroke="none"/>` +
+            `<image x="0" y="0" width="${W}" height="${H}" preserveAspectRatio="xMidYMid meet" href="${this.HVS_VIEW_DIR}${this.hvsFrameKey()}_front.jpg"/>` +
+            `<g font-family="${font}">${g}${leg}</g></svg>` +
+            `<button type="button" class="scheme-zoom-btn" aria-label="На весь экран">⛶ На весь экран</button></div>`;
     },
     /**
      * Узел обвязки коллектора напольного отопления — над разделом
@@ -26549,11 +26657,19 @@ const app = {
             });
         }
         const N3 = window.projectNodes3D;
-        if (!N3) return null;
-        try { await N3.load(); }
-        catch (e) { return null; }
-        const spec = this.currentEquipmentList || [];
         const out = {};
+        // Узел ввода ХВС стоит особняком: его кадры лежат не в img/nodes3d, а
+        // рядом с листами в img/nodes — та папка выкладывается, а nodes3d нет.
+        // Поэтому собираем его своим загрузчиком и до проверки на N3: без неё
+        // узел пропал бы ровно там, где остальные виды и так не работают.
+        if (this.state.waterInput) {
+            await this.loadHvsFrames();
+            out.hvs_in = this.hvsNodePhoto();
+        }
+        if (!N3) return out;
+        try { await N3.load(); }
+        catch (e) { return out; }
+        const spec = this.currentEquipmentList || [];
         try {
             if ((this.state.systems || []).includes('tp')) out.ufh = N3.node('ufh');
             if (this.state.water) out.water = N3.node('water');

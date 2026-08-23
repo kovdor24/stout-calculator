@@ -364,7 +364,17 @@ if (payload && payload.items && payload.items.length) {
         photo: payload.node3d.water, items: itemsBy.v })].filter(Boolean)
     : [];
   var vPipeNo = vNodeStart + vNodes.length;
-  var vPipe = [];
+  // Обвязка узла ввода ХВС: вид собран 3D-рендером, потому что на листах
+  // проектов-образцов узел с редуктором и счётчиком не нарисован ни разу.
+  var vPipe = (window.projectNodeSheets && (payload.node3d || {}).hvs_in)
+    ? [projectNodeSheets.piping({ code: MARK.v.code, sheet: numOf('v')(vPipeNo),
+        title: 'Обвязка узла ввода ХВС', photo: payload.node3d.hvs_in,
+        notes: ['Косой фильтр ставится раньше счётчика и редуктора: песок и окалина ' +
+                  'из магистрали сажают крыльчатку счётчика и седло редуктора.',
+                'Обратный клапан — после редуктора; перед ним он отсекает редуктор ' +
+                  'от магистрали, и настроить его нечем.',
+                'После сборки провести гидравлическое испытание давлением 10 бар.'] })].filter(Boolean)
+    : [];
   var vSpecStart = vPipeNo + vPipe.length;
   var vSpec = itemsBy.v.length ? projectSheets.fromEquipment(itemsBy.v, {
     title: 'Спецификация материалов и оборудования водоснабжения',
