@@ -12592,8 +12592,7 @@ body.object-flat #blk_object_type {
     display: none;
 }
 
-body.object-flat #blk_flat_params,
-body.object-flat #blk_flat_riser {
+body.object-flat #blk_flat_params {
     display: block;
 }
 

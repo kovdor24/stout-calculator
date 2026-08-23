@@ -659,21 +659,6 @@
             </div>
 
 
-            <!-- Как приборы присоединены к дому. Это главный вопрос квартирного
-                 отопления: от него зависит, покупается ли коллектор с трассой или
-                 только обвязка прибора. Виден только в квартирном режиме. -->
-            <div id="blk_flat_riser">
-                <div class="control-item" style="margin-bottom: 12px;">
-                    <span class="lbl" style="display:block; margin-bottom: 6px;">Как разведено отопление</span>
-                    <div class="tabs" id="flat_riser_tabs" style="font-size:11px;">
-                        <div class="tab flat-riser-tab active" data-fr="riser" onclick="app.setFlatRiser('riser')"
-                            title="Загляните за радиатор: из пола или стены выходят вертикальные трубы, прибор висит прямо на них.">Стояки в комнатах</div>
-                        <div class="tab flat-riser-tab" data-fr="own" onclick="app.setFlatRiser('own')"
-                            title="В прихожей или санузле стоит шкаф с гребёнкой, от неё трубы расходятся по полу к каждому радиатору.">Коллектор в квартире</div>
-                    </div>
-                </div>
-            </div>
-
             <!-- Свойства квартиры: этаж и угловая. Стоят сразу под площадью — это
                  её уточнение, а не отдельная тема: теплопотери квартиры определяются
                  не метражом, а тем, сколько сторон выходит на улицу. Виден блок
@@ -1339,6 +1324,21 @@
                 <div class="tabs">
                     <div class="tab multi-active" id="sys_rad" onclick="app.toggleSys('rad', event)">🌡️ Радиаторы</div>
                     <div class="tab" id="sys_tp" onclick="app.toggleSys('tp', event)">♨️ Тёплый пол</div>
+                </div>
+            </div>
+
+            <!-- Как приборы присоединены к дому. Стоит под «Типом отопления» —
+                 это продолжение того же выбора, и относится он к радиаторам:
+                 без них показывать нечего (см. app.syncObjectTypeUI). -->
+            <div id="blk_flat_riser">
+                <div class="control-item" style="margin-bottom: 12px;">
+                    <span class="lbl" style="display:block; margin-bottom: 6px;">Как разведено отопление</span>
+                    <div class="tabs" id="flat_riser_tabs" style="font-size:11px;">
+                        <div class="tab flat-riser-tab active" data-fr="riser" onclick="app.setFlatRiser('riser')"
+                            title="Загляните за радиатор: из пола или стены выходят вертикальные трубы, прибор висит прямо на них.">Стояки в комнатах</div>
+                        <div class="tab flat-riser-tab" data-fr="own" onclick="app.setFlatRiser('own')"
+                            title="В прихожей или санузле стоит шкаф с гребёнкой, от неё трубы расходятся по полу к каждому радиатору.">Коллектор в квартире</div>
+                    </div>
                 </div>
             </div>
 

@@ -32214,6 +32214,14 @@ const app = {
         const tpLbl = document.getElementById('lbl_tp1');
         if (tpLbl) tpLbl.textContent = (type === 'flat') ? 'Тёплый пол' : 'Тёплый пол 1 этаж';
 
+        // Блок разводки относится к радиаторам: без них он не о чем. Показываем
+        // инлайном, а не классом на body, — условие зависит от набора систем,
+        // а CSS про state.systems ничего не знает.
+        const riserBlk = document.getElementById('blk_flat_riser');
+        if (riserBlk) {
+            const show = (type === 'flat') && (this.state.systems || []).includes('rad');
+            riserBlk.style.display = show ? 'block' : 'none';
+        }
         const riserKind = this.flatRiser();
         document.querySelectorAll('.flat-riser-tab').forEach(t => {
             t.className = (t.dataset.fr === riserKind) ? 'tab flat-riser-tab active' : 'tab flat-riser-tab';
