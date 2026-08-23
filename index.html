@@ -624,12 +624,21 @@
                             title="Над потолком холодный чердак или кровля — потолок считается наружным ограждением.">Последний</div>
                     </div>
                 </div>
-                <div class="control-item toggle-item" style="margin-bottom: 15px;">
+                <div class="control-item toggle-item" style="margin-bottom: 12px;">
                     <div class="label-row">
                         <span class="lbl"
                             title="Две наружные стены вместо одной. Теплопотери выше примерно в полтора раза, и радиаторы вырастают соответственно.">Угловая квартира</span>
                         <label class="switch"><input type="checkbox" id="chk_flat_corner"
                                 onchange="app.toggleState('flatCorner', this.checked)"><span
+                                class="slider"></span></label>
+                    </div>
+                </div>
+                <div class="control-item toggle-item" style="margin-bottom: 15px;">
+                    <div class="label-row">
+                        <span class="lbl"
+                            title="Узел на вводе от общедомового стояка: два крана, косой фильтр на подаче, балансировочный клапан на обратке, манометр. Нужен там, где в квартиру заходит своя пара труб. Если приборы врезаны прямо в вертикальные стояки, узла нет — арматура считается у каждого радиатора.">Узел ввода отопления</span>
+                        <label class="switch"><input type="checkbox" id="chk_flat_heat_inlet"
+                                onchange="app.toggleState('flatHeatInlet', this.checked)"><span
                                 class="slider"></span></label>
                     </div>
                 </div>
