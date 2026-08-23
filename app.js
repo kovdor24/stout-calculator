@@ -845,11 +845,11 @@ const app = {
      * написал площадь руками, второй раз её не приписываем.
      */
     projectObjectTitle: function (name) {
-        // Калькулятор считает только жилые дома, поэтому название не спрашиваем:
-        // «Жилой дом» плюс площадь из текущего расчёта. Если объект всё же назвали
-        // по-своему (например, из КП) — берём это название, но площадь дописываем
-        // так же, чтобы после правки расчёта цифра не осталась старой.
-        const base = String(name || '').trim() || 'Жилой дом';
+        // Название не спрашиваем: тип объекта плюс площадь из текущего расчёта.
+        // Если объект всё же назвали по-своему (например, из КП) — берём это
+        // название, но площадь дописываем так же, чтобы после правки расчёта
+        // цифра не осталась старой.
+        const base = String(name || '').trim() || (this.isFlat() ? 'Квартира' : 'Жилой дом');
         const area = Math.round(Number(this.state.area) || 0);
         if (!area) return base;
         if (/\d\s*(м²|м2|кв\.?\s*м)/i.test(base)) return base;
@@ -21962,6 +21962,11 @@ const app = {
     // вариантом — на случай, если движок листов не подключился, и для смет
     // без котла, для которых конфигурации не существует.
     renderScheme: function () {
+        // В квартире котельной нет, а эта схема — именно тепломеханическая схема
+        // котельной: котёл, гидрострелка, насосные группы, расширительный бак.
+        // Своя схема квартиры (стояк — узел ввода — приборы) ещё не сделана;
+        // пока лучше не показывать никакой, чем чужую.
+        if (this.isFlat()) return '';
         const spec = this.currentSpec || [];
         // Объект не заполнен — схемы нет вовсе. Раньше на пустой смете
         // показывалась PNG-подложка старой схемы (рамка с легендой и пустым
@@ -28372,7 +28377,12 @@ const app = {
     },
     updateDocumentTitle: function () {
         let sections = [];
-        if (this.state.systems.includes('rad') || this.state.systems.includes('tp') || this.state.hotWater) {
+        // Котельной в квартире нет — там к дому присоединяются узлом ввода, а
+        // воду греет свой водонагреватель.
+        if (this.isFlat()) {
+            if (this.state.flatHeatInlet) sections.push("ввод отопления");
+            if (this.state.hotWater) sections.push("водонагреватель");
+        } else if (this.state.systems.includes('rad') || this.state.systems.includes('tp') || this.state.hotWater) {
             sections.push("котельная");
         }
         if (this.state.systems.includes('rad')) {
@@ -28385,7 +28395,7 @@ const app = {
             sections.push("водоснабжение");
         }
         if (this.state.waterInput) {
-            sections.push("узел ввода ХВС");
+            sections.push(this.isFlat() ? "узел ввода воды" : "узел ввода ХВС");
         }
         if (this.state.well) {
             sections.push("скважина");
@@ -47305,7 +47315,13 @@ const app = {
                     }
                 }
 
-                this.currentSpec.push({ ...finalItem, q: finalQty, group: itemGroup });
+                // Разделы, которых в квартире нет, не должны попадать и сюда:
+                // currentSpec читают схема, 3D-виды узлов и листы проекта, и они
+                // показывали котельную там, где её нет. Раздел определяем по
+                // currentSectionTitle — он уже выставлен к этому моменту.
+                if (!this.flatSkipsSection(currentSectionTitle)) {
+                    this.currentSpec.push({ ...finalItem, q: finalQty, group: itemGroup });
+                }
                 this.calcFinalTotal += Math.round(originalPrice * finalQty);
 
                 // Одинаковые позиции внутри одного подраздела складываем в одну строку.
