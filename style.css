@@ -12587,13 +12587,11 @@ body.object-flat #blk_object_type {
 /* Параметры квартиры и её узел ввода отопления — наоборот, видны только в
    квартирном режиме */
 #blk_flat_params,
-#blk_flat_hot_riser_row,
-#blk_flat_heat_inlet_wrap {
+#blk_flat_hot_riser_row {
     display: none;
 }
 
-body.object-flat #blk_flat_params,
-body.object-flat #blk_flat_heat_inlet_wrap {
+body.object-flat #blk_flat_params {
     display: block;
 }
 
