@@ -32213,7 +32213,9 @@ const app = {
      */
     flatRoomsFromArea: function () {
         const area = Math.max(0, parseFloat(this.state.area) || 0);
-        if (!area) return 1;
+        // Площадь не задана — считать нечего. Единица здесь была бы выдумкой:
+        // расчёт ещё пустой, а окна от неё уже показывали бы двойку.
+        if (!area) return 0;
         return Math.min(6, Math.max(1, Math.round(area / 25)));
     },
 
@@ -32225,7 +32227,8 @@ const app = {
     },
 
     flatWindowsFromRooms: function () {
-        const rooms = Math.max(1, parseInt(this.state.flatRooms) || 1);
+        const rooms = Math.max(0, parseInt(this.state.flatRooms) || 0);
+        if (!rooms) return 0;
         return rooms + 1 + (this.state.flatCorner ? 1 : 0);
     },
 
@@ -32236,16 +32239,23 @@ const app = {
     },
 
     setFlatRooms: function (v) {
-        let n = parseInt(String(v).replace(/\D+/g, '')) || 1;
-        if (n < 1) n = 1; if (n > 6) n = 6;
+        let n = parseInt(String(v).replace(/\D+/g, ''));
+        if (isNaN(n) || n < 1) n = 1;
+        if (n > 6) n = 6;
         this.state.flatRooms = n;
-        // Задано руками — дальше площадь это значение не перебивает
+        // Задано руками — дальше площадь это значение не перебивает. Ноль руками
+        // не ставится: он бывает только пока не задана площадь, и приходит из
+        // автоподбора. Иначе «минус» на единице сбрасывал ручной режим, комнаты
+        // тут же пересчитывались от площади, и счётчик отскакивал вверх.
         this.state.flatRoomsManual = true;
         this.syncFlatWindows();
         this.saveState(); this.syncUI(); this.render();
     },
     updFlatRooms: function (d) {
-        this.setFlatRooms((parseInt(this.state.flatRooms) || 1) + d);
+        const cur = parseInt(this.state.flatRooms) || 0;
+        // Площадь ещё не задана, комнат ноль — «минусу» уменьшать нечего
+        if (!cur && d < 0) return;
+        this.setFlatRooms(cur + d);
     },
 
     setFlatCorner: function (on) {
@@ -32350,7 +32360,7 @@ const app = {
             t.className = (t.dataset.fst === st) ? 'tab flat-sewer-tab active' : 'tab flat-sewer-tab';
         });
         const roomsEl = document.getElementById('val_flat_rooms');
-        if (roomsEl) roomsEl.textContent = parseInt(this.state.flatRooms) || 1;
+        if (roomsEl) roomsEl.textContent = parseInt(this.state.flatRooms) || 0;
         const zEl = document.getElementById('val_flat_ufh_zones');
         if (zEl) zEl.textContent = parseInt(this.state.flatUfhZones) || 1;
         // Горячая вода: в квартире её греет не бойлер под котёл, а свой прибор
