@@ -12622,6 +12622,35 @@ body.object-flat #blk_flat_params {
     display: block;
 }
 
+/* Жильцы, рециркуляция и загрузка бойлера — вопросы дома с котлом.
+   Объём бака в квартире считается по приборам санузла (app.flatWhVolume),
+   рециркуляции при баке в том же санузле не бывает, а бойлера косвенного
+   нагрева нет вовсе. Остаётся полотенцесушитель — он в квартире как раз есть. */
+body.object-flat #blk_res_row,
+body.object-flat #blk_recirc_wrap,
+body.object-flat #blk_tank_pump_wrap {
+    display: none !important;
+}
+
+/* Полотенцесушитель остаётся один в карточке — верхняя черта ему не нужна */
+body.object-flat #blk_towel_wrap {
+    border-top: none;
+    padding-top: 0;
+}
+
+/* Материал стен и тип дома — одно место, разные вопросы */
+#blk_mat_flat {
+    display: none;
+}
+
+body.object-flat #blk_mat_flat {
+    display: block;
+}
+
+body.object-flat #blk_mat_house {
+    display: none !important;
+}
+
 /* Тройниковая или коллекторная — это про разводку от коллектора. На стояках
    выбирать нечего, поэтому переключатель прячем вместе с его заголовком: он
    отдельным <h4> и сам по себе не скрывается. */

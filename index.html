@@ -789,13 +789,32 @@
                 </div>
                 <div class="info-card" id="desc_reg" style="margin-top: 10px;"></div>
             </div>
-            <div class="control-item"><span class="lbl-sub">Материал стен</span>
-                <div class="tabs" id="mat_tabs">
-                    <div class="tab" onclick="app.setMat(1.3)">Холодный</div>
-                    <div class="tab active" onclick="app.setMat(1.0)">Стандарт</div>
-                    <div class="tab" onclick="app.setMat(0.8)">Тёплый</div>
+            <div class="control-item">
+                <div id="blk_mat_house"><span class="lbl-sub">Материал стен</span>
+                    <div class="tabs" id="mat_tabs">
+                        <div class="tab" onclick="app.setMat(1.3)">Холодный</div>
+                        <div class="tab active" onclick="app.setMat(1.0)">Стандарт</div>
+                        <div class="tab" onclick="app.setMat(0.8)">Тёплый</div>
+                    </div>
+                    <div class="info-card" id="desc_mat" style="margin-top: 10px; margin-bottom: 8px;"></div>
                 </div>
-                <div class="info-card" id="desc_mat" style="margin-top: 10px; margin-bottom: 8px;"></div>
+
+                <!-- Тип дома вместо «материала стен»: квартиру в деревянном доме не
+                     считают, а вот панель, кирпич и монолит различаются заметно —
+                     у панельной наружная стена тоньше и холоднее кирпичной. Виден
+                     только в квартирном режиме (style.css, body.object-flat). -->
+                <div id="blk_mat_flat">
+                    <span class="lbl-sub">Тип дома</span>
+                    <div class="tabs" id="flat_house_tabs">
+                        <div class="tab flat-house-tab" data-fh="panel" onclick="app.setFlatHouse('panel')"
+                            title="Панельные серии: наружная стена тонкая, стыки продувает, теплопотери выше кирпича примерно на пятнадцать процентов.">Панельный</div>
+                        <div class="tab flat-house-tab active" data-fh="brick" onclick="app.setFlatHouse('brick')"
+                            title="Кирпич и блок: базовый случай, от него и считаем.">Кирпичный</div>
+                        <div class="tab flat-house-tab" data-fh="monolith" onclick="app.setFlatHouse('monolith')"
+                            title="Монолит-кирпич и новостройки с утеплённым фасадом: стена теплее нормы примерно на пятнадцать процентов.">Монолит</div>
+                    </div>
+                    <div class="info-card" id="desc_flat_house" style="margin-top: 10px; margin-bottom: 8px;"></div>
+                </div>
                 
                 <!-- Конструктор пирога стены (СП 50.13330) -->
                 <div class="control-item toggle-item" id="wall_layers_header_wrapper" style="display: none; margin-top: 12px; margin-bottom: 6px; width: 100%;">
@@ -1533,7 +1552,7 @@
 
                 <div id="blk_res"
                     style="display:none; flex-direction:column; gap:10px; margin-top:10px; background:#F8FAFC; padding:12px; border-radius:8px; border:1px solid #E5E7EB;">
-                    <div style="display:flex; justify-content:space-between; align-items:center;"><span class="lbl"
+                    <div id="blk_res_row" style="display:flex; justify-content:space-between; align-items:center;"><span class="lbl"
                             style="font-size:12px;">Кол-во жильцов:</span>
                         <div class="stepper" style="width:100px;"><button class="step-btn"
                                 onclick="app.updRes(-1)">−</button>
