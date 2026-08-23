@@ -401,6 +401,11 @@
                             title="Городская квартира: приборы на стояках, узел ввода воды, канализация"><span
                                 class="hdr-obj-ico">🏢</span></button>
                     </div>
+                    <!-- Черта после выбора объекта: дом и квартира — не такая же
+                         кнопка шапки, как сохранение или тема, а развилка перед
+                         ними. Прячется вместе с самим переключателем
+                         (app.syncObjectTypeUI). -->
+                    <div class="header-divider" id="hdr_object_divider" style="display:none;"></div>
 
                     <!-- Notification / Envelope Button -->
                     <button id="btn_notifications" class="btn-ctrl" onclick="app.openMessagesCenter()" title="Сообщения и уведомления" style="position: relative;">

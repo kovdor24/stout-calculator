@@ -32597,6 +32597,64 @@ const app = {
         return many;
     },
 
+    /**
+     * Замена мата набором из нескольких одинаковых.
+     *
+     * Мат нельзя укоротить — режется только сетка между нитками, кабель
+     * остаётся своей длины. Поэтому заменять его можно тем же метражом или
+     * чуть большим, и на больших площадях выбор упирался в линейку: у Ридан и
+     * THERMO она кончается на 12 м², и для мата на 14 предложить было нечего —
+     * все замены оказывались марками одного Теплолюкса.
+     *
+     * Но два мата по 7 м² закрывают те же 14, и укладывают их ровно так же:
+     * пол и без того набирается несколькими матами. Собираем набор из
+     * одинаковых, от двух до трёх штук, с перебором не больше четверти — тем
+     * же правилом, что и одиночная замена.
+     *
+     * От каждой марки — один набор, и только от тех марок, у которых
+     * одиночного мата на этот метраж нет. Иначе к пяти строкам таблицы
+     * добавлялось сорок: тот же Tropix набором из двух, трёх и четырёх, да
+     * ещё дороже себя же одиночного. Выбираем набор с наименьшим числом
+     * матов — меньше стыков и меньше проводов к терморегулятору, — а при
+     * равном числе более дешёвый.
+     */
+    MAT_SET_MAX: 3,
+
+    matSetAlts: function (target, pool, skipBrands) {
+        if (!(target > 0)) return [];
+        const skip = new Set(skipBrands || []);
+        const best = {};
+        const fmt = a => (a % 1 ? a.toFixed(1).replace('.', ',') : String(a));
+        (pool || []).forEach(m => {
+            if (!(m.area > 0) || m.area >= target) return;
+            if (skip.has(m.brand)) return;
+            for (let n = 2; n <= this.MAT_SET_MAX; n++) {
+                const a = +(m.area * n).toFixed(3);
+                if (a < target - 1e-9) continue;
+                if (a > target * 1.25 + 1e-9) return;   // дальше только хуже
+                const cand = {
+                    id: m.id + '__x' + n,
+                    imgId: m.id,
+                    brand: m.brand,
+                    name: `${m.name} — ${n} шт на ${fmt(a)} м²`,
+                    price: Math.round((m.price || 0) * n),
+                    area: a,
+                    watt: (m.watt || 0) * n,
+                    pieces: n,
+                    availability: m.availability,
+                    price_date: m.price_date
+                };
+                const cur = best[m.brand];
+                if (!cur || cand.pieces < cur.pieces
+                    || (cand.pieces === cur.pieces && cand.price < cur.price)) {
+                    best[m.brand] = cand;
+                }
+                return;
+            }
+        });
+        return Object.keys(best).map(b => best[b]).sort((x, y) => (x.price || 0) - (y.price || 0));
+    },
+
     setFlatPosition: function (pos) {
         this.state.flatPosition = ['first', 'middle', 'last'].includes(pos) ? pos : 'middle';
         this.saveState();
@@ -32611,6 +32669,8 @@ const app = {
         const allowed = this.flatModeAllowed();
         const row = document.getElementById('hdr_object_type');
         if (row) row.style.display = allowed ? 'inline-flex' : 'none';
+        const rowDiv = document.getElementById('hdr_object_divider');
+        if (rowDiv) rowDiv.style.display = allowed ? 'block' : 'none';
         const type = this.objectType();
         // Кнопки в шапке — обычные .btn-ctrl, а выбранная помечается тем же
         // классом is-on, что и остальные включённые кнопки шапки. Класс
@@ -36163,12 +36223,20 @@ const app = {
                 });
             }
 
+            // Выбранный набор («…__x2») в смете превращается в обычный товар, и
+            // по item.id строка набора активной не выглядела бы — подсвечивалась
+            // бы одиночная позиция того же артикула. Смотрим, что на самом деле
+            // лежит в swaps, но только если такая строка в таблице есть.
+            const _swapRaw = (this.state.swaps || {})[item.originalId || item.id];
+            const _activeAltId = (_swapRaw && _swapRaw !== item.id
+                && uniqueAlts.some(e => e.display && e.display.id === _swapRaw)) ? _swapRaw : null;
+
             uniqueAlts.forEach((entry, idx) => {
                 let alt = entry.original;
                 let displayAlt = entry.display;
                 let img = getImg(displayAlt);
 
-                let isActive = (displayAlt.id === item.id);
+                let isActive = _activeAltId ? (displayAlt.id === _activeAltId) : (displayAlt.id === item.id);
                 let activeClass = isActive ? "active-row" : "";
                 let activeStyle = isActive ? "background-color: var(--primary-light);" : "";
                 let badgeHtml = isActive ? `<span style="font-size: 10px; background: var(--primary); color: #fff; padding: 2px 6px; border-radius: 4px; font-weight: bold; margin-left: 8px;">Выбран</span>` : "";
@@ -47675,6 +47743,15 @@ const app = {
 
             let lookupKey = item.originalId || item.id;
             let manualSwapId = (item.noMerge) ? null : (this.state.swaps && this.state.swaps[lookupKey]);
+            // Замена набором («два мата по 7 м² вместо одного на 14»): товар
+            // обычный, синтетический только id — «<артикул>__x2». Снимаем
+            // приставку здесь, дальше замена идёт как всякая другая, а число
+            // штук умножается на кратность.
+            let _setMul = 1;
+            if (typeof manualSwapId === 'string') {
+                const _sm = manualSwapId.match(/^(.+)__x(\d+)$/);
+                if (_sm) { manualSwapId = _sm[1]; _setMul = Math.max(1, parseInt(_sm[2]) || 1); }
+            }
             let activeItem = item;
             let forceAnalog = false;
             let forceStout = false;
@@ -47724,6 +47801,33 @@ const app = {
                             if (found) { foundItem = found; break; }
                         }
                     }
+                    if (!foundItem) {
+                        // Часть заменителей живёт только внутри .alts другой позиции
+                        // и отдельным массивом в catalog{} не лежит — так заведены
+                        // нагревательные маты Ридан и THERMO. Без этого поиска выбор
+                        // в таблице молча не применялся: swaps выставлялся, а строка
+                        // сметы оставалась прежней.
+                        //
+                        // Сначала смотрим замены самой позиции — это и дешевле, и
+                        // точнее, — потом уже вложенные списки всего каталога.
+                        if (Array.isArray(item.alts)) {
+                            foundItem = item.alts.find(x => x && x.id === manualSwapId) || null;
+                        }
+                        if (!foundItem) {
+                            for (const catKey in catalog) {
+                                if (!Array.isArray(catalog[catKey])) continue;
+                                for (const x of catalog[catKey]) {
+                                    if (!x || !Array.isArray(x.alts)) continue;
+                                    const f = x.alts.find(a => a && a.id === manualSwapId);
+                                    if (f) { foundItem = f; break; }
+                                }
+                                if (foundItem) break;
+                            }
+                        }
+                    }
+                    // Замена не нашлась — значит и набора нет: количество умножать
+                    // не на что, иначе в смете оказался бы прежний товар удвоенным.
+                    if (!foundItem) _setMul = 1;
                     if (foundItem) {
                         // Строка считается бухтами (asCoilPrice): цена в ней — за
                         // бухту целиком, количество — в бухтах. Замена приходит из
@@ -47852,7 +47956,7 @@ const app = {
             // Добавляем все сформированные позиции в смету
             itemsToAdd.forEach(entry => {
                 let finalItem = entry.itm;
-                let finalQty = entry.q;
+                let finalQty = entry.q * _setMul;
 
                 // Remove "Бастион" from stabilizer names
                 if (finalItem.name && (finalItem.name.includes('Бастион') || finalItem.name.includes('бастион') || (finalItem.id && finalItem.id.startsWith('SST-')))) {
@@ -52429,13 +52533,28 @@ const app = {
                 const grpM = "4.1. Нагревательные маты";
                 // Одинаковые маты в одну строку: пять матов по 2 м² — это «5 шт»,
                 // а не пять отдельных строк подряд.
+                // Общий пул матов других марок: из него собираются наборы для
+                // тех метражей, где одиночной замены нет (Ридан и THERMO
+                // кончаются на 12 м²).
+                const _matPool = [];
+                const _seenPool = new Set();
+                (list || []).forEach(x => (x.alts || []).forEach(a => {
+                    if (a && a.area > 0 && !_seenPool.has(a.id)) { _seenPool.add(a.id); _matPool.push(a); }
+                }));
+
                 const byId = {};
                 picked.forEach(m => { byId[m.id] = (byId[m.id] || 0) + 1; });
                 const laidArea = picked.reduce((s, m) => s + m.area, 0);
                 const totalW = picked.reduce((s, m) => s + m.watt, 0);
                 Object.keys(byId).forEach(id => {
                     const m = picked.find(x => x.id === id);
-                    addToBill(m, byId[id], this.autoTip(m.name, [
+                    // Марки, у которых одиночный мат на этот метраж есть, набором
+                    // не предлагаем: одиночный и проще, и дешевле.
+                    const _singleIds = new Set((m.alts || []).map(a => a.id));
+                    const _singleBrands = (m.alts || []).map(a => a.brand);
+                    const _sets = this.matSetAlts(m.area, _matPool.filter(a => !_singleIds.has(a.id)), _singleBrands);
+                    const _mAlts = _sets.length ? [...(m.alts || []), ..._sets] : m.alts;
+                    addToBill({ ...m, alts: _mAlts }, byId[id], this.autoTip(m.name, [
                         `<b>Зачем:</b> Нагревательный мат ${cover === 'laminate'
                             ? 'под ламинат и паркет: фольгированный, кладётся на подложку без клея и стяжки'
                             : 'под плитку и керамогранит: укладывается прямо в слой плиточного клея'}.`,

@@ -12785,6 +12785,11 @@ body.object-flat #blk_floor_mat_content {
     gap: 8px;
 }
 
+/* Отступ вокруг черты — такой же, как у разделителя перед кнопкой обучения */
+#hdr_object_divider {
+    margin: 0 4px;
+}
+
 .hdr-obj-switch .btn-ctrl {
     font-size: 17px;
     line-height: 1;
