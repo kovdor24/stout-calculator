@@ -32197,7 +32197,9 @@ const app = {
     // Больше двухсот метров квартир практически не бывает, а ползунок дома тянется
     // до 360: на квартире три четверти его хода оказывались мёртвыми.
     FLAT_AREA_MAX: 200,
-    FLAT_AREA_MIN: 25,
+    // Двадцать, а не двадцать пять: у ползунка шаг 10, и от 25 он попадал бы на
+    // 35, 45, 55 — мимо круглых значений, а до 200 не доходил вовсе (195).
+    FLAT_AREA_MIN: 20,
 
     /**
      * Комнаты по площади.
@@ -32328,21 +32330,6 @@ const app = {
         document.querySelectorAll('.flat-ufh-ctrl-tab').forEach(t => {
             t.className = (t.dataset.fct === ctrl) ? 'tab flat-ufh-ctrl-tab active' : 'tab flat-ufh-ctrl-tab';
         });
-        // Ползунок площади в квартире короче: до 360 м² тянется только дом.
-        const areaInp = document.getElementById('inp_area');
-        if (areaInp) {
-            const max = (type === 'flat') ? this.FLAT_AREA_MAX : this.MAX_AREA;
-            const min = (type === 'flat') ? this.FLAT_AREA_MIN : 50;
-            if (+areaInp.max !== max) areaInp.max = max;
-            if (+areaInp.min !== min) areaInp.min = min;
-            if (type === 'flat' && (parseFloat(this.state.area) || 0) > max) {
-                this.state.area = max;
-                const areaVal = document.getElementById('val_area');
-                if (areaVal) areaVal.innerText = max;
-                areaInp.value = max;
-            }
-        }
-
         // Окна пересчитываем на каждой синхронизации, а не только при смене
         // комнат: иначе в сохранённой смете, где их было ноль, они нулём и
         // остались бы, а вместе с ними и приборы.
@@ -42632,8 +42619,19 @@ const app = {
         this.state.waterZones = this.state.waterZones || [];
         this.state.wallLayers = this.state.wallLayers || [];
 
-        document.getElementById('inp_area').max = this.MAX_AREA;
-        document.getElementById('inp_area').value = this.state.area; document.getElementById('val_area').innerText = this.state.area;
+        // Границы ползунка площади: у квартиры свои. Ставим их здесь же, где
+        // присваивается значение, — иначе значение прилетало бы к чужой шкале.
+        const _areaMax = this.isFlat() ? this.FLAT_AREA_MAX : this.MAX_AREA;
+        const _areaMin = this.isFlat() ? this.FLAT_AREA_MIN : 50;
+        if (this.isFlat() && (parseFloat(this.state.area) || 0) > _areaMax) this.state.area = _areaMax;
+        const _areaInp = document.getElementById('inp_area');
+        _areaInp.min = _areaMin;
+        _areaInp.max = _areaMax;
+        // Площадь не задана — бегунок к левому краю, а не туда, где он стоял.
+        // Ноль шкала не представляет (минимум 25), поэтому подставляем минимум
+        // явно: без этого браузер оставлял прежнее значение.
+        _areaInp.value = (parseFloat(this.state.area) || 0) > 0 ? this.state.area : _areaMin;
+        document.getElementById('val_area').innerText = this.state.area;
         this.renderPlanAreaNote();
         if (document.getElementById('blk_h2_wrapper')) document.getElementById('blk_h2_wrapper').style.display = (this.state.floors === 2) ? 'flex' : 'none';
         if (document.getElementById('btn_add_floor')) document.getElementById('btn_add_floor').style.display = (this.state.floors === 2) ? 'none' : 'block';
@@ -43741,8 +43739,9 @@ const app = {
     },
     setArea: function (v) {
         v = parseInt(v);
-        // Нижняя граница у квартиры своя: однушки бывают от тридцати с небольшим,
-        // и упирать их в домовые 50 м² значит завышать и теплопотери, и приборы.
+        // Нижняя граница у квартиры своя: студии и однушки бывают от тридцати с
+        // небольшим, и упирать их в домовые 50 м² значит завышать и теплопотери,
+        // и приборы.
         const minArea = this.isFlat() ? this.FLAT_AREA_MIN : 50;
         if (isNaN(v) || v < minArea) v = minArea;
         if (v > this.MAX_AREA) v = this.MAX_AREA; // Жесткий лимит площади
