@@ -12601,6 +12601,31 @@ body.object-flat #blk_flat_hot_riser_row {
     display: flex !important;
 }
 
+/* Тёплый пол квартиры: блок настроек виден только там */
+#blk_flat_ufh {
+    display: none;
+}
+
+body.object-flat #blk_flat_ufh {
+    display: block;
+}
+
+/* Электрическому полу шаг укладки, перепад и водяная автоматика не нужны:
+   у него нет ни трубы, ни коллектора, ни узла подмеса. */
+body.ufh-electric #blk_step_floor1,
+body.ufh-electric #blk_step_floor2,
+body.ufh-electric #blk_ufh_dt,
+body.ufh-electric #blk_ufh_ctrl {
+    display: none !important;
+}
+
+/* Недоступная вкладка: водяной пол выше первого этажа не согласуют, и это
+   должно быть видно, а не выясняться щелчком. */
+.tab.tab-disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
 /* Карточка «Окна» осталась в сетке одна: «Второй этаж» в квартире скрыт, и
    вторая колонка держала пустое место справа от неё. */
 body.object-flat #blk_fast_grid {

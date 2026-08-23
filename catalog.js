@@ -1137,6 +1137,11 @@ const WORK_PRICE_CATALOG = [
     // 1.6 Ввод отопления в квартиру (только квартирный расчёт)
     { name: "Монтаж узла ввода отопления в квартиру", unit: "компл", price: 12000, group: "1.6 Ввод отопления в квартиру" },
 
+    // 1.4 Электрический тёплый пол (квартирный расчёт)
+    { name: "Монтаж нагревательного мата", unit: "м²", price: 900, group: "1.4 Электрический тёплый пол" },
+    { name: "Установка терморегулятора тёплого пола", unit: "шт", price: 2500, group: "1.4 Электрический тёплый пол" },
+    { name: "Штробление под терморегулятор и датчик пола", unit: "шт", price: 1500, group: "1.4 Электрический тёплый пол" },
+
     // 2.4 Узел ввода воды в квартиру (только квартирный расчёт). Своей группой,
     // потому что «2.2 Монтаж узла ввода ХВС» — расценка на загородный узел со
     // скважиной, и в квартире она не выводится вовсе.
@@ -2920,6 +2925,68 @@ const catalog = {
     // 0,8886, «STOUT Арматура» — 0,8364, «STOUT Латунные резьбовые фит» — 0,8366,
     // «Rommer шаровые краны ГОСТ» — 0,9994, «Rommer шаровые краны (Китай)» —
     // 0,8998, «Rommer Трубопроводная арматура» — 0,9082, «Декаст» — 1,0.
+    // ===== Электрический тёплый пол (квартирный расчёт) =====
+    //
+    // В квартире водяной тёплый пол от общедомового стояка не сделать: это врезка
+    // в общее имущество дома, и разрешают её только на первом этаже над нежилым
+    // либо в новостройке со своим узлом ввода. Во всех остальных случаях греют
+    // электричеством, и это отдельный расчёт: не метры трубы и петли, а маты,
+    // которые нельзя резать, и терморегулятор на каждую зону.
+    //
+    // Tropix — под плитку и керамогранит, укладывается в слой плиточного клея,
+    // 160 Вт/м². Alumia — фольгированный, под ламинат и паркет, без клея и стяжки,
+    // 150 Вт/м².
+    //
+    // Коэффициент цены для группы «Теплолюкс» вывести не из чего: ни одной её
+    // позиции в каталоге до сих пор не было. Берём цену прайса как есть (1,0) —
+    // так же, как у остальных сторонних брендов (Aquario, UNIPUMP, Аквабрайт,
+    // ZONT), у которых коэффициент проверен и равен единице.
+    ufh_mats_tile: [
+        { id: "100035705800", name: "Мат нагревательный Tropix 80 Вт / 0,5 м²", area: 0.5, watt: 80, price: 6632, brand: "Теплолюкс", unit: "шт", availability: "on_order", price_date: "2026-07-29" },
+        { id: "100035712600", name: "Мат нагревательный Tropix 160 Вт / 1 м²", area: 1.0, watt: 160, price: 7858, brand: "Теплолюкс", unit: "шт", availability: "on_order", price_date: "2026-07-29" },
+        { id: "100035712700", name: "Мат нагревательный Tropix 240 Вт / 1,5 м²", area: 1.5, watt: 240, price: 9432, brand: "Теплолюкс", unit: "шт", availability: "on_order", price_date: "2026-07-29" },
+        { id: "100035712800", name: "Мат нагревательный Tropix 320 Вт / 2 м²", area: 2.0, watt: 320, price: 10482, brand: "Теплолюкс", unit: "шт", availability: "on_order", price_date: "2026-07-29" },
+        { id: "100035712900", name: "Мат нагревательный Tropix 400 Вт / 2,5 м²", area: 2.5, watt: 400, price: 12232, brand: "Теплолюкс", unit: "шт", availability: "on_order", price_date: "2026-07-29" },
+        { id: "100035719300", name: "Мат нагревательный Tropix 480 Вт / 3 м²", area: 3.0, watt: 480, price: 13632, brand: "Теплолюкс", unit: "шт", availability: "on_order", price_date: "2026-07-29" },
+        { id: "100035713000", name: "Мат нагревательный Tropix 560 Вт / 3,5 м²", area: 3.5, watt: 560, price: 15032, brand: "Теплолюкс", unit: "шт", availability: "on_order", price_date: "2026-07-29" },
+        { id: "100035713100", name: "Мат нагревательный Tropix 640 Вт / 4 м²", area: 4.0, watt: 640, price: 15908, brand: "Теплолюкс", unit: "шт", availability: "on_order", price_date: "2026-07-29" },
+        { id: "100035713200", name: "Мат нагревательный Tropix 720 Вт / 4,5 м²", area: 4.5, watt: 720, price: 16958, brand: "Теплолюкс", unit: "шт", availability: "on_order", price_date: "2026-07-29" },
+        { id: "100035713300", name: "Мат нагревательный Tropix 800 Вт / 5 м²", area: 5.0, watt: 800, price: 18008, brand: "Теплолюкс", unit: "шт", availability: "on_order", price_date: "2026-07-29" },
+        { id: "100035713400", name: "Мат нагревательный Tropix 960 Вт / 6 м²", area: 6.0, watt: 960, price: 20982, brand: "Теплолюкс", unit: "шт", availability: "on_order", price_date: "2026-07-29" },
+        { id: "100035724300", name: "Мат нагревательный Tropix 1120 Вт / 7 м²", area: 7.0, watt: 1120, price: 23782, brand: "Теплолюкс", unit: "шт", availability: "on_order", price_date: "2026-07-29" },
+        { id: "100035719200", name: "Мат нагревательный Tropix 1280 Вт / 8 м²", area: 8.0, watt: 1280, price: 26408, brand: "Теплолюкс", unit: "шт", availability: "on_order", price_date: "2026-07-29" },
+        { id: "100035729100", name: "Мат нагревательный Tropix 1600 Вт / 10 м²", area: 10.0, watt: 1600, price: 30258, brand: "Теплолюкс", unit: "шт", availability: "on_order", price_date: "2026-07-29" },
+        { id: "100035729200", name: "Мат нагревательный Tropix 1920 Вт / 12 м²", area: 12.0, watt: 1920, price: 33582, brand: "Теплолюкс", unit: "шт", availability: "on_order", price_date: "2026-07-29" },
+        { id: "100035729300", name: "Мат нагревательный Tropix 2240 Вт / 14 м²", area: 14.0, watt: 2240, price: 36732, brand: "Теплолюкс", unit: "шт", availability: "on_order", price_date: "2026-07-29" }
+    ],
+    ufh_mats_laminate: [
+        { id: "100035685600", name: "Мат нагревательный Alumia 150 Вт / 1 м²", area: 1.0, watt: 150, price: 7158, brand: "Теплолюкс", unit: "шт", availability: "on_order", price_date: "2026-07-29" },
+        { id: "100035685700", name: "Мат нагревательный Alumia 225 Вт / 1,5 м²", area: 1.5, watt: 225, price: 8382, brand: "Теплолюкс", unit: "шт", availability: "on_order", price_date: "2026-07-29" },
+        { id: "100035685800", name: "Мат нагревательный Alumia 300 Вт / 2 м²", area: 2.0, watt: 300, price: 9782, brand: "Теплолюкс", unit: "шт", availability: "on_order", price_date: "2026-07-29" },
+        { id: "100035685900", name: "Мат нагревательный Alumia 375 Вт / 2,5 м²", area: 2.5, watt: 375, price: 11532, brand: "Теплолюкс", unit: "шт", availability: "on_order", price_date: "2026-07-29" },
+        { id: "100035686000", name: "Мат нагревательный Alumia 450 Вт / 3 м²", area: 3.0, watt: 450, price: 13282, brand: "Теплолюкс", unit: "шт", availability: "on_order", price_date: "2026-07-29" },
+        { id: "100035686100", name: "Мат нагревательный Alumia 525 Вт / 3,5 м²", area: 3.5, watt: 525, price: 15382, brand: "Теплолюкс", unit: "шт", availability: "on_order", price_date: "2026-07-29" },
+        { id: "100035686200", name: "Мат нагревательный Alumia 600 Вт / 4 м²", area: 4.0, watt: 600, price: 17308, brand: "Теплолюкс", unit: "шт", availability: "on_order", price_date: "2026-07-29" },
+        { id: "100035686300", name: "Мат нагревательный Alumia 675 Вт / 4,5 м²", area: 4.5, watt: 675, price: 19232, brand: "Теплолюкс", unit: "шт", availability: "on_order", price_date: "2026-07-29" },
+        { id: "100035686400", name: "Мат нагревательный Alumia 750 Вт / 5 м²", area: 5.0, watt: 750, price: 21332, brand: "Теплолюкс", unit: "шт", availability: "on_order", price_date: "2026-07-29" },
+        { id: "100035686500", name: "Мат нагревательный Alumia 900 Вт / 6 м²", area: 6.0, watt: 900, price: 24832, brand: "Теплолюкс", unit: "шт", availability: "on_order", price_date: "2026-07-29" },
+        { id: "100035699700", name: "Мат нагревательный Alumia 1050 Вт / 7 м²", area: 7.0, watt: 1050, price: 26758, brand: "Теплолюкс", unit: "шт", availability: "on_order", price_date: "2026-07-29" },
+        { id: "100035693500", name: "Мат нагревательный Alumia 1200 Вт / 8 м²", area: 8.0, watt: 1200, price: 30258, brand: "Теплолюкс", unit: "шт", availability: "on_order", price_date: "2026-07-29" },
+        { id: "100035699800", name: "Мат нагревательный Alumia 1350 Вт / 9 м²", area: 9.0, watt: 1350, price: 33758, brand: "Теплолюкс", unit: "шт", availability: "on_order", price_date: "2026-07-29" },
+        { id: "100035705200", name: "Мат нагревательный Alumia 1500 Вт / 10 м²", area: 10.0, watt: 1500, price: 36732, brand: "Теплолюкс", unit: "шт", availability: "on_order", price_date: "2026-07-29" },
+        { id: "100035705300", name: "Мат нагревательный Alumia 1800 Вт / 12 м²", area: 12.0, watt: 1800, price: 41108, brand: "Теплолюкс", unit: "шт", availability: "on_order", price_date: "2026-07-29" },
+        { id: "100035699900", name: "Мат нагревательный Alumia 2250 Вт / 15 м²", area: 15.0, watt: 2250, price: 59308, brand: "Теплолюкс", unit: "шт", availability: "on_order", price_date: "2026-07-29" },
+        { id: "100035705400", name: "Мат нагревательный Alumia 2700 Вт / 18 м²", area: 18.0, watt: 2700, price: 76282, brand: "Теплолюкс", unit: "шт", availability: "on_order", price_date: "2026-07-29" }
+    ],
+    // Терморегулятор — по одному на зону обогрева: у каждой свой датчик в полу.
+    // Механического хватает там, где пол включают на сезон и забывают; электронный
+    // нужен, когда важно расписание — он греет к подъёму и отключается на день,
+    // а это половина счёта за электричество.
+    ufh_el_thermostats: [
+        { id: "100037050400", name: "Терморегулятор механический Solus, белый", kind: "mech", price: 4544, brand: "Теплолюкс", unit: "шт", availability: "on_order", price_date: "2026-07-29" },
+        { id: "100037087900", name: "Терморегулятор электронный Pontus, белый", kind: "electro", price: 8012, brand: "Теплолюкс", unit: "шт", availability: "on_order", price_date: "2026-07-29" },
+        { id: "100037088400", name: "Терморегулятор электронный Pontus Wi-Fi, белый", kind: "wifi", price: 10019, brand: "Теплолюкс", unit: "шт", availability: "on_order", price_date: "2026-07-29" }
+    ],
     flat_water_inlet: [
         { id: "SVB-0001-200015", name: "Кран шаровой полнопроходной ВР/ВР, рычаг 1/2\"", price: 729, brand: "STOUT", unit: "шт", availability: "on_order", price_date: "2026-07-29", rommer: { id: "RBV-0001-2110315", name: "Кран шаровой ВР/ВР, ручка рычаг 1/2\"", price: 319, brand: "ROMMER", availability: "on_order", price_date: "2026-07-29" } },
         { id: "SFW-0011-000015", name: "Фильтр сетчатый косой 1/2\"", price: 563, brand: "STOUT", unit: "шт", availability: "in_stock", price_date: "2026-08-10", rommer: { id: "RFW-0001-000015", name: "Фильтр грубой очистки косой 500 мкм 1/2\"", price: 293, brand: "ROMMER", availability: "on_order", price_date: "2026-07-29" } },

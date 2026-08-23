@@ -1357,13 +1357,71 @@
             </div>
             <div id="blk_tp_sliders" style="display:none; border-top:1px dashed #E5E7EB; padding-top:15px;">
                 <div class="control-item">
-                    <div class="label-row"><span class="lbl">Тёплый пол 1 этаж</span><span class="val"><span
+                    <div class="label-row"><span class="lbl" id="lbl_tp1">Тёплый пол 1 этаж</span><span class="val"><span
                                 id="val_tp1" class="editable-val" contenteditable="true"
                                 onblur="app.updTp(1, this.innerText)"
                                 onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">0</span>
                             м²</span></div><input type="range" id="inp_tp1" min="0" max="150" value="0"
                         oninput="app.updTp(1,this.value)">
                 </div>
+
+                <!-- Тёплый пол в квартире. Виден только в квартирном режиме
+                     (style.css, body.object-flat). Водяной от общедомового стояка —
+                     врезка в общее имущество дома, поэтому он доступен только на
+                     первом этаже, где под квартирой нежилое. -->
+                <div id="blk_flat_ufh">
+                    <div class="control-item" style="margin-bottom: 12px; margin-top: 6px;">
+                        <span class="lbl" style="display:block; margin-bottom: 6px;">Тип тёплого пола</span>
+                        <div class="tabs" id="flat_ufh_kind_tabs">
+                            <div class="tab flat-ufh-kind-tab" data-fk="electric"
+                                onclick="app.setFlatUfhKind('electric')"
+                                title="Нагревательный мат под покрытие и терморегулятор на стене. Ничего согласовывать не нужно.">Электрический</div>
+                            <div class="tab flat-ufh-kind-tab" data-fk="water"
+                                onclick="app.setFlatUfhKind('water')"
+                                title="Врезка в общедомовой стояк. Согласуют только там, где под квартирой нежилое, то есть на первом этаже.">Водяной</div>
+                        </div>
+                        <div id="flat_ufh_kind_hint"
+                            style="margin-top:8px; font-size:11px; line-height:1.5; color:var(--text-sec);"></div>
+                    </div>
+                    <div id="blk_flat_ufh_el">
+                        <div class="control-item" style="margin-bottom: 12px;">
+                            <span class="lbl" style="display:block; margin-bottom: 6px;">Покрытие пола</span>
+                            <div class="tabs" id="flat_ufh_cover_tabs">
+                                <div class="tab flat-ufh-cover-tab" data-fc="tile"
+                                    onclick="app.setFlatUfhCover('tile')"
+                                    title="Мат Tropix 160 Вт/м²: укладывается прямо в слой плиточного клея.">Плитка</div>
+                                <div class="tab flat-ufh-cover-tab" data-fc="laminate"
+                                    onclick="app.setFlatUfhCover('laminate')"
+                                    title="Мат Alumia 150 Вт/м²: фольгированный, кладётся на подложку без клея и стяжки.">Ламинат</div>
+                            </div>
+                        </div>
+                        <div class="control-item" style="margin-bottom: 12px;">
+                            <span class="lbl" style="display:block; margin-bottom: 6px;">Терморегулятор</span>
+                            <div class="tabs" id="flat_ufh_ctrl_tabs">
+                                <div class="tab flat-ufh-ctrl-tab" data-fct="mech"
+                                    onclick="app.setFlatUfhCtrl('mech')"
+                                    title="Колесо уставки. Годится там, где пол включают на сезон и больше к нему не подходят.">Механический</div>
+                                <div class="tab flat-ufh-ctrl-tab" data-fct="electro"
+                                    onclick="app.setFlatUfhCtrl('electro')"
+                                    title="Расписание по дням и часам: пол греется к подъёму и отключается на рабочий день.">Электронный</div>
+                                <div class="tab flat-ufh-ctrl-tab" data-fct="wifi"
+                                    onclick="app.setFlatUfhCtrl('wifi')"
+                                    title="То же расписание плюс управление с телефона.">Wi-Fi</div>
+                            </div>
+                        </div>
+                        <div class="control-item"
+                            style="margin-bottom: 12px; display:flex; justify-content:space-between; align-items:center;">
+                            <span class="lbl"
+                                title="Терморегулятор ставится по одному на зону: у санузла и кухни разный график и разное покрытие.">Зон обогрева</span>
+                            <div class="stepper" style="width:100px;">
+                                <button class="step-btn" onclick="app.updFlatUfhZones(-1)">−</button>
+                                <div class="step-val" id="val_flat_ufh_zones">1</div>
+                                <button class="step-btn" onclick="app.updFlatUfhZones(1)">+</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="control-item" id="blk_step_floor1" style="display:none; margin-bottom: 12px; margin-top: 6px;">
                     <span class="lbl-sub" style="margin-bottom: 6px;">Шаг укладки трубы 1 этаж</span>
                     <div class="tabs" id="ufh_step1_tabs">
