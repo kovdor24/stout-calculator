@@ -1021,7 +1021,7 @@ const app = {
     currentAuthTab: 'login',
     pendingRegistration: null,
     adminData: { users: [], estimates: [], recentEstimates: [], userEstimates: [] },
-    state: { waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, waterFilterLevel: 'none', waterReducer: false, waterMeter: false, waterLeakGuard: true, waterFrame: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, rigOff: {}, qtyOverrides: {}, darkMode: false, area: 0, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 0, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', tankMount: 'floor', tankHeat: 'cos', tankVol: null, tankSwapMount: null, tankSwapHeat: null, tankSwapVol: null, ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', boilerSeriesManual: false, elBoilerPower: null, elPowerLimit: 15, elPowerLimitOff: false, elPhase: '380', elTariff: 6, elTariffNight: 3, elTariffMode: 'day_night', showElCost: false, showGasCost: false, gasTariffMode: 'main', gasTariff: null, gasTariffManual: false, lpgTariff: 26, polisKit: 'gbm', radBottomKit: 'gtube', hydroType: 'combo', pipeType: 'insulated', ufhPipeMaterial: 'pex', waterPipeMaterial: 'pex', ufhBaseType: 'mat', radManifoldType: 'standard', waterManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, boilerAuto: false, boilerAutoLevel: 'auto', leakProtect: false, leakSensors: null, feedType: 'manual', airControl: false, airDeviceType: 'sensor', airLink: 'wired', airSensors: null, ctrlPanel: false, servoAutoSwapped: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, worksDiscount: 0, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', towelWarmer: { enabled: false, type: 'electric', count: null, modelId: 'SHQ-J2RR-008050', color: 'all', series: 'all' }, roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, sectionScheme: {}, last_saved_date: "", ufhMixType: 'std', ufhDT: null, sewerClampsType: 'standard', sewerClampsD58Type: 'standard', boilerFrameType: 'profile_single', expansionTankMountType: 'standard', pipeMountType: 'hidden', boilerFrameFastenerType: 'anchor', mountPlateSingleType: 'SAC-0022-600001', mountPlateDouble100Type: 'SAC-0022-600100', mountPlateDouble150Type: 'SAC-0022-600150', radRegime: 'r8060', servoType: null, snowMelt: false, snowZones: [], snowCtrl: 'sensor', snowInBoilerPower: true, showSnowPanel: false, snowPipe: 'thin' },
+    state: { objectType: 'house', waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, waterFilterLevel: 'none', waterReducer: false, waterMeter: false, waterLeakGuard: true, waterFrame: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: false, optItems: {}, rigOff: {}, qtyOverrides: {}, darkMode: false, area: 0, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 0, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: false, collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', tankMount: 'floor', tankHeat: 'cos', tankVol: null, tankSwapMount: null, tankSwapHeat: null, tankSwapVol: null, ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', boilerSeriesManual: false, elBoilerPower: null, elPowerLimit: 15, elPowerLimitOff: false, elPhase: '380', elTariff: 6, elTariffNight: 3, elTariffMode: 'day_night', showElCost: false, showGasCost: false, gasTariffMode: 'main', gasTariff: null, gasTariffManual: false, lpgTariff: 26, polisKit: 'gbm', radBottomKit: 'gtube', hydroType: 'combo', pipeType: 'insulated', ufhPipeMaterial: 'pex', waterPipeMaterial: 'pex', ufhBaseType: 'mat', radManifoldType: 'standard', waterManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, boilerAuto: false, boilerAutoLevel: 'auto', leakProtect: false, leakSensors: null, feedType: 'manual', airControl: false, airDeviceType: 'sensor', airLink: 'wired', airSensors: null, ctrlPanel: false, servoAutoSwapped: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, worksDiscount: 0, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', towelWarmer: { enabled: false, type: 'electric', count: null, modelId: 'SHQ-J2RR-008050', color: 'all', series: 'all' }, roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, sectionScheme: {}, last_saved_date: "", ufhMixType: 'std', ufhDT: null, sewerClampsType: 'standard', sewerClampsD58Type: 'standard', boilerFrameType: 'profile_single', expansionTankMountType: 'standard', pipeMountType: 'hidden', boilerFrameFastenerType: 'anchor', mountPlateSingleType: 'SAC-0022-600001', mountPlateDouble100Type: 'SAC-0022-600100', mountPlateDouble150Type: 'SAC-0022-600150', radRegime: 'r8060', servoType: null, snowMelt: false, snowZones: [], snowCtrl: 'sensor', snowInBoilerPower: true, showSnowPanel: false, snowPipe: 'thin' },
 
     lastSavedStateString: "",
 
@@ -31073,7 +31073,7 @@ const app = {
 
         // Полный сброс данных расчета
         this.state = {
-            waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, waterFilterLevel: 'none', waterReducer: false, waterMeter: false, waterLeakGuard: true, waterFrame: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: currentShowScheme, optItems: {}, qtyOverrides: {}, darkMode: currentDarkMode, area: 0, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 0, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: (currentAccType === 'pro'), collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', tankMount: 'floor', tankHeat: 'cos', tankVol: null, tankSwapMount: null, tankSwapHeat: null, tankSwapVol: null, ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', boilerSeriesManual: false, elBoilerPower: null, elPowerLimit: 15, elPowerLimitOff: false, elPhase: '380', elTariff: 6, elTariffNight: 3, elTariffMode: 'day_night', showElCost: false, showGasCost: false, gasTariffMode: 'main', gasTariff: null, gasTariffManual: false, lpgTariff: 26, polisKit: 'gbm', radBottomKit: 'gtube', hydroType: 'combo', pipeType: 'insulated', ufhPipeMaterial: 'pex', waterPipeMaterial: 'pex', ufhBaseType: 'mat', radManifoldType: 'standard', waterManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, boilerAuto: false, boilerAutoLevel: 'auto', leakProtect: false, leakSensors: null, feedType: 'manual', airControl: false, airDeviceType: 'sensor', airLink: 'wired', airSensors: null, ctrlPanel: false, servoAutoSwapped: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, worksDiscount: 0, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', towelWarmer: { enabled: false, type: 'electric', count: null, modelId: 'SHQ-J2RR-008050', color: 'all', series: 'all' }, roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, sectionScheme: {}, last_saved_date: "", sewerClampsType: 'standard', sewerClampsD58Type: 'standard', boilerFrameType: 'profile_single', expansionTankMountType: 'standard', pipeMountType: 'hidden', boilerFrameFastenerType: 'anchor', mountPlateSingleType: 'SAC-0022-600001', mountPlateDouble100Type: 'SAC-0022-600100', mountPlateDouble150Type: 'SAC-0022-600150',
+            objectType: 'house', waterInput: false, outdoorFaucet: 0, bigBlueFilter: false, waterFilterLevel: 'none', waterReducer: false, waterMeter: false, waterLeakGuard: true, waterFrame: false, heatingFeed: false, convConnectionType: 'straight', detailedRooms: false, rooms: [], convectorType: 'scq', well: false, wellDepth: 30, wellDist: 15, wellAutoType: 'sirio', h1: 2.7, h2: 2.7, viewMode: 'equipment', showScheme: currentShowScheme, optItems: {}, qtyOverrides: {}, darkMode: currentDarkMode, area: 0, floors: 1, region: 100, selectedCity: null, mat: 1.0, lastQuickMat: null, wallLayersEnabled: false, wallLayers: [{ matId: "gas_d500", thick: 300 }, { matId: "minwool", thick: 50 }], fuels: ['el'], systems: [], hotWater: false, recirc: false, res: 0, win: 10, tp1: 0, tp2: 0, ufhStep1: 150, ufhStep2: 150, showSku: false, coolant: 'water', groupItems: (currentAccType === 'pro'), collapsedGroups: [], disabledSections: [], revealedToggles: [], swaps: {}, showSwapFor: null, radType: 'space', headType: 'gas', connectionType: 'angled', boilerType: 'optibase', tankMount: 'floor', tankHeat: 'cos', tankVol: null, tankSwapMount: null, tankSwapHeat: null, tankSwapVol: null, ufhZones: 1, ufhCtrl: 'mech', pumpType: 'default', boilerSeries: 'status', boilerSeriesManual: false, elBoilerPower: null, elPowerLimit: 15, elPowerLimitOff: false, elPhase: '380', elTariff: 6, elTariffNight: 3, elTariffMode: 'day_night', showElCost: false, showGasCost: false, gasTariffMode: 'main', gasTariff: null, gasTariffManual: false, lpgTariff: 26, polisKit: 'gbm', radBottomKit: 'gtube', hydroType: 'combo', pipeType: 'insulated', ufhPipeMaterial: 'pex', waterPipeMaterial: 'pex', ufhBaseType: 'mat', radManifoldType: 'standard', waterManifoldType: 'standard', water: false, waterZones: [], ufhAuto: false, boilerAuto: false, boilerAutoLevel: 'auto', leakProtect: false, leakSensors: null, feedType: 'manual', airControl: false, airDeviceType: 'sensor', airLink: 'wired', airSensors: null, ctrlPanel: false, servoAutoSwapped: false, projectName: "", brandMode: "stout", pprSystemBrand: "proaqua", customWorks: {}, showImages: true, eqDiscount: 0, worksDiscount: 0, chimneyType: 'standard', hydroArrowType: 'standard', ventilationEnabled: false, ventilationType: 'natural', sewerType: 'std', towelWarmer: { enabled: false, type: 'electric', count: null, modelId: 'SHQ-J2RR-008050', color: 'all', series: 'all' }, roofEnabled: false, roofMatId: 'roof_mw150', floorEnabled: false, floorMatId: 'floor_ground_ins', glazingEnabled: false, glazingMatId: 'glz_2cam', showDetailedRoomsPanel: false, showWallLayersPanel: false, sectionAnalog: {}, sectionScheme: {}, last_saved_date: "", sewerClampsType: 'standard', sewerClampsD58Type: 'standard', boilerFrameType: 'profile_single', expansionTankMountType: 'standard', pipeMountType: 'hidden', boilerFrameFastenerType: 'anchor', mountPlateSingleType: 'SAC-0022-600001', mountPlateDouble100Type: 'SAC-0022-600100', mountPlateDouble150Type: 'SAC-0022-600150',
             // ВОЗВРАЩАЕМ АВТОРИЗАЦИЮ И ТАРИФ НА МЕСТО
             tgUser: currentTgUser,
             accountType: currentAccType,
@@ -31787,6 +31787,65 @@ const app = {
         }
     },
 
+    // ===================== Дом или квартира =====================
+    //
+    // Квартирный расчёт живёт в этом же калькуляторе, а не на отдельной странице.
+    // Смета, счёт, ссылка клиенту, сохранение в облако, распознавание и документы
+    // у них общие; вторая копия app.js разошлась бы с первой на первой же правке
+    // цены, и правку пришлось бы вносить дважды.
+    //
+    // Пока режим обкатывается, он виден только владельцу — по тому же праву, что
+    // и вкладка «Аналитика» (три личных адреса, а не account_type: 'admin' и
+    // 'viewer' раздаются дистрибьюторам и наблюдателям, им сюда рано). Всем
+    // остальным калькулятор выглядит ровно как раньше: ни переключателя в колонке
+    // параметров, ни шага выбора в окне первого запуска.
+    flatModeAllowed: function () {
+        return this.isAnalyticsOwner();
+    },
+
+    // Что считаем на самом деле. Право проверяется здесь, а не только при клике:
+    // адрес ?type=flat и чужая сохранённая смета с objectType: 'flat' не должны
+    // открывать квартирный расчёт тому, кому он ещё не показан.
+    objectType: function () {
+        return (this.state.objectType === 'flat' && this.flatModeAllowed()) ? 'flat' : 'house';
+    },
+
+    isFlat: function () { return this.objectType() === 'flat'; },
+
+    setObjectType: function (type) {
+        const next = (type === 'flat') ? 'flat' : 'house';
+        if (next === 'flat' && !this.flatModeAllowed()) return;
+        if (this.state.objectType === next) return;
+        this.state.objectType = next;
+        if (next === 'flat') {
+            // В квартире нет ни котла, ни скважины, ни площадки перед гаражом.
+            // Гасим их сразу, иначе они останутся в смете невидимыми строками:
+            // блоки-то из колонки параметров уйдут, а состояние нет.
+            this.state.fuels = [];
+            this.state.floors = 1;
+            this.state.well = false;
+            this.state.snowMelt = false;
+            this.state.boilerAuto = false;
+        }
+        this.saveState();
+        this.syncUI();
+        this.render();
+    },
+
+    // Блоки, которых в квартире нет, прячет CSS по классу на body, а не инлайновый
+    // display. Те же самые блоки показывает и прячет syncUI по своим условиям —
+    // инлайновый стиль он бы просто перетёр на следующем такте.
+    syncObjectTypeUI: function () {
+        const allowed = this.flatModeAllowed();
+        const row = document.getElementById('blk_object_type');
+        if (row) row.style.display = allowed ? 'block' : 'none';
+        const type = this.objectType();
+        document.querySelectorAll('.object-type-tab').forEach(t => {
+            t.className = (t.dataset.otype === type) ? 'tab object-type-tab active' : 'tab object-type-tab';
+        });
+        if (document.body) document.body.classList.toggle('object-flat', type === 'flat');
+    },
+
     // ===================== Быстрый старт (окно первого запуска) =====================
     //
     // Первое, что видит новый человек — форма с полусотней переключателей и площадью 0.
@@ -31898,8 +31957,32 @@ const app = {
         } catch (e) { console.warn('[quickStart] не показалось:', e); }
     },
 
-    showQuickStart: function () {
+    // Шаг выбора объекта. Показывается только владельцу и только первым: у всех
+    // остальных окно открывается сразу на типовых домах, как и раньше.
+    QUICK_START_TYPES: [
+        { key: 'house', icon: '🏠', title: 'Частный дом', note: 'котельная, теплопотери по стенам и окнам, тёплый пол' },
+        { key: 'flat', icon: '🏢', title: 'Квартира', note: 'приборы отопления от стояка, вода, канализация' }
+    ],
+
+    // Выбор объекта в окне первого запуска. Дом ведёт дальше, к типовым объектам;
+    // квартира пока просто включает режим — типовых квартир ещё нет.
+    applyQuickStartType: function (type) {
+        if (type === 'flat') {
+            this.closeQuickStart(true);
+            try { localStorage.setItem('quick_start_used', '1'); } catch (e) { }
+            this.setObjectType('flat');
+            return;
+        }
+        this.setObjectType('house');
+        this.closeQuickStart(true);
+        // Не через кадр и не через ноль: closeQuickStart снимает узел своим
+        // таймером, и окно, открытое раньше, увидело бы старое и не открылось.
+        setTimeout(() => this.showQuickStart('presets'), 30);
+    },
+
+    showQuickStart: function (step) {
         if (document.getElementById('quick_start_overlay')) return;
+        if (step !== 'presets' && this.flatModeAllowed()) return this.showQuickStartTypes();
         const cards = this.QUICK_START_PRESETS.map(p => `
             <button type="button" class="quick-start-card" onclick="app.applyQuickStart('${p.key}')"
                 aria-label="${p.title}: ${p.note}"
@@ -31944,6 +32027,42 @@ const app = {
         setTimeout(() => { wrap.classList.add('active'); this.syncModalOverlayClass(); }, 20);
     },
 
+    showQuickStartTypes: function () {
+        if (document.getElementById('quick_start_overlay')) return;
+        const cards = this.QUICK_START_TYPES.map(p => `
+            <button type="button" class="quick-start-card" onclick="app.applyQuickStartType('${p.key}')"
+                aria-label="${p.title}: ${p.note}"
+                style="display:flex; align-items:center; gap:14px; width:100%; text-align:left; cursor:pointer;
+                       background:var(--bg); border:1px solid var(--border); border-radius:14px;
+                       padding:14px 16px; margin-bottom:10px; transition:0.15s;">
+                <span style="font-size:30px; line-height:1; flex:0 0 auto;">${p.icon}</span>
+                <span style="flex:1 1 auto;">
+                    <span style="display:block; font-size:15px; font-weight:700; color:var(--text-main);">${p.title}</span>
+                    <span style="display:block; font-size:12.5px; color:var(--text-sec); margin-top:2px;">${p.note}</span>
+                </span>
+                <span style="font-size:18px; color:var(--primary); flex:0 0 auto;">›</span>
+            </button>`).join('');
+        const wrap = document.createElement('div');
+        wrap.id = 'quick_start_overlay';
+        wrap.className = 'custom-modal-overlay';
+        wrap.onclick = (e) => { if (e.target === wrap) app.closeQuickStart(); };
+        wrap.innerHTML = `
+            <div class="custom-modal" style="max-width:520px; padding:32px 28px; text-align:left;">
+                <span class="auth-modal-close" onclick="app.closeQuickStart()"
+                    style="top:6px; right:8px; padding:10px 14px;">&times;</span>
+                <div class="custom-modal-title" style="font-size:20px; margin-bottom:6px;">Что считаем?</div>
+                <div class="custom-modal-text" style="margin-bottom:18px;">
+                    Объект можно сменить в любой момент — переключателем в самом верху колонки параметров.
+                </div>
+                ${cards}
+                <button type="button" class="custom-modal-btn custom-modal-close" style="margin-top:6px;"
+                    onclick="app.closeQuickStart()">Настрою сам</button>
+            </div>`;
+        document.body.appendChild(wrap);
+        if (typeof Tour !== 'undefined' && Tour.active()) Tour.hideCard();
+        setTimeout(() => { wrap.classList.add('active'); this.syncModalOverlayClass(); }, 20);
+    },
+
     closeQuickStart: function (instant) {
         const wrap = document.getElementById('quick_start_overlay');
         if (!wrap) return;
@@ -31961,6 +32080,7 @@ const app = {
         // Метка для события 'calculated' (см. ensureCalcId): по ней видно, сколько
         // смет начинается с шаблона, а сколько — с пустой формы.
         this._quickStartPreset = preset.key;
+        this.state.objectType = 'house';
         this.autoCalcZones();
         this.syncUI();
         this.render();
@@ -31993,6 +32113,13 @@ const app = {
         this.migrateSnowPipeSwap();
         this.migrateElCostDefaultOff();
         this.migrateBoilerSectionTitles();
+        // Адрес ?type=flat открывает калькулятор сразу на квартире — под это можно
+        // будет дать отдельную ссылку в рекламе. Право здесь не проверяем: его
+        // проверит objectType(), и чужому человеку ссылка ничего не переключит.
+        try {
+            const _objQ = new URLSearchParams(window.location.search || '').get('type');
+            if (_objQ === 'flat' || _objQ === 'house') this.state.objectType = _objQ;
+        } catch (e) { }
         this.loadInstallerSettingsLocal();
         // Реквизиты компании переехали из сметы в настройки аккаунта — забираем их
         // из последнего расчёта, пока он ещё лежит в state (разовая операция)
@@ -42597,6 +42724,7 @@ const app = {
         if (document.getElementById('chk_water')) document.getElementById('chk_water').checked = this.state.water;
         if (document.getElementById('blk_water_zones')) document.getElementById('blk_water_zones').style.display = this.state.water ? 'flex' : 'none';
         if (document.getElementById('chk_detailed_rooms')) document.getElementById('chk_detailed_rooms').checked = this.state.detailedRooms;
+        this.syncObjectTypeUI();
 
         const modeFast = document.getElementById('mode_fast');
         const modePro = document.getElementById('mode_pro');

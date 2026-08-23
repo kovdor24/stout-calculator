@@ -12573,3 +12573,28 @@ body.dark-mode .btn-ctrl.is-on:hover {
     border-radius: 12px;
     background: var(--bg);
 }
+
+/* ===== Квартирный расчёт: что уходит из колонки параметров =====
+   Прячем классом на body, а не инлайновым display: те же самые блоки показывает
+   и прячет app.syncUI по своим условиям (подробный режим, выбранное топливо,
+   включённый тёплый пол), и инлайновый стиль он перетёр бы на следующем такте.
+   Состояние этих узлов гасит app.setObjectType — иначе они остались бы в смете
+   невидимыми строками. */
+body.object-flat #blk_object_type {
+    display: block !important;
+}
+
+body.object-flat #blk_fuel_type,
+body.object-flat #blk_floors_card,
+body.object-flat #blk_well_wrap,
+body.object-flat #blk_snow_header,
+body.object-flat #blk_snow_opts,
+body.object-flat #blk_boiler_auto_item,
+body.object-flat #blk_el_group,
+body.object-flat #blk_gas_cost,
+body.object-flat #blk_roof_mat_wrapper,
+body.object-flat #blk_roof_mat_content,
+body.object-flat #blk_floor_mat_wrapper,
+body.object-flat #blk_floor_mat_content {
+    display: none !important;
+}

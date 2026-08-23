@@ -586,6 +586,21 @@
             <div class="input-panel-grip no-print" id="input_panel_grip" role="button" tabindex="0"
                 title="Перетащите, чтобы перенести колонку параметров вправо или влево (двойной щелчок — переключить)"
                 aria-label="Переместить колонку параметров"></div>
+            <!-- Что считаем: частный дом или городскую квартиру. Пока квартирный
+                 расчёт обкатывается, блок виден только владельцу — показывает его
+                 app.syncObjectTypeUI по тому же праву, что и вкладку «Аналитика». -->
+            <div id="blk_object_type" style="display:none;">
+                <h3 style="margin-top: 0; font-size: 13px; font-weight: 600; text-transform: none; letter-spacing: normal;">Объект</h3>
+                <div class="control-item" style="margin-bottom: 15px;">
+                    <div class="tabs" id="object_type_tabs">
+                        <div class="tab object-type-tab" data-otype="house" onclick="app.setObjectType('house')"
+                            title="Частный дом: котельная, теплопотери по ограждающим конструкциям, скважина, снеготаяние.">🏠 Дом</div>
+                        <div class="tab object-type-tab" data-otype="flat" onclick="app.setObjectType('flat')"
+                            title="Городская квартира: приборы отопления от стояка, узел ввода воды, канализация. Котла, скважины и снеготаяния нет.">🏢 Квартира</div>
+                    </div>
+                </div>
+            </div>
+
             <h3 style="margin-top: 0; font-size: 13px; font-weight: 600; text-transform: none; letter-spacing: normal;">Режим расчёта</h3>
             <div class="control-item" style="margin-bottom: 15px;">
                 <div class="mode-selector-tabs">
@@ -702,7 +717,7 @@
                                 class="step-btn" onclick="app.updWin(1)">+</button>
                         </div>
                     </div>
-                    <div class="control-card"><span class="lbl">Второй этаж</span><label class="switch"><input
+                    <div class="control-card" id="blk_floors_card"><span class="lbl">Второй этаж</span><label class="switch"><input
                                 type="checkbox" id="chk_floors" onchange="app.toggleFloors(this.checked)"><span
                                 class="slider"></span></label></div>
                 </div>
@@ -884,11 +899,13 @@
             </div>
             </div>
 
-            <h4 style="margin-bottom: 6px; font-size: 13px; font-weight: 600; text-transform: none; letter-spacing: normal; color: var(--text-main);">Тип котла</h4>
-            <div class="control-item">
-                <div class="tabs">
-                    <div class="tab multi-active" id="fuel_el" onclick="app.toggleFuel('el')">⚡ Электро</div>
-                    <div class="tab" id="fuel_gas" onclick="app.toggleFuel('gas')">🔥 Газ</div>
+            <div id="blk_fuel_type">
+                <h4 style="margin-bottom: 6px; font-size: 13px; font-weight: 600; text-transform: none; letter-spacing: normal; color: var(--text-main);">Тип котла</h4>
+                <div class="control-item">
+                    <div class="tabs">
+                        <div class="tab multi-active" id="fuel_el" onclick="app.toggleFuel('el')">⚡ Электро</div>
+                        <div class="tab" id="fuel_gas" onclick="app.toggleFuel('gas')">🔥 Газ</div>
+                    </div>
                 </div>
             </div>
 
@@ -1576,7 +1593,7 @@
                 </div>
             </div>
 
-            <div class="control-item toggle-item">
+            <div class="control-item toggle-item" id="blk_well_wrap">
                 <div class="label-row">
                     <span class="lbl">Скважинный насос</span>
                     <label class="switch"><input type="checkbox" id="chk_well"
