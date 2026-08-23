@@ -387,6 +387,19 @@
             <div class="header-main-controls">
                 
                 <div class="header-cloud-btns" style="display: flex; align-items: center; gap: 8px;">
+                    <!-- Дом или квартира. Живёт в шапке, а не в колонке параметров:
+                         там он сдвигал вниз всё остальное, и калькулятор переставал
+                         помещаться в экран целиком (см. body.empty-fit). Виден
+                         только владельцу — app.syncObjectTypeUI. -->
+                    <div id="hdr_object_type" class="hdr-obj-switch no-print" style="display:none;">
+                        <button type="button" class="hdr-obj-btn object-type-tab active" data-otype="house"
+                            onclick="app.setObjectType('house')"
+                            title="Частный дом: котельная, теплопотери по стенам и окнам, тёплый пол">🏠</button>
+                        <button type="button" class="hdr-obj-btn object-type-tab" data-otype="flat"
+                            onclick="app.setObjectType('flat')"
+                            title="Городская квартира: приборы на стояках, узел ввода воды, канализация">🏢</button>
+                    </div>
+
                     <!-- Notification / Envelope Button -->
                     <button id="btn_notifications" class="btn-ctrl" onclick="app.openMessagesCenter()" title="Сообщения и уведомления" style="position: relative;">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -586,21 +599,6 @@
             <div class="input-panel-grip no-print" id="input_panel_grip" role="button" tabindex="0"
                 title="Перетащите, чтобы перенести колонку параметров вправо или влево (двойной щелчок — переключить)"
                 aria-label="Переместить колонку параметров"></div>
-            <!-- Что считаем: частный дом или городскую квартиру. Пока квартирный
-                 расчёт обкатывается, блок виден только владельцу — показывает его
-                 app.syncObjectTypeUI по тому же праву, что и вкладку «Аналитика». -->
-            <div id="blk_object_type" style="display:none;">
-                <h3 style="margin-top: 0; font-size: 13px; font-weight: 600; text-transform: none; letter-spacing: normal;">Объект</h3>
-                <div class="control-item" style="margin-bottom: 15px;">
-                    <div class="tabs" id="object_type_tabs">
-                        <div class="tab object-type-tab" data-otype="house" onclick="app.setObjectType('house')"
-                            title="Частный дом: котельная, теплопотери по ограждающим конструкциям, скважина, снеготаяние.">🏠 Дом</div>
-                        <div class="tab object-type-tab" data-otype="flat" onclick="app.setObjectType('flat')"
-                            title="Городская квартира: приборы отопления от стояка, узел ввода воды, канализация. Котла, скважины и снеготаяния нет.">🏢 Квартира</div>
-                    </div>
-                </div>
-            </div>
-
             <h3 style="margin-top: 0; font-size: 13px; font-weight: 600; text-transform: none; letter-spacing: normal;">Режим расчёта</h3>
             <div class="control-item" style="margin-bottom: 15px;">
                 <div class="mode-selector-tabs">

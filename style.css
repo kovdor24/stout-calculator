@@ -12674,3 +12674,37 @@ body.object-flat #blk_floor_mat_content {
    неверна по деньгам. Тумблер спрятан, а состояние принудительно включает
    app.setObjectType — иначе строка «Счётчик» осталась бы выключенной в старой
    смете, переключённой на квартиру. */
+
+
+/* Переключатель «дом / квартира» в шапке. В колонке параметров он занимал целый
+   блок с заголовком и сдвигал вниз всё остальное — калькулятор переставал
+   помещаться в экран целиком. */
+.hdr-obj-switch {
+    display: inline-flex;
+    gap: 2px;
+    padding: 2px;
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    background: var(--bg);
+}
+
+.hdr-obj-btn {
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font-size: 15px;
+    line-height: 1;
+    padding: 5px 9px;
+    border-radius: 7px;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.hdr-obj-btn.active {
+    background: var(--primary-light);
+    box-shadow: inset 0 0 0 1px var(--primary);
+}
+
+.hdr-obj-btn:not(.active):hover {
+    background: var(--surface-light);
+}

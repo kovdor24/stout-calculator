@@ -32191,11 +32191,13 @@ const app = {
     // инлайновый стиль он бы просто перетёр на следующем такте.
     syncObjectTypeUI: function () {
         const allowed = this.flatModeAllowed();
-        const row = document.getElementById('blk_object_type');
-        if (row) row.style.display = allowed ? 'block' : 'none';
+        const row = document.getElementById('hdr_object_type');
+        if (row) row.style.display = allowed ? 'inline-flex' : 'none';
         const type = this.objectType();
+        // Класс active переключаем, а не переписываем className целиком: у кнопки
+        // в шапке есть свой класс оформления, и он бы стёрся.
         document.querySelectorAll('.object-type-tab').forEach(t => {
-            t.className = (t.dataset.otype === type) ? 'tab object-type-tab active' : 'tab object-type-tab';
+            t.classList.toggle('active', t.dataset.otype === type);
         });
         if (document.body) document.body.classList.toggle('object-flat', type === 'flat');
         const pos = this.state.flatPosition || 'middle';
