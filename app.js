@@ -32290,17 +32290,159 @@ const app = {
      * до остатка. Остаток меньше самого маленького мата закрываем этим самым
      * маленьким — иначе кусок пола остался бы холодным.
      */
-    pickUfhMats: function (area, list) {
-        const sorted = (list || []).slice().sort((x, y) => y.area - x.area);
-        if (!sorted.length || !(area > 0)) return [];
-        const smallest = sorted[sorted.length - 1];
+    /**
+     * Под что кладётся серия матов.
+     *
+     * Разница не в марке, а в конструкции. Фольгированный мат (Alumia) кладут
+     * насухо под подложку ламината. Мат на сетке — в слой плиточного клея.
+     * Перепутать нельзя: кабель Ø3–4 мм под ламинатом продавит доску, а без
+     * отвода тепла в клей ещё и перегреется.
+     *
+     * В catalog.js замены собраны только по метражу, без оглядки на покрытие,
+     * — поэтому классификация живёт здесь и фильтрует и подбор, и таблицу
+     * замены.
+     */
+    UFH_MAT_COVER: {
+        'Мат нагревательный Alumia': 'laminate',
+        'Мат нагревательный Tropix': 'tile',
+        'Мат нагревательный Warmstad': 'tile',
+        'Мат нагревательный Ultra': 'tile',
+        'Мат нагревательный ProfiMat': 'tile',
+        'Мат нагревательный Ридан Comfort Mat-150': 'tile',
+        'Мат нагревательный Ридан TF-150': 'tile',
+        'Термомат THERMO': 'tile'
+    },
+
+    // «Мат нагревательный Tropix 960 Вт / 6 м²» → «Мат нагревательный Tropix»
+    matSeries: function (m) {
+        return String((m && m.name) || '').replace(/\s*\d+(?:[.,]\d+)?\s*Вт.*$/i, '').trim();
+    },
+
+    matCover: function (m) {
+        return this.UFH_MAT_COVER[this.matSeries(m)] || 'tile';
+    },
+
+    // Ключ серии для набора: имя плюс удельная мощность. У THERMO под одним
+    // именем идут TVK-130 и TVK-180 — 130 и 180 Вт/м². Класть их в один пол
+    // нельзя: пол будет греться пятнами.
+    matSeriesKey: function (m) {
+        const w = (m.area > 0) ? Math.round((m.watt || 0) / m.area / 10) * 10 : 0;
+        return this.matSeries(m) + '|' + w;
+    },
+
+    /**
+     * Все маты, пригодные под заданное покрытие.
+     *
+     * Позиции лежат двумя слоями: сами маты Теплолюкс в ufh_mats_* и чужие
+     * марки во вложенных .alts. Собираем и те и другие, отсеивая неподходящее
+     * покрытие и дубли по артикулу.
+     */
+    matPool: function (cover) {
+        const want = (cover === 'laminate') ? 'laminate' : 'tile';
+        const seen = new Set();
         const out = [];
-        let left = area;
-        while (left > 0.01 && out.length < 14) {
-            const fit = sorted.find(m => m.area <= left + 1e-9);
-            if (fit) { out.push(fit); left -= fit.area; }
-            else { out.push(smallest); left = 0; }
+        [catalog.ufh_mats_tile, catalog.ufh_mats_laminate].forEach(src => {
+            (src || []).forEach(m => {
+                [m].concat(m.alts || []).forEach(a => {
+                    if (!a || !(a.area > 0) || seen.has(a.id)) return;
+                    if (this.matCover(a) !== want) return;
+                    seen.add(a.id);
+                    out.push(a.unit ? a : { ...a, unit: 'шт' });
+                });
+            });
+        });
+        return out;
+    },
+
+    // Мат нельзя укоротить, поэтому набирать можно только с перебором. Четверть
+    // — тот же допуск, что и у ручной замены: больше уже не влезет в комнату.
+    UFH_MAT_OVERSHOOT: 1.25,
+    // Шаг сетки для перебора. Все типоразмеры каталога на 0,05 м² ложатся ровно
+    // (1,2 / 2,7 / 3,85 / 5,25 / 10,2 — в том числе).
+    UFH_MAT_GRID: 0.05,
+
+    /**
+     * Самая дешёвая раскладка площади матами одной серии.
+     *
+     * Обычная задача о размене: набрать не меньше нужной площади и не больше
+     * допуска, потратив как можно меньше. Перебором «сначала самый большой»
+     * дешёвого решения не получить — крупные маты часто дороже в пересчёте на
+     * метр, чем пара средних.
+     */
+    matPlanSeries: function (area, mats) {
+        const G = this.UFH_MAT_GRID;
+        const need = Math.round(area / G);
+        const cap = Math.floor(area * this.UFH_MAT_OVERSHOOT / G);
+        if (!(need > 0) || !mats || !mats.length || cap < need) return null;
+
+        const dp = new Float64Array(cap + 1).fill(Infinity);
+        const via = new Int32Array(cap + 1).fill(-1);
+        const from = new Int32Array(cap + 1).fill(-1);
+        dp[0] = 0;
+        const units = mats.map(m => Math.round(m.area / G));
+        for (let j = 0; j <= cap; j++) {
+            if (dp[j] === Infinity) continue;
+            for (let k = 0; k < mats.length; k++) {
+                const nj = j + units[k];
+                if (nj > cap) continue;
+                const c = dp[j] + (mats[k].price || 0);
+                if (c < dp[nj]) { dp[nj] = c; via[nj] = k; from[nj] = j; }
+            }
         }
+        let best = -1;
+        for (let j = need; j <= cap; j++) {
+            if (dp[j] !== Infinity && (best < 0 || dp[j] < dp[best])) best = j;
+        }
+        if (best < 0) return null;
+        const out = [];
+        for (let j = best; j > 0; j = from[j]) out.push(mats[via[j]]);
+        return { cost: dp[best], mats: out, laid: best * G };
+    },
+
+    /**
+     * Набор матов на заданную площадь — самый дешёвый, одной серией.
+     *
+     * Серию не смешиваем: у марок разная удельная мощность и разная толщина, и
+     * пол из двух разных матов греется по-разному в разных углах. Внутри серии
+     * типоразмеры комбинируются свободно — так их и укладывают.
+     *
+     * Пересчитывается на каждой отрисовке, поэтому смена площади сама меняет и
+     * набор: стало выгоднее другой маркой — она и встанет в смету.
+     */
+    pickUfhMats: function (area, cover) {
+        if (!(area > 0)) return [];
+        const want = (cover === 'laminate') ? 'laminate' : 'tile';
+        const ck = want + ':' + area;
+        if (!this._matPickCache) this._matPickCache = {};
+        if (this._matPickCache[ck]) return this._matPickCache[ck];
+
+        const pool = this.matPool(want);
+        if (!pool.length) return [];
+        const bySeries = {};
+        pool.forEach(m => {
+            const k = this.matSeriesKey(m);
+            (bySeries[k] = bySeries[k] || []).push(m);
+        });
+
+        let best = null;
+        Object.keys(bySeries).forEach(k => {
+            const plan = this.matPlanSeries(area, bySeries[k]);
+            if (!plan) return;
+            // При равной цене берём набор из меньшего числа матов: меньше
+            // стыков и меньше концов к терморегулятору.
+            if (!best || plan.cost < best.cost
+                || (plan.cost === best.cost && plan.mats.length < best.mats.length)) best = plan;
+        });
+
+        let out;
+        if (best) {
+            out = best.mats.slice().sort((a, b) => b.area - a.area);
+        } else {
+            // В допуск не уложился никто — площадь меньше самого мелкого мата.
+            // Кладём наименьший: пол чуть больше комнаты лучше, чем никакой.
+            out = [pool.slice().sort((x, y) => x.area - y.area)[0]];
+        }
+        this._matPickCache[ck] = out;
         return out;
     },
 
@@ -32655,6 +32797,45 @@ const app = {
         return Object.keys(best).map(b => best[b]).sort((x, y) => (x.price || 0) - (y.price || 0));
     },
 
+    /**
+     * Пустые рамки в колонке параметров.
+     *
+     * Блоки-обёртки достались от домового расчёта: у «Горячей воды» в квартире
+     * скрыт и сам переключатель, и всё, что внутри, — а рамка с отступами
+     * осталась и читается как поле, которое почему-то не заполнилось. То же с
+     * узлом ввода в быстром режиме.
+     *
+     * Перечислять такие блоки поимённо в CSS бесполезно: набор скрытого зависит
+     * от режима, systems и десятка переключателей. Поэтому смотрим по факту —
+     * есть ли внутри хоть что-то видимое. Два прохода: спрятав вложенный блок,
+     * можем опустошить внешний.
+     *
+     * Перед замером снимаем то, что спрятали сами: блок должен вернуться, как
+     * только внутри снова появится содержимое.
+     */
+    hideEmptyControlItems: function () {
+        const all = document.querySelectorAll('.input-panel .control-item');
+        all.forEach(el => {
+            if (el.dataset.autoHidden === '1') {
+                el.style.display = '';
+                delete el.dataset.autoHidden;
+            }
+        });
+        if (!this.isFlat()) return;
+        for (let pass = 0; pass < 2; pass++) {
+            all.forEach(el => {
+                if (el.dataset.autoHidden === '1') return;
+                if (!el.getClientRects().length) return;          // и так не виден
+                const hasBox = [...el.children].some(c => c.getClientRects().length > 0);
+                const hasText = [...el.childNodes].some(n => n.nodeType === 3 && n.textContent.trim());
+                if (!hasBox && !hasText) {
+                    el.style.display = 'none';
+                    el.dataset.autoHidden = '1';
+                }
+            });
+        }
+    },
+
     setFlatPosition: function (pos) {
         this.state.flatPosition = ['first', 'middle', 'last'].includes(pos) ? pos : 'middle';
         this.saveState();
@@ -32781,6 +32962,9 @@ const app = {
         });
         const fhDesc = document.getElementById('desc_flat_house');
         if (fhDesc) fhDesc.innerHTML = this.FLAT_HOUSE_DESC[houseKind] || '';
+        // Последним делом: убрать рамки, внутри которых после всех скрытий
+        // ничего не осталось.
+        this.hideEmptyControlItems();
         // Коэффициент держим в согласии с выбранным типом дома: старая смета
         // могла прийти с домовым mat, которого в квартирном списке нет.
         if (type === 'flat' && this.state.mat !== this.FLAT_HOUSE_MAT[houseKind]) {
@@ -52528,19 +52712,14 @@ const app = {
             if (areaEl > 0) {
                 currentSectionTitle = "4. Электрический тёплый пол";
                 const cover = this.state.flatUfhCover === 'laminate' ? 'laminate' : 'tile';
-                const list = cover === 'laminate' ? catalog.ufh_mats_laminate : catalog.ufh_mats_tile;
-                const picked = this.pickUfhMats(areaEl, list || []);
+                const picked = this.pickUfhMats(areaEl, cover);
                 const grpM = "4.1. Нагревательные маты";
                 // Одинаковые маты в одну строку: пять матов по 2 м² — это «5 шт»,
                 // а не пять отдельных строк подряд.
-                // Общий пул матов других марок: из него собираются наборы для
-                // тех метражей, где одиночной замены нет (Ридан и THERMO
-                // кончаются на 12 м²).
-                const _matPool = [];
-                const _seenPool = new Set();
-                (list || []).forEach(x => (x.alts || []).forEach(a => {
-                    if (a && a.area > 0 && !_seenPool.has(a.id)) { _seenPool.add(a.id); _matPool.push(a); }
-                }));
+                // Пул замен — тот же, что у подбора: только маты под это покрытие.
+                // Раньше сюда попадали все подряд, и под ламинат предлагался мат
+                // на сетке в плиточный клей.
+                const _matPool = this.matPool(cover);
 
                 const byId = {};
                 picked.forEach(m => { byId[m.id] = (byId[m.id] || 0) + 1; });
@@ -52550,10 +52729,16 @@ const app = {
                     const m = picked.find(x => x.id === id);
                     // Марки, у которых одиночный мат на этот метраж есть, набором
                     // не предлагаем: одиночный и проще, и дешевле.
-                    const _singleIds = new Set((m.alts || []).map(a => a.id));
-                    const _singleBrands = (m.alts || []).map(a => a.brand);
+                    // Одиночные замены: тот же метраж или чуть больше, и только
+                    // под это покрытие. Сам подобранный мат оставляем в списке —
+                    // по нему видно, от чего считается разница в цене.
+                    const _singles = _matPool
+                        .filter(a => a.area >= m.area - 1e-9 && a.area <= m.area * this.UFH_MAT_OVERSHOOT + 1e-9)
+                        .sort((a, b) => (a.price || 0) - (b.price || 0));
+                    const _singleIds = new Set(_singles.map(a => a.id));
+                    const _singleBrands = _singles.map(a => a.brand);
                     const _sets = this.matSetAlts(m.area, _matPool.filter(a => !_singleIds.has(a.id)), _singleBrands);
-                    const _mAlts = _sets.length ? [...(m.alts || []), ..._sets] : m.alts;
+                    const _mAlts = [..._singles, ..._sets];
                     addToBill({ ...m, alts: _mAlts }, byId[id], this.autoTip(m.name, [
                         `<b>Зачем:</b> Нагревательный мат ${cover === 'laminate'
                             ? 'под ламинат и паркет: фольгированный, кладётся на подложку без клея и стяжки'
@@ -54752,7 +54937,11 @@ const app = {
             }
             if (this.state.waterReducer) addToWorks("Установка редуктора давления", 1, 2000, "шт", hvsGroup);
             if (this.state.waterMeter) addToWorks("Установка счётчика воды", 1, 2500, "шт", hvsGroup);
-            if (this.state.waterLeakGuard) addToWorks("Монтаж системы защиты от протечки воды", 1, 6000, "компл", hvsGroup);
+            // Монтаж защиты от протечки отдельной строкой в доме НЕ считаем.
+            // Сам комплект в смете дома был и раньше, а работа по нему входила
+            // в «Монтаж гидравлики ХВС» за 20 000 — отдельная строка подняла бы
+            // цену каждой домовой сметы на 6 000 без ведома монтажника.
+            // В квартире она есть: там гидравлики узла ввода за 20 000 нет.
             if (this.state.waterFrame) addToWorks("Сборка узла ввода на монтажном каркасе", 1, 5000, "компл", hvsGroup);
             if (this.state.outdoorFaucet > 0) {
                 let count = parseInt(this.state.outdoorFaucet) || 1;
