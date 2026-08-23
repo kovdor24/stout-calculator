@@ -12678,33 +12678,16 @@ body.object-flat #blk_floor_mat_content {
 
 /* Переключатель «дом / квартира» в шапке. В колонке параметров он занимал целый
    блок с заголовком и сдвигал вниз всё остальное — калькулятор переставал
-   помещаться в экран целиком. */
+   помещаться в экран целиком.
+
+   Кнопки обычные .btn-ctrl, как все соседние; выбранная помечается тем же
+   классом is-on, что и прочие включённые кнопки шапки. Своего оформления у них
+   нет — только размер значка, потому что внутри эмодзи, а не svg. */
 .hdr-obj-switch {
-    display: inline-flex;
-    gap: 2px;
-    padding: 2px;
-    border: 1px solid var(--border);
-    border-radius: 9px;
-    background: var(--bg);
+    gap: 8px;
 }
 
-.hdr-obj-btn {
-    border: 0;
-    background: transparent;
-    color: inherit;
-    font-size: 15px;
+.hdr-obj-switch .btn-ctrl {
+    font-size: 17px;
     line-height: 1;
-    padding: 5px 9px;
-    border-radius: 7px;
-    cursor: pointer;
-    transition: background 0.15s;
-}
-
-.hdr-obj-btn.active {
-    background: var(--primary-light);
-    box-shadow: inset 0 0 0 1px var(--primary);
-}
-
-.hdr-obj-btn:not(.active):hover {
-    background: var(--surface-light);
 }

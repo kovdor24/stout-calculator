@@ -32194,10 +32194,12 @@ const app = {
         const row = document.getElementById('hdr_object_type');
         if (row) row.style.display = allowed ? 'inline-flex' : 'none';
         const type = this.objectType();
-        // Класс active переключаем, а не переписываем className целиком: у кнопки
-        // в шапке есть свой класс оформления, и он бы стёрся.
+        // Кнопки в шапке — обычные .btn-ctrl, а выбранная помечается тем же
+        // классом is-on, что и остальные включённые кнопки шапки. Класс
+        // переключаем, а не переписываем className целиком, иначе слетело бы
+        // само оформление кнопки.
         document.querySelectorAll('.object-type-tab').forEach(t => {
-            t.classList.toggle('active', t.dataset.otype === type);
+            t.classList.toggle('is-on', t.dataset.otype === type);
         });
         if (document.body) document.body.classList.toggle('object-flat', type === 'flat');
         const pos = this.state.flatPosition || 'middle';
