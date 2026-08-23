@@ -609,6 +609,32 @@
                 </div>
             </div>
 
+            <!-- Параметры квартиры. Виден только в квартирном режиме — правило в
+                 style.css по классу body.object-flat. Дому эти вопросы не нужны:
+                 там наружу выходят все стены и обе горизонтали. -->
+            <div id="blk_flat_params">
+                <div class="control-item" style="margin-bottom: 12px;">
+                    <span class="lbl-sub" style="margin-bottom: 6px;">Этаж</span>
+                    <div class="tabs" id="flat_position_tabs">
+                        <div class="tab flat-pos-tab" data-fpos="first" onclick="app.setFlatPosition('first')"
+                            title="Под полом подвал, подполье или проезд — пол считается наружным ограждением.">Первый</div>
+                        <div class="tab flat-pos-tab active" data-fpos="middle" onclick="app.setFlatPosition('middle')"
+                            title="Сверху и снизу такие же квартиры: через перекрытия тепло никуда не уходит.">Средний</div>
+                        <div class="tab flat-pos-tab" data-fpos="last" onclick="app.setFlatPosition('last')"
+                            title="Над потолком холодный чердак или кровля — потолок считается наружным ограждением.">Последний</div>
+                    </div>
+                </div>
+                <div class="control-item toggle-item" style="margin-bottom: 15px;">
+                    <div class="label-row">
+                        <span class="lbl"
+                            title="Две наружные стены вместо одной. Теплопотери выше примерно в полтора раза, и радиаторы вырастают соответственно.">Угловая квартира</span>
+                        <label class="switch"><input type="checkbox" id="chk_flat_corner"
+                                onchange="app.toggleState('flatCorner', this.checked)"><span
+                                class="slider"></span></label>
+                    </div>
+                </div>
+            </div>
+
             <div class="control-item" id="blk_main_area" style="margin-bottom: 15px;">
                 <div class="label-row"><span class="lbl">Основная площадь</span><span class="val"><span
                             id="val_area" class="editable-val" contenteditable="true"

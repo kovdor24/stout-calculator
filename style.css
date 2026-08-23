@@ -12584,6 +12584,15 @@ body.object-flat #blk_object_type {
     display: block !important;
 }
 
+/* Параметры квартиры — наоборот, видны только в квартирном режиме */
+#blk_flat_params {
+    display: none;
+}
+
+body.object-flat #blk_flat_params {
+    display: block;
+}
+
 body.object-flat #blk_fuel_type,
 body.object-flat #blk_floors_card,
 body.object-flat #blk_well_wrap,
