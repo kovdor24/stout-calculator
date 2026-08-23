@@ -32489,6 +32489,37 @@ const app = {
         this.saveState(); this.syncUI(); this.render();
     },
 
+    /**
+     * Название прибора с подписью стороны подключения — ровно один раз.
+     *
+     * В каталоге сторона уже записана, но по-разному: у секционных короткой
+     * пометкой «(бок.)» или внутри размера «(500мм, нижн.)», у дизайнерских
+     * трубчатых — словами и подробно, «правостороннее нижнее». Смета дописывала
+     * подпись поверх, и выходило «Радиатор TITAN (бок.) 8 секций (боковое
+     * подключение)» — одно и то же дважды.
+     *
+     * Поэтому: где сторона уже названа словами, ничего не трогаем — «нижнее
+     * центральное» точнее нашего общего «нижнее подключение», и затирать его
+     * нечем. Где стоит короткая пометка — убираем её и дописываем полную.
+     */
+    radNameWithSide: function (name, isBottom) {
+        let n = String(name || '').trim();
+        // Сторона уже названа словами — второй раз не пишем
+        if (/подключени|сторонн|нижнее центральное/i.test(n)) return n;
+        n = n
+            // «(500мм, бок.)» → «(500мм)»
+            .replace(/,\s*(?:бок|нижн?)\.\s*(?=\))/gi, '')
+            // «Радиатор TITAN (бок.) 8 секций» → «Радиатор TITAN, 8 секций»
+            .replace(/\s*\(\s*(?:бок|нижн?)\.\s*\)\s*(?=\S)/gi, ', ')
+            // та же пометка в самом конце названия — просто убрать
+            .replace(/\s*\(\s*(?:бок|нижн?)\.\s*\)\s*$/gi, '')
+            // «(500мм) 8 секций» → «(500мм), 8 секций»
+            .replace(/\)\s+(?=\d)/g, '), ')
+            .replace(/\s{2,}/g, ' ')
+            .trim();
+        return n + (isBottom ? ' (нижнее подключение)' : ' (боковое подключение)');
+    },
+
     setFlatPosition: function (pos) {
         this.state.flatPosition = ['first', 'middle', 'last'].includes(pos) ? pos : 'middle';
         this.saveState();
@@ -51167,7 +51198,7 @@ const app = {
                             // видел её при перепроверке сметы, не открывая каждую подсказку.
                             activeItem = {
                                 ...activeItem,
-                                name: activeItem.name + (_radIsBottom ? ' (нижнее подключение)' : ' (боковое подключение)')
+                                name: app.radNameWithSide(activeItem.name, _radIsBottom)
                             };
                             addToBill(activeItem, _radQty, wDesc, "3. Приборы отопления");
                             totalRadCount += _radQty;
@@ -51322,7 +51353,7 @@ const app = {
                 // Подпись стороны подключения — как в detailedRooms, для перепроверки сметы.
                 activeItem = {
                     ...activeItem,
-                    name: activeItem.name + (_quickRadIsBottom ? ' (нижнее подключение)' : ' (боковое подключение)')
+                    name: app.radNameWithSide(activeItem.name, _quickRadIsBottom)
                 };
                 addToBill(activeItem, totalCount, devInfo, "3. Приборы отопления");
             }
