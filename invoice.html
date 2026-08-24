@@ -3881,21 +3881,12 @@
                 // сих пор он не знал, дошла смета до заказчика или нет, и не мог
                 // отличить «не смотрел» от «посмотрел и молчит».
                 //
-                // Первое ли это открытие, спрашиваем у базы, а не только у
-                // localStorage: он свой у каждого устройства, а звонить монтажнику
-                // на каждый повторный просмотр незачем. Пуш то же самое проверяет
-                // и на сервере, но письмо отправляется отсюда, и без этой проверки
-                // на второй телефон клиента ушло бы второе письмо.
-                let firstOpen = true;
-                try {
-                    const { data } = await supabaseClient.from('invoice_events')
-                        .select('id').eq('calc_id', String(calcId)).eq('event', 'opened')
-                        .order('created_at', { ascending: true }).limit(2);
-                    if (data && data.length && String(data[0].id) !== String(rowId)) firstOpen = false;
-                } catch (e) { /* не проверилось — считаем первым, лучше сообщить */ }
-
+                // Только пушем. Раньше событие дублировалось письмом, потому что
+                // приложения ещё не было; теперь письма об открытии не шлём —
+                // канал остался один, зато почта не забивается уведомлениями.
+                // Первое ли это открытие, проверяет сама send-push по базе, так
+                // что спрашивать отсюда незачем.
                 notifyInvoiceEvent(rowId);
-                if (firstOpen) notifyOpenedByEmail();
             } catch (e) {
                 // Приватный режим блокирует localStorage — отметка не критична,
                 // страница клиента из-за неё падать не должна.
@@ -3903,37 +3894,11 @@
             }
         }
 
-        // Письмо монтажнику «клиент открыл смету».
-        //
-        // Пуши сегодня не доходят ни до кого: приложение ещё не опубликовано, и в
-        // push_tokens ноль устройств. Письмо — единственный канал, который работает
-        // прямо сейчас, поэтому событие дублируется на почту. Уйдёт через ту же
-        // Edge Function mail-status, что и ответ клиента по смете.
-        //
-        // Адрес берём из manager_info — это контакты САМОГО монтажника (имя, телефон,
-        // почта), как они уехали в ссылку; для клиента он и есть «менеджер объекта».
-        async function notifyOpenedByEmail() {
-            try {
-                const to = invoiceData?.manager_info?.email;
-                if (!to) return;
-                const projectName = invoiceData?.object_info?.projectName || 'Новый объект';
-                await fetch('https://ahanbwugsmcyvrwbmtlx.supabase.co/functions/v1/mail-status', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        to: to,
-                        projectName: projectName,
-                        statusText: 'Клиент открыл смету',
-                        comment: 'Заказчик открыл ссылку на смету. Хороший момент позвонить.',
-                        invoiceUrl: window.location.href,
-                        calcId: invoiceData?.object_info?.sequence_id || null,
-                        event: 'opened'
-                    })
-                });
-            } catch (e) {
-                console.warn('[mail] письмо об открытии не отправлено:', e);
-            }
-        }
+        // Письма «клиент открыл смету» больше нет: событие уходит только пушем
+        // (notifyInvoiceEvent выше). Оно шло через шаблон «Запрос счёта» и приходило
+        // с пустой анкетой объекта, а вместе с ложными срабатываниями предпросмотра
+        // забивало почту. Письмами остались только ответы клиента по смете
+        // (sendStatusEmailNotification) — их монтажник ждёт.
 
         // Сохраняет ответ клиента (статус и комментарий) в shared_invoices.
         //

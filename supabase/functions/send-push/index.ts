@@ -346,6 +346,17 @@ Deno.serve(async (req) => {
       const owner = Array.isArray(est) && est[0] ? est[0].user_id : null;
       if (!owner) return json({ status: "skipped", reason: "owner-unknown" });
 
+      // Что именно открыли. У монтажника в работе десяток смет и столько же
+      // разосланных ссылок; «Клиент открыл смету» без объекта и номера расчёта не
+      // говорит, к какой из них идти и кому звонить. Номер расчёта — то же число,
+      // что стоит в карточке заказа и в самой ссылке.
+      const objectName = String(row.project_name || "").trim();
+      const calcNo = String(row.calc_id || "").trim();
+      const whatOpened = [
+        objectName && objectName !== "Без названия" ? `Объект: ${objectName}` : "",
+        calcNo ? `расчёт № ${calcNo}` : "",
+      ].filter(Boolean).join(" · ");
+
       if (TO_MANAGER.has(event)) {
         // Ищем менеджера дистрибьютора, к которому привязан монтажник. Берём и
         // менеджера, и директора: у части дистрибьюторов заполнен только второй,
@@ -371,11 +382,11 @@ Deno.serve(async (req) => {
         if (!mgrIds.length) return json({ status: "skipped", reason: "manager-not-registered" });
 
         recipientUserIds = mgrIds;
-        text = row.project_name ? `Объект: ${row.project_name}` : "Монтажник запросил счёт";
+        text = whatOpened || "Монтажник запросил счёт";
         payload.open = "kanban";
       } else {
         recipientUserIds = [String(owner)];
-        text = row.project_name ? `Объект: ${row.project_name}` : "Смета изменила статус";
+        text = whatOpened || "Смета изменила статус";
         payload.open = "orders";
       }
 
@@ -400,9 +411,17 @@ Deno.serve(async (req) => {
 
       recipientUserIds = [String(row.user_id)];
       title = status === "confirmed" ? "Клиент согласовал смету" : "Клиент просит доработать смету";
-      const objectName = info.project_name || info.object_name || "";
-      text = objectName ? `Объект: ${objectName}` : "Откройте смету, чтобы посмотреть ответ";
+      // Та же подпись, что у событий сметы: по какой именно ссылке пришёл ответ.
+      // Страница пишет объект в projectName; project_name/object_name остались от
+      // прежних версий записи и встречаются в старых строках.
+      const objectName = String(info.projectName || info.project_name || info.object_name || "").trim();
+      const calcNo = String(info.sequence_id || "").trim();
+      text = [
+        objectName && objectName !== "Без названия" ? `Объект: ${objectName}` : "",
+        calcNo ? `расчёт № ${calcNo}` : "",
+      ].filter(Boolean).join(" · ") || "Откройте смету, чтобы посмотреть ответ";
       payload.open = "orders";
+      if (calcNo) payload.calcId = calcNo;
     } else {
       return json({ error: "Неизвестное событие" }, 400);
     }
