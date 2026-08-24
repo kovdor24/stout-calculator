@@ -49,6 +49,29 @@ public class HcNativePlugin extends Plugin {
     private static final String SHARE_DIR = "share";
 
     /**
+     * Адрес, которым браузер разбудил приложение после входа через Яндекс ID.
+     *
+     * Поле общее на всё приложение: адрес приходит в MainActivity, а забирает
+     * его страница — и, если приложение только что запустилось, забирает уже
+     * после того, как разметка загрузилась. Иначе код авторизации пропал бы
+     * в промежутке между запуском и готовностью страницы.
+     */
+    private static String pendingUrl;
+
+    static void setPendingUrl(String url) {
+        pendingUrl = url;
+    }
+
+    /** Отдаёт странице адрес возврата и забывает его: второй раз он не нужен. */
+    @PluginMethod
+    public void takeUrl(PluginCall call) {
+        JSObject res = new JSObject();
+        res.put("url", pendingUrl);
+        pendingUrl = null;
+        call.resolve(res);
+    }
+
+    /**
      * Кладёт файл в общую папку «Загрузки» — туда же, куда складывает файлы
      * браузер, и там его найдёт любой файловый менеджер.
      */

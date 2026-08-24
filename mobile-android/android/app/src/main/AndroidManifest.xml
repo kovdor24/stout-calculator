@@ -22,6 +22,20 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
+            <!-- Возврат из браузера после входа через Яндекс ID.
+                 Страница внутри приложения живёт по адресу localhost, и такого
+                 адреса возврата у Яндекса нет — он отвечал ошибкой 400. Поэтому
+                 адрес возврата теперь ru.heatcalc.app://oauth: браузер по нему
+                 будит приложение, и код авторизации попадает прямо сюда.
+                 Тот же адрес должен быть прописан в настройках приложения
+                 на oauth.yandex.ru как Callback URL. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="@string/custom_url_scheme" />
+            </intent-filter>
+
         </activity>
 
         <provider

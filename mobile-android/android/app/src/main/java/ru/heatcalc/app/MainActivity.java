@@ -1,5 +1,7 @@
 package ru.heatcalc.app;
 
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Toast;
@@ -36,6 +38,33 @@ public class MainActivity extends BridgeActivity {
         applySystemBarInsets();
         applySystemBarAppearance();
         installBackHandler();
+
+        // Приложение запустили по ссылке возврата (холодный старт после входа
+        // через Яндекс ID). Страницы ещё нет — просто откладываем адрес, её
+        // код заберёт его сам, когда загрузится.
+        rememberUrl(getIntent());
+    }
+
+    /**
+     * Возврат из браузера в уже открытое приложение — обычный случай для входа
+     * через Яндекс ID: человек нажал кнопку внутри приложения, ушёл в браузер
+     * и вернулся. Активность объявлена singleTask, поэтому повторного запуска
+     * не будет, адрес приходит сюда.
+     */
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        if (rememberUrl(intent) && bridge != null) {
+            bridge.eval("window.hcNativeUrlReady && window.hcNativeUrlReady()", value -> { });
+        }
+    }
+
+    private boolean rememberUrl(Intent intent) {
+        Uri data = intent == null ? null : intent.getData();
+        if (data == null) return false;
+        HcNativePlugin.setPendingUrl(data.toString());
+        return true;
     }
 
     /**

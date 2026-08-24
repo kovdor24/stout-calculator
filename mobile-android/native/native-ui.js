@@ -338,6 +338,43 @@
         inp.click();
     }
 
+    // ------------------------------------------- возврат из браузера (Яндекс ID)
+    // Страница входа Яндекса открывается в системном браузере — иначе нельзя,
+    // отдельных окон у встроенного браузера нет. Обратно браузер приходит по
+    // адресу ru.heatcalc.app://oauth?code=…, и Android будит приложение. Код
+    // авторизации от этого адреса нужно передать тому же обработчику, который
+    // на сайте разбирает адресную строку после возврата.
+
+    function takeNativeUrl() {
+        var api = plugin();
+        if (!api || !api.takeUrl) return;
+        api.takeUrl().then(function (res) {
+            if (res && res.url) applyReturnUrl(res.url);
+        }).catch(function (err) {
+            console.error('[native] адрес возврата не забрался', err);
+        });
+    }
+
+    function applyReturnUrl(url) {
+        var q = url.indexOf('?');
+        if (q < 0) return;
+
+        var query = url.slice(q);
+        if (query.indexOf('code=') < 0 && query.indexOf('error=') < 0) return;
+
+        // Подкладываем параметры в адресную строку: handleYandexCallback читает
+        // их именно оттуда, а сверку state держит в sessionStorage — она жива,
+        // страница за время похода в браузер не перезагружалась.
+        history.replaceState(null, d.title, location.pathname + query);
+
+        if (window.app && typeof app.handleYandexCallback === 'function') {
+            app.handleYandexCallback();
+        }
+    }
+
+    // Зовётся из MainActivity, когда браузер вернулся в уже открытое приложение.
+    window.hcNativeUrlReady = takeNativeUrl;
+
     // ------------------------------------------------------ кнопка «Назад»
     // Зовётся из MainActivity. Возвращает true, если нашлось что закрыть, —
     // тогда приложение остаётся на месте. Если false, родная часть предложит
@@ -420,6 +457,10 @@
             if (!d.hidden) updateNetwork();
         });
         d.addEventListener('click', handleLink, true);
+
+        // Приложение могли запустить прямо по ссылке возврата — тогда адрес
+        // уже дожидается нас в родной части.
+        takeNativeUrl();
 
         // Экран распознавания собирается заново при каждом открытии, поэтому
         // кнопку съёмки не ставим один раз, а дожидаемся появления поля.
