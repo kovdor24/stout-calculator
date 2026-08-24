@@ -105,7 +105,7 @@
         if (note && note.innerHTML.indexOf('heatcalc.ru') !== -1) {
             note.innerHTML = note.innerHTML.replace(
                 /автоматическим калькулятором на сайте heatcalc\.ru/,
-                'приложением «Калькулятор Монтажника»'
+                'приложением HeatCalc'
             );
         }
     }

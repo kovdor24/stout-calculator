@@ -1,6 +1,6 @@
 {
   "appId": "ru.heatcalc.app",
-  "appName": "Калькулятор Монтажника",
+  "appName": "HeatCalc",
   "webDir": "www",
   "server": {
     "androidScheme": "https",
