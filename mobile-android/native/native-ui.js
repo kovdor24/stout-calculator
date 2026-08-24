@@ -27,6 +27,10 @@
 
     var d = document;
 
+    // Адрес сайта. Нужен и проверке связи, и ссылкам на разделы, которых
+    // внутри приложения нет.
+    var SITE = 'https://heatcalc.ru';
+
     // ---------------------------------------------------------------- стили
     // Пишем сразу, не дожидаясь разметки: до первой отрисовки успеет.
     var style = d.createElement('style');
@@ -81,13 +85,32 @@
         return bar;
     }
 
-    function updateNetwork() {
+    function showOffline(on) {
         var el = offlineBar();
         // Кадр задержки нужен, чтобы браузер успел применить начальное
         // положение и увидел именно переход, а не сразу конечное состояние.
-        requestAnimationFrame(function () {
-            el.classList.toggle('show', !navigator.onLine);
-        });
+        requestAnimationFrame(function () { el.classList.toggle('show', !!on); });
+    }
+
+    /**
+     * Проверка связи настоящим запросом.
+     *
+     * Одному navigator.onLine верить нельзя: встроенный браузер отвечает «нет
+     * сети» и там, где она есть. Разрешение ACCESS_NETWORK_STATE это чинит, но
+     * плашка, которая врёт про отсутствие интернета, — худшее, что можно
+     * показать человеку в поле, поэтому перед ней ещё и стучимся на сайт.
+     * Ответ не читаем: важен сам факт, что запрос дошёл.
+     */
+    function probe() {
+        return fetch(SITE + '/manifest.json',
+            { method: 'HEAD', mode: 'no-cors', cache: 'no-store' })
+            .then(function () { return true; })
+            .catch(function () { return false; });
+    }
+
+    function updateNetwork() {
+        if (navigator.onLine) { showOffline(false); return; }
+        probe().then(function (ok) { showOffline(!ok); });
     }
 
     // -------------------------------------------------- следы сайта в печати
@@ -122,7 +145,6 @@
     //
     // Разбираем не разметку, а нажатие: половину ссылок рисует app.render()
     // уже после загрузки, и однократный обход по готовности их бы не застал.
-    var SITE = 'https://heatcalc.ru';
 
     function handleLink(e) {
         var a = e.target && e.target.closest ? e.target.closest('a[href]') : null;
@@ -391,6 +413,12 @@
         updateNetwork();
         window.addEventListener('online', updateNetwork);
         window.addEventListener('offline', updateNetwork);
+        // Вернулись к приложению — перепроверяем. Событий online/offline может
+        // и не быть: телефон переключился с Wi-Fi на сотовую сеть, пока
+        // приложение было свёрнуто.
+        d.addEventListener('visibilitychange', function () {
+            if (!d.hidden) updateNetwork();
+        });
         d.addEventListener('click', handleLink, true);
 
         // Экран распознавания собирается заново при каждом открытии, поэтому
