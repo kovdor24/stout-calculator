@@ -42,8 +42,29 @@
         'transition:transform .25s ease;pointer-events:none;}',
         '.hc-offline-bar.show{transform:translateX(-50%) translateY(0);}',
         '.hc-offline-bar b{font-weight:600;}',
-        /* Печать: плашке на бумаге делать нечего. */
-        '@media print{.hc-offline-bar{display:none !important;}}'
+
+        /* Полоса «файл сохранён» — та же посадка, но с кнопками. */
+        '.hc-saved-bar{position:fixed;left:50%;transform:translateX(-50%) translateY(160%);',
+        'bottom:calc(72px + env(safe-area-inset-bottom, 0px));z-index:100001;',
+        'max-width:calc(100vw - 24px);box-sizing:border-box;',
+        'display:flex;align-items:center;gap:10px;flex-wrap:wrap;',
+        'padding:10px 12px 10px 16px;border-radius:22px;',
+        'background:#111827;color:#fff;font-size:13px;line-height:1.3;',
+        'box-shadow:0 6px 20px rgba(0,0,0,.4);transition:transform .25s ease;}',
+        '.hc-saved-bar.show{transform:translateX(-50%) translateY(0);}',
+        '.hc-saved-bar button{appearance:none;border:none;cursor:pointer;',
+        'padding:7px 14px;border-radius:16px;font-size:13px;font-weight:600;',
+        'background:#2563EB;color:#fff;font-family:inherit;}',
+        '.hc-saved-bar button.ghost{background:rgba(255,255,255,.14);}',
+
+        /* Кнопка съёмки в распознавании. */
+        '.hc-shot{display:flex;align-items:center;justify-content:center;gap:8px;',
+        'width:100%;margin-top:10px;padding:13px 16px;border:none;cursor:pointer;',
+        'border-radius:12px;font-size:15px;font-weight:600;font-family:inherit;',
+        'background:#2563EB;color:#fff;}',
+
+        /* Печать: экранным плашкам на бумаге делать нечего. */
+        '@media print{.hc-offline-bar,.hc-saved-bar,.hc-shot{display:none !important;}}'
     ].join('');
     (d.head || d.documentElement).appendChild(style);
 
@@ -90,14 +111,14 @@
     }
 
     // ------------------------------------------------------------- ссылки
-    // target="_blank" на телефоне разворачивается в отдельное окно, и Capacitor
-    // отдаёт такое окно системному браузеру. Для оферты и политики это провал:
-    // они лежат внутри приложения, по адресу localhost, и браузер показал бы
-    // пустую страницу. Свои страницы открываем у себя же.
+    // Часть ссылок в разметке ведёт в разделы сайта, которых внутри приложения
+    // нет: рейтинг, страницы городов. Внутри они открылись бы как localhost/…,
+    // то есть пустой страницей. Даём таким полный адрес — чужой адрес Capacitor
+    // перехватывает и отдаёт системному браузеру, сам оставаясь на месте.
     //
-    // Рейтинг — наоборот: страницы /rating/ внутри нет, она живёт на сайте.
-    // Даём ей полный адрес, и система откроет её в браузере, как и положено
-    // внешней ссылке.
+    // Оферту и политику, наоборот, держим у себя: они лежат внутри APK.
+    // target="_blank" убираем явно, чтобы поведение не зависело от настроек
+    // встроенного браузера.
     //
     // Разбираем не разметку, а нажатие: половину ссылок рисует app.render()
     // уже после загрузки, и однократный обход по готовности их бы не застал.
@@ -109,18 +130,190 @@
 
         var href = a.getAttribute('href') || '';
 
-        // Разделы сайта, которых нет в приложении (рейтинг, страницы городов).
+        // Именно переходом, а не window.open: отдельные окна во встроенном
+        // браузере выключены, и open() молча вернул бы пустоту.
         if (href.charAt(0) === '/' && href !== '/') {
             e.preventDefault();
-            window.open(SITE + href, '_blank');
+            location.href = SITE + href;
             return;
         }
 
-        // Свои страницы: открываем у себя, без отдельного окна.
         if (a.target === '_blank' && /\.html($|[?#])/.test(href)) {
             e.preventDefault();
-            window.location.href = href;
+            location.href = href;
         }
+    }
+
+    // ------------------------------------------------------- выгрузка файлов
+    // Смета в PDF, счёт, договор, выгрузка в Excel — всё собирается в браузере
+    // и «скачивается» щелчком по невидимой ссылке с blob:-адресом. Встроенный
+    // браузер такие ссылки не скачивает вообще: нажатие не делает ничего.
+    // Поэтому ссылку перехватываем и отдаём содержимое родной части, которая
+    // кладёт файл в «Загрузки».
+    //
+    // Перехватываем в двух местах. Свои кнопки калькулятора зовут a.click(),
+    // а библиотека печати в PDF — a.dispatchEvent(new MouseEvent('click')) на
+    // ссылке, которой нет в разметке. До второго случая не добралось бы ни
+    // одно событие на документе, поэтому подменяем оба метода самой ссылки.
+
+    var A = window.HTMLAnchorElement && window.HTMLAnchorElement.prototype;
+    var last = null;   // последний сохранённый файл — для «Открыть» и «Поделиться»
+
+    function plugin() {
+        var cap = window.Capacitor;
+        return (cap && cap.Plugins && cap.Plugins.HcNative) || null;
+    }
+
+    function isDownload(a, href) {
+        if (!a.hasAttribute('download')) return false;
+        return href.indexOf('blob:') === 0 || href.indexOf('data:') === 0;
+    }
+
+    function grab(href) {
+        // fetch читает и blob:, и data: — отдельная ветка для каждого не нужна.
+        return fetch(href).then(function (r) { return r.blob(); }).then(function (b) {
+            return new Promise(function (resolve, reject) {
+                var fr = new FileReader();
+                fr.onload = function () {
+                    // Отрезаем «data:тип;base64,» — родной части нужно только тело.
+                    var s = String(fr.result);
+                    resolve({ data: s.slice(s.indexOf(',') + 1), mime: b.type });
+                };
+                fr.onerror = function () { reject(fr.error); };
+                fr.readAsDataURL(b);
+            });
+        });
+    }
+
+    function saveFile(href, name) {
+        var api = plugin();
+        if (!api) return false;
+
+        grab(href).then(function (f) {
+            return api.save({ name: name, mime: f.mime, data: f.data })
+                .then(function (res) {
+                    last = { uri: res.uri, mime: res.mime, name: res.name, data: f.data };
+                    showSaved(res);
+                });
+        }).catch(function (err) {
+            console.error('[native] сохранение файла не удалось', err);
+            alert('Не удалось сохранить файл. Проверьте свободное место на устройстве.');
+        });
+        return true;
+    }
+
+    if (A) {
+        var origClick = A.click;
+        A.click = function () {
+            var href = this.getAttribute('href') || '';
+            if (isDownload(this, href) && saveFile(href, this.getAttribute('download'))) return;
+            return origClick.apply(this, arguments);
+        };
+
+        var origDispatch = A.dispatchEvent;
+        A.dispatchEvent = function (ev) {
+            var href = this.getAttribute('href') || '';
+            if (ev && ev.type === 'click' && isDownload(this, href) &&
+                saveFile(href, this.getAttribute('download'))) {
+                return true;
+            }
+            return origDispatch.apply(this, arguments);
+        };
+    }
+
+    // --------------------------------------------------- полоса «сохранено»
+    var savedBar = null, savedTimer = null;
+
+    function showSaved(res) {
+        if (!savedBar) {
+            savedBar = d.createElement('div');
+            savedBar.className = 'hc-saved-bar';
+            d.body.appendChild(savedBar);
+        }
+
+        savedBar.innerHTML = '';
+
+        var text = d.createElement('span');
+        text.innerHTML = 'Сохранено в «' + esc(res.where) + '»';
+        savedBar.appendChild(text);
+
+        var open = d.createElement('button');
+        open.className = 'ghost';
+        open.textContent = 'Открыть';
+        open.onclick = function () {
+            var api = plugin();
+            if (!api || !last) return;
+            api.open({ uri: last.uri, mime: last.mime }).catch(function (err) {
+                console.error('[native] открыть файл не удалось', err);
+                alert('На устройстве нет программы для просмотра этого файла.');
+            });
+        };
+        savedBar.appendChild(open);
+
+        var send = d.createElement('button');
+        send.textContent = 'Поделиться';
+        send.onclick = function () {
+            var api = plugin();
+            if (!api || !last) return;
+            api.share({ name: last.name, mime: last.mime, data: last.data })
+                .catch(function (err) { console.error('[native] отправка не удалась', err); });
+        };
+        savedBar.appendChild(send);
+
+        requestAnimationFrame(function () { savedBar.classList.add('show'); });
+
+        // Полоса не должна висеть вечно: она перекрывает нижнюю навигацию.
+        clearTimeout(savedTimer);
+        savedTimer = setTimeout(function () { savedBar.classList.remove('show'); }, 12000);
+    }
+
+    function esc(s) {
+        return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+    }
+
+    // ------------------------------------------------ съёмка сметы на камеру
+    // Распознавание умеет читать фотографию, но выбрать её можно было только
+    // из галереи: снимок сначала надо сделать в другой программе и вернуться.
+    // Отдельная кнопка открывает камеру сразу — обычная ссылка так не может.
+    //
+    // Кнопка добавляется рядом с полем загрузки, а не вместо него: атрибут
+    // capture у поля выбора увёл бы в камеру и тех, кому нужен PDF со сметой
+    // от поставщика.
+
+    function addShotButton() {
+        var drop = d.getElementById('rec_drop');
+        if (!drop || d.getElementById('hc_shot')) return;
+
+        var btn = d.createElement('button');
+        btn.id = 'hc_shot';
+        btn.className = 'hc-shot';
+        btn.type = 'button';
+        btn.innerHTML = '<span>📷</span><span>Сфотографировать</span>';
+        btn.onclick = function (e) {
+            e.stopPropagation();
+            shoot();
+        };
+        drop.parentNode.insertBefore(btn, drop.nextSibling);
+    }
+
+    function shoot() {
+        var inp = d.createElement('input');
+        inp.type = 'file';
+        inp.accept = 'image/*';
+        inp.capture = 'environment';   // задняя камера, а не селфи
+        inp.style.display = 'none';
+        d.body.appendChild(inp);
+        inp.onchange = function (e) {
+            var files = [].slice.call(e.target.files || []);
+            inp.remove();
+            if (!files.length) return;
+            if (typeof RecognizeUI === 'undefined') return;
+            // Тот же путь, что и у выбора файла из галереи: снимок докладывается
+            // к уже загруженным листам, если они есть.
+            if (RecognizeUI._docs && RecognizeUI._docs.length) RecognizeUI.addDocs(files);
+            else RecognizeUI.handleFiles(files);
+        };
+        inp.click();
     }
 
     // ------------------------------------------------------ кнопка «Назад»
@@ -199,6 +392,14 @@
         window.addEventListener('online', updateNetwork);
         window.addEventListener('offline', updateNetwork);
         d.addEventListener('click', handleLink, true);
+
+        // Экран распознавания собирается заново при каждом открытии, поэтому
+        // кнопку съёмки не ставим один раз, а дожидаемся появления поля.
+        addShotButton();
+        if (window.MutationObserver) {
+            new MutationObserver(addShotButton)
+                .observe(d.body, { childList: true, subtree: true });
+        }
     }
 
     if (d.readyState === 'loading') {

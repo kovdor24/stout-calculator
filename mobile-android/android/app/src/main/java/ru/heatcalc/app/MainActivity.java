@@ -23,6 +23,11 @@ public class MainActivity extends BridgeActivity {
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
+        // Сохранение файлов, «Поделиться» и открытие в просмотрщике. Строго до
+        // super.onCreate: позже Capacitor уже собрал список плагинов, и наш в
+        // него не попадёт.
+        registerPlugin(HcNativePlugin.class);
+
         // Тему заставки снимает сам Capacitor: BridgeActivity.onCreate ставит
         // AppTheme.NoActionBar. Стиль с таким именем есть и в библиотеке, и у
         // нас в values/styles.xml — при сборке наш перекрывает её.

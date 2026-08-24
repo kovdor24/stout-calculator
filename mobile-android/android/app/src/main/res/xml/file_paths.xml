@@ -2,4 +2,10 @@
 <paths xmlns:android="http://schemas.android.com/apk/res/android">
     <external-path name="my_images" path="." />
     <cache-path name="my_cache_images" path="." />
+
+    <!-- Своя папка приложения во внешней памяти. Туда HcNativePlugin кладёт
+         сохранённые сметы на Android 9 и старше, где общее хранилище требует
+         разрешения на всю память телефона. Без этой строки провайдер отказался
+         бы отдавать файл наружу: «Открыть» и «Поделиться» падали бы. -->
+    <external-files-path name="hc_files" path="." />
 </paths>
