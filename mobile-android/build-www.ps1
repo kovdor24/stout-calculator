@@ -45,6 +45,17 @@ $files = @(
     'recognize.js',
     'recognize_files.js',
     'recognize_match.js',
+    'recognize_plan.js',
+
+    # Эти шесть подключены в index.html, но в список не попадали — внутри
+    # приложения их просто не было. Без них молча отваливались обучение,
+    # договоры с актами, выгрузка в Excel, сверка цен и гарантийный талон:
+    # человек нажимал кнопку, и ничего не происходило.
+    'tour.js',
+    'docs.js',
+    'excel_export.js',
+    'reprice.js',
+    'warranty.js',
 
     'boiler-3d.js',
     'project_layout.js',
@@ -109,20 +120,100 @@ foreach ($rel in $imgRefs.Keys) {
     }
 }
 
-# --- Прослойка для удалённых ресурсов --------------------------------------
+# --- Библиотеки со стороннего сервера ---------------------------------------
+# Печать в PDF и проверка пароля подключены с cdnjs.cloudflare.com. На сайте это
+# нормально, а в приложении означает, что без интернета не работает даже печать
+# уже посчитанной сметы. Кладём библиотеки внутрь и переписываем ссылки.
 
-Copy-Item (Join-Path (Join-Path $here 'native') 'remote-shim.js') -Destination (Join-Path $dst 'remote-shim.js')
+$vendorDst = Join-Path $dst 'vendor'
+if (-not (Test-Path $vendorDst)) { New-Item -ItemType Directory -Path $vendorDst | Out-Null }
 
-$indexPath = Join-Path $dst 'index.html'
-$html = [System.IO.File]::ReadAllText($indexPath, [System.Text.UTF8Encoding]::new($false))
+$cdnLibs = @(
+    @{ url = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js'; file = 'html2pdf.bundle.min.js' },
+    @{ url = 'https://cdnjs.cloudflare.com/ajax/libs/bcryptjs/2.4.3/bcrypt.min.js';              file = 'bcrypt.min.js' }
+)
 
-if ($html -notmatch 'remote-shim\.js') {
-    $anchor = '<link rel="icon"'
-    if ($html -notmatch [regex]::Escape($anchor)) {
-        throw "Не найдено место для вставки remote-shim.js в index.html (искали '$anchor'). Вёрстка изменилась — поправьте build-www.ps1."
+$vendored = @{}
+foreach ($lib in $cdnLibs) {
+    $out = Join-Path $vendorDst $lib.file
+    try {
+        Invoke-WebRequest -Uri $lib.url -OutFile $out -UseBasicParsing -TimeoutSec 60
+        $vendored[$lib.url] = "vendor/$($lib.file)"
+        Write-Host "Забрана библиотека: $($lib.file)" -ForegroundColor Green
+    } catch {
+        # Не валим сборку: приложение останется рабочим, просто печать в PDF
+        # будет требовать сети, как сейчас.
+        Write-Host "ВНИМАНИЕ: не удалось скачать $($lib.url) — ссылка осталась внешней." -ForegroundColor Yellow
     }
-    $html = $html -replace [regex]::Escape($anchor), "<script src=`"remote-shim.js`"></script>`r`n    $anchor"
-    [System.IO.File]::WriteAllText($indexPath, $html, [System.Text.UTF8Encoding]::new($false))
+}
+
+# --- Прослойки для приложения ----------------------------------------------
+# remote-shim.js — подставляет адрес сайта тому, что внутрь не влезло.
+# native-ui.js   — убирает следы сайта и добавляет поведение приложения.
+
+foreach ($shim in @('remote-shim.js', 'native-ui.js')) {
+    Copy-Item (Join-Path (Join-Path $here 'native') $shim) -Destination (Join-Path $dst $shim)
+}
+
+# Подключаем на КАЖДОЙ странице приложения, а не только на главной: оферту и
+# политику человек открывает прямо в приложении, и там тоже не должно быть ни
+# вопроса про cookie, ни неработающей кнопки «Назад».
+#
+# native-ui.js идёт первым и без defer: он ставит метку window.__HC_NATIVE__,
+# по которой cookie-consent.js понимает, что баннер показывать не надо.
+# Отложенный скрипт выполнился бы уже после него.
+
+$injected = 0
+foreach ($page in @('index.html', 'invoice.html', 'plan_editor.html', 'oferta.html', 'privacy-policy.html')) {
+    $p = Join-Path $dst $page
+    if (-not (Test-Path $p)) { continue }
+
+    $html = [System.IO.File]::ReadAllText($p, [System.Text.UTF8Encoding]::new($false))
+    if ($html -match 'native-ui\.js') { continue }
+
+    $tags = "`r`n    <script src=`"native-ui.js`"></script>`r`n    <script src=`"remote-shim.js`"></script>"
+
+    # Встаём сразу после объявления кодировки, если оно есть: браузер ищет его в
+    # первом килобайте разметки, и скрипт, вставленный выше, мог бы его туда не
+    # пустить — страница открылась бы кракозябрами.
+    $charset = [regex]::Match($html, '<meta\s+charset[^>]*>', 'IgnoreCase')
+    if ($charset.Success) {
+        $html = $html.Insert($charset.Index + $charset.Length, $tags)
+    } else {
+        $head = [regex]::Match($html, '<head[^>]*>', 'IgnoreCase')
+        if (-not $head.Success) {
+            throw "В $page нет <head> — вставить прослойки некуда. Вёрстка изменилась, поправьте build-www.ps1."
+        }
+        $html = $html.Insert($head.Index + $head.Length, $tags)
+    }
+
+    [System.IO.File]::WriteAllText($p, $html, [System.Text.UTF8Encoding]::new($false))
+    $injected++
+}
+
+if ($injected -eq 0) {
+    throw "Прослойки приложения не подключились ни к одной странице — проверьте build-www.ps1."
+}
+
+# Ссылки на скачанные библиотеки переписываем во всех страницах приложения.
+if ($vendored.Count -gt 0) {
+    foreach ($page in @('index.html', 'invoice.html', 'plan_editor.html')) {
+        $p = Join-Path $dst $page
+        if (-not (Test-Path $p)) { continue }
+
+        $text = [System.IO.File]::ReadAllText($p, [System.Text.UTF8Encoding]::new($false))
+        $changed = $false
+        foreach ($url in $vendored.Keys) {
+            if ($text.Contains($url)) {
+                $text = $text.Replace($url, $vendored[$url])
+                $changed = $true
+            }
+        }
+        if ($changed) {
+            [System.IO.File]::WriteAllText($p, $text, [System.Text.UTF8Encoding]::new($false))
+            Write-Host "Ссылки на библиотеки переписаны: $page" -ForegroundColor Green
+        }
+    }
 }
 
 # --- Итог ------------------------------------------------------------------

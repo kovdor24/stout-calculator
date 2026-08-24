@@ -54,7 +54,15 @@
     document.addEventListener('error', function (e) {
         var el = e.target;
         if (!el || el.tagName !== 'IMG') return;
-        if (el.getAttribute('data-hc-remote')) return;
+
+        // Вторая осечка: фото не нашлось и на сайте — значит, сети нет.
+        // Свой onerror мы у картинки уже сняли, и без этой ветки на её месте
+        // остался бы значок битого файла. Прячем так же, как это делает
+        // getImg() в каталоге: пусто лучше, чем сломано.
+        if (el.getAttribute('data-hc-remote')) {
+            el.style.visibility = 'hidden';
+            return;
+        }
 
         var src = el.getAttribute('src') || '';
         if (!src || /^(https?:|data:|blob:)/.test(src)) return;

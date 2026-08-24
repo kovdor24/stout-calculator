@@ -1,7 +1,11 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">Калькулятор Монтажника</string>
-    <string name="title_activity_main">Калькулятор Монтажника</string>
+    <!-- Подпись под иконкой. Коротко и тем же словом, с которого начинается
+         название карточки в магазине («HeatCalc: расчёт отопления и смета»):
+         расхождение имени в сторе и на телефоне проверяющий отмечает отдельно.
+         Длинное «Калькулятор Монтажника» пусковой экран всё равно обрезал. -->
+    <string name="app_name">HeatCalc</string>
+    <string name="title_activity_main">HeatCalc</string>
     <string name="package_name">ru.heatcalc.app</string>
     <string name="custom_url_scheme">ru.heatcalc.app</string>
 </resources>

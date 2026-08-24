@@ -44,4 +44,15 @@
          увидит вообще. Плагин push-notifications её не приносит: в его манифесте
          объявлена только служба приёма сообщений. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!-- Съёмка сметы и плана этажа прямо в приложении. Разрешение спрашивает
+         сам Capacitor, когда человек нажимает «Сфотографировать»: без строки
+         ниже система отклоняет запрос молча. -->
+    <uses-permission android:name="android.permission.CAMERA" />
+
+    <!-- Обязательная пара к разрешению выше. Иначе Android считает камеру
+         необходимой, и магазин прячет приложение от планшетов без задней
+         камеры — а считать смету на них можно и без съёмки. -->
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
 </manifest>
