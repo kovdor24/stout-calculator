@@ -11,12 +11,13 @@ const EMAILJS_SERVICE_ID = "service_o11b4ej";
 // под анкету объекта: имя, телефон, город, площадь, сумма. У события статуса этих
 // данных нет — функция подставляла заглушки, и монтажнику приходило письмо с шапкой
 // «Запрос счёта», номером расчёта «N/A» и прочерками во всех полях. Оставлен
-// запасным вариантом: пока шаблон статусов не заведён, письма всё же уходят.
+// запасным вариантом, если системный шаблон вдруг окажется недоступен.
 const EMAILJS_TEMPLATE_INVOICE = "template_lg1zol9";
-// Шаблон под события сметы: объект, статус, комментарий, ссылка — и ничего лишнего.
-// Заводится в кабинете EmailJS (Email Templates → Create New Template), сюда
-// вписывается его ID.
-const EMAILJS_TEMPLATE_STATUS = "ЗАМЕНИТЬ_НА_ID_ШАБЛОНА";
+// Системный шаблон: свободный заголовок и свободный текст письма, без анкеты.
+// Через него уже уходят коды подтверждения регистрации и обратная связь
+// (app.js, sendNotificationEmail). Своего шаблона под события сметы не заводим:
+// тариф EmailJS даёт всего два, и оба заняты.
+const EMAILJS_TEMPLATE_STATUS = "template_ysuxfio";
 const EMAILJS_PUBLIC_KEY = "-m4N93pTqMlCfuBpT";
 const ADMIN_EMAIL = "kovdor24@yandex.ru";
 
@@ -57,22 +58,32 @@ Deno.serve(async (req) => {
 
     const subject = `${statusText} — ${projectName}`;
 
-    // Параметры шаблона статусов: только то, что у события действительно есть.
-    // Пустых значений не шлём — вместо «Телефон: —» в письме просто не будет строки.
+    // Текст письма собираем здесь: системный шаблон печатает его как есть, своей
+    // разметки под смету у него нет. Строки, которых у события нет, не выводим —
+    // пустых полей с прочерками в письме больше быть не должно.
+    const lines = [statusText, ""];
+    lines.push(`Объект: ${projectName}`);
+    if (calcId) lines.push(`Расчёт № ${calcId}`);
+    if (comment) lines.push("", comment);
+    if (invoiceUrl) lines.push("", `Открыть смету: ${invoiceUrl}`);
+    const statusBody = lines.join("\n");
+
+    // Имена параметров — те же, что у остальных системных писем (app.js,
+    // sendNotificationEmail): шаблон один, и он ждёт именно их. Дубли subject_text
+    // и message_text не лишние: шаблон подставляет их в разных местах вёрстки.
     const statusParams = {
       to_email: to,
+      user_email: to,
+      tariff_name: statusText,
       email_subject: subject,
-      project_name: projectName,
-      calc_id: calcId || "—",
-      status_title: statusText,
-      comment: comment || "—",
-      view_url: invoiceUrl,
-      message: message,
+      subject_text: subject,
+      email_body: statusBody,
+      message_text: statusBody,
     };
 
-    // Запасной набор — для старого шаблона «Запрос счёта», если шаблон статусов
-    // ещё не заведён. Заглушки здесь и делали письмо «пустым», но это лучше,
-    // чем не отправить монтажнику ничего.
+    // Запасной набор — для старого шаблона «Запрос счёта», на случай если системный
+    // шаблон переименуют или удалят. Заглушки здесь и делали письмо «пустым», но
+    // это лучше, чем не отправить монтажнику ничего.
     const invoiceParams = {
       to_email: to,
       email_subject: `Статус КП: ${projectName} — ${statusText}`,
@@ -108,16 +119,14 @@ Deno.serve(async (req) => {
         }),
       });
 
-    // Шаблон статусов заведён? Если ID ещё не вписан — сразу идём старым путём.
-    const hasStatusTemplate = EMAILJS_TEMPLATE_STATUS.startsWith("template_");
-    let templateId = hasStatusTemplate ? EMAILJS_TEMPLATE_STATUS : EMAILJS_TEMPLATE_INVOICE;
-    let params: Record<string, unknown> = hasStatusTemplate ? statusParams : invoiceParams;
+    let templateId = EMAILJS_TEMPLATE_STATUS;
+    let params: Record<string, unknown> = statusParams;
 
     let emailjsResp = await sendVia(templateId, params);
 
-    // Шаблон удалён или ID вписан с опечаткой: EmailJS отвечает «template ID not
-    // found». Письмо в этом случае важнее его вида — повторяем по старому шаблону.
-    if (!emailjsResp.ok && hasStatusTemplate) {
+    // Шаблон удалён или переименован: EmailJS отвечает «template ID not found».
+    // Письмо в этом случае важнее его вида — повторяем по старому шаблону.
+    if (!emailjsResp.ok) {
       const errText = await emailjsResp.clone().text();
       if (/template/i.test(errText) && /not found/i.test(errText)) {
         console.error("Шаблон статусов не найден, отправляю по старому:", errText);
