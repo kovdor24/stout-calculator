@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Тот же синий, что объявлен в manifest.json как theme_color: им
+         закрашены полосы под строкой состояния и панелью навигации. -->
+    <color name="hcSystemBars">#2563EB</color>
+
+    <!-- Фон заставки. Совпадает с белым фоном картинки splash.png и с
+         background_color в manifest.json — иначе на стыке заставки и первого
+         экрана будет заметная вспышка другого цвета. -->
+    <color name="hcSplashBackground">#FFFFFF</color>
+</resources>

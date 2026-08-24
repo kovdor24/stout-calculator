@@ -1,4 +1,14 @@
 (function() {
+    // 0. Android-приложение: ни баннера, ни веб-аналитики.
+    //    Вопрос «принимаете ли вы cookie» — примета сайта, и в магазине именно
+    //    он первым выдаёт приложение за обёртку вокруг страницы. Согласия здесь
+    //    не спрашиваем, поэтому и счётчик не поднимаем: нет согласия — нет сбора.
+    //    Метку ставит native-ui.js, он подключён раньше и только внутри APK.
+    if (window.__HC_NATIVE__) {
+        window.initMetrika = function() {};
+        return;
+    }
+
     // 1. Define Yandex.Metrika Initialization Function
     window.initMetrika = function() {
         if (window.ymInitialized) return;
