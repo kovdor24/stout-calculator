@@ -1246,6 +1246,13 @@ const catalog = {
         { id: "SVB-0008-200020", name: "Кран шаровой с американкой угловой 3/4\" ВР/НР", price: 2021, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10", rommer: { id: "RBV-0006-0610220", name: "Кран шаровой угловой с американкой ВР/НР 3/4\"", price: 638, brand: "ROMMER", availability: "in_stock", price_date: "2026-08-19" } },
         { id: "SVB-0008-200025", name: "Кран шаровой с американкой угловой 1\" ВР/НР", price: 3159, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10", rommer: { id: "RBV-0006-0610225", name: "Кран шаровой угловой с американкой ВР/НР 1\"", price: 1450, brand: "ROMMER", availability: "in_stock", price_date: "2026-08-19" } }
     ],
+    // Базовая линейка автоподбора — Haier, 18 и 24 кВт. Выше 24 кВт линейка
+    // кончается, и подбор идёт по остальным газовым котлам каталога (BAXI,
+    // Vaillant, Navien — см. gasBoilerPool в app.js): берётся самое дешёвое
+    // решение вместе с обвязкой, обычно это один котёл вместо каскада из двух.
+    // atmo: true — открытая камера сгорания (BAXI без «F»/«Fi» в названии).
+    // Такие котлы автоподбор не берёт: обвязка калькулятора считает коаксиальный
+    // дымоход 60/100, а им нужна дымовая труба. В таблице замены они остаются.
     boilers_gas: [
         { id: "GE0Q6QE0CRU", name: "Котёл газовый, одноконтурный (18 кВт)", article: "GE0Q6QE0CRU", price: 56091, power: 18, circuits: 1, type: "gas", brand: "Haier", availability: "in_stock", price_date: "2026-08-20" },
         { id: "GE0Q6RE0CRU", name: "Котёл газовый, одноконтурный (24 кВт)", article: "GE0Q6RE0CRU", price: 57117, power: 24, circuits: 1, type: "gas", brand: "Haier", availability: "in_stock", price_date: "2026-08-20" },
@@ -1266,7 +1273,7 @@ const catalog = {
         { id: "7659668", name: "ECO4S 10 F", price: 68470, power: 10, circuits: 2, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-08-20" },
         { id: "7659669", name: "ECO4S 18 F", price: 71320, power: 18, circuits: 2, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-08-20" },
         { id: "7659670", name: "ECO4S 24 F", price: 73820, power: 24, circuits: 2, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-08-20" },
-        { id: "7659762", name: "ECO4S 24", price: 68760, power: 24, circuits: 2, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-08-20" },
+        { id: "7659762", name: "ECO4S 24", price: 68760, power: 24, circuits: 2, type: "gas", atmo: true, brand: "BAXI", availability: "in_stock", price_date: "2026-08-20" },
         // ECO Life
         { id: "7860077", name: "ECO Life 1.14F", price: 62130, power: 14, circuits: 1, type: "gas", brand: "BAXI", availability: "on_order", price_date: "2026-08-20" },
         { id: "7814104", name: "ECO Life 24F", price: 62840, power: 24, circuits: 2, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-08-20" },
@@ -1274,28 +1281,28 @@ const catalog = {
         { id: "7814105", name: "ECO Life 1.24F", price: 62630, power: 24, circuits: 1, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-08-20" },
         { id: "7814108", name: "ECO Life 1.31F", price: 85070, power: 31, circuits: 1, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-08-20" },
         // LUNA 3
-        { id: "CSE45224366", name: "LUNA 3 240 i", price: 93120, power: 24, circuits: 2, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-08-20" },
+        { id: "CSE45224366", name: "LUNA 3 240 i", price: 93120, power: 24, circuits: 2, type: "gas", atmo: true, brand: "BAXI", availability: "in_stock", price_date: "2026-08-20" },
         { id: "CSE45624366", name: "LUNA 3 240 Fi", price: 106450, power: 24, circuits: 2, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-08-20" },
         { id: "CSE45628366", name: "LUNA 3 280 Fi", price: 114930, power: 28, circuits: 2, type: "gas", brand: "BAXI", availability: "on_order", price_date: "2026-08-20" },
         { id: "CSE45631366", name: "LUNA 3 310 Fi", price: 117560, power: 31, circuits: 2, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-08-20" },
         { id: "CSE45531366", name: "LUNA 3 1.310 Fi", price: 103100, power: 31, circuits: 1, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-08-20" },
         // ECO Four
-        { id: "CSE46114354", name: "ECO Four 1.14", price: 62490, power: 14, circuits: 1, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-08-20" },
+        { id: "CSE46114354", name: "ECO Four 1.14", price: 62490, power: 14, circuits: 1, type: "gas", atmo: true, brand: "BAXI", availability: "in_stock", price_date: "2026-08-20" },
         { id: "CSE46514354", name: "ECO Four 1.14 F", price: 74390, power: 14, circuits: 1, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-08-20" },
-        { id: "CSE46124354", name: "ECO Four 1.24", price: 70470, power: 24, circuits: 1, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-08-20" },
+        { id: "CSE46124354", name: "ECO Four 1.24", price: 70470, power: 24, circuits: 1, type: "gas", atmo: true, brand: "BAXI", availability: "in_stock", price_date: "2026-08-20" },
         { id: "CSE46524354", name: "ECO Four 1.24 F", price: 78590, power: 24, circuits: 1, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-08-20" },
-        { id: "CSE46224354", name: "ECO Four 24", price: 81150, power: 24, circuits: 2, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-08-20" },
+        { id: "CSE46224354", name: "ECO Four 24", price: 81150, power: 24, circuits: 2, type: "gas", atmo: true, brand: "BAXI", availability: "in_stock", price_date: "2026-08-20" },
         { id: "CSE46624354", name: "ECO Four 24 F", price: 90490, power: 24, circuits: 2, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-08-20" },
         // LUNA 3 Comfort
-        { id: "CSE45224358", name: "LUNA 3 Comfort 240 i", price: 96190, power: 24, circuits: 2, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-08-20" },
+        { id: "CSE45224358", name: "LUNA 3 Comfort 240 i", price: 96190, power: 24, circuits: 2, type: "gas", atmo: true, brand: "BAXI", availability: "in_stock", price_date: "2026-08-20" },
         { id: "CSE45624358", name: "LUNA 3 Comfort 240 Fi", price: 113220, power: 24, circuits: 2, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-08-20" },
-        { id: "CSE45124358", name: "LUNA 3 Comfort 1.240 i", price: 91060, power: 24, circuits: 1, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-08-20" },
+        { id: "CSE45124358", name: "LUNA 3 Comfort 1.240 i", price: 91060, power: 24, circuits: 1, type: "gas", atmo: true, brand: "BAXI", availability: "in_stock", price_date: "2026-08-20" },
         { id: "CSE45524358", name: "LUNA 3 Comfort 1.240 Fi", price: 101960, power: 24, circuits: 1, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-08-20" },
         { id: "CSE45631358", name: "LUNA 3 Comfort 310 Fi", price: 122550, power: 31, circuits: 2, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-08-20" },
         { id: "CSE45531358", name: "LUNA 3 Comfort 1.310 Fi", price: 110370, power: 31, circuits: 1, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-08-20" },
         // NUVOLA 3 Comfort
-        { id: "CSB45424358", name: "NUVOLA 3 Comfort 240 i", price: 165370, power: 24, circuits: 1, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-08-20" },
-        { id: "CSB45428358", name: "NUVOLA 3 Comfort 280 i", price: 173920, power: 28, circuits: 1, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-08-20" },
+        { id: "CSB45424358", name: "NUVOLA 3 Comfort 240 i", price: 165370, power: 24, circuits: 1, type: "gas", atmo: true, brand: "BAXI", availability: "in_stock", price_date: "2026-08-20" },
+        { id: "CSB45428358", name: "NUVOLA 3 Comfort 280 i", price: 173920, power: 28, circuits: 1, type: "gas", atmo: true, brand: "BAXI", availability: "in_stock", price_date: "2026-08-20" },
         { id: "CSB45724358", name: "NUVOLA 3 Comfort 240 Fi", price: 180760, power: 24, circuits: 1, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-08-20" },
         { id: "CSB45728358", name: "NUVOLA 3 Comfort 280 Fi", price: 186250, power: 28, circuits: 1, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-08-20" },
         { id: "CSB45732358", name: "NUVOLA 3 Comfort 320 Fi", price: 204560, power: 32, circuits: 1, type: "gas", brand: "BAXI", availability: "in_stock", price_date: "2026-08-20" },

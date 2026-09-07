@@ -34919,6 +34919,66 @@ const app = {
     gasBoilerPool: function () {
         return [...catalog.boilers_gas, ...(catalog.boilers_baxi || []), ...(catalog.boilers_vaillant || []), ...(catalog.boilers_navien || [])];
     },
+    // Стоимость обвязки одного газового котла: дымоход, стабилизатор, фильтр,
+    // американки, краны, а в каскаде ещё и обратный клапан. Нужна подбору — каждый
+    // следующий котёл каскада тянет за собой такой же комплект, и без него
+    // сравнение «один мощный против двух послабее» врёт на двадцать тысяч в
+    // пользу каскада. Состав повторяет обвязку из render() — если она меняется,
+    // менять и здесь, иначе подбор начнёт сравнивать не то, что попадёт в смету.
+    gasRigCost: function (b, cascade) {
+        const p = x => (x && x.price) || 0;
+        const list = catalog.chimneys || [];
+        // Дымоход берём тот же, что поставит обвязка: конденсационному нужен свой
+        // комплект — родной у Vaillant, универсальный у остальных.
+        let ch = (this.state.chimneyType === 'basic') ? list[1] : list[0];
+        if (b && b.cond) {
+            ch = (b.brand && list.find(c => c.chimType === 'cond' && c.forBrand === b.brand)) ||
+                list.find(c => c.chimType === 'cond' && !c.forBrand) || ch;
+        }
+        return p(ch) + p((catalog.stabs || [])[0]) + p(catalog.filter_mag) +
+            p(catalog.american_34) * 2 + p(catalog.ball_valve_34) * 2 +
+            (cascade ? p(catalog.check_valve_34) : 0);
+    },
+    // Автоподбор газового котла: какая модель и сколько штук.
+    // Пока хватает Haier (18 и 24 кВт) — ставим его, это базовая линейка сметы.
+    // Выше 24 кВт линейка кончается, и раньше подбор молча собирал каскад из двух
+    // котлов по 18: дом на 29 кВт получал 36 кВт мощности, два дымохода и две
+    // обвязки. Теперь перебирается весь пул газовых котлов (те же BAXI, Vaillant и
+    // Navien, что в таблице замены) и берётся самое дешёвое решение вместе с
+    // обвязкой — один котёл на 32 кВт выходит вдвое дешевле двух восемнадцатых.
+    // needCirc: 2 — двухконтурный (ГВС проточная), 1 — одноконтурный (ГВС бойлером).
+    pickGasBoiler: function (targetPower, needCirc) {
+        const haier = catalog.boilers_gas.filter(x => x.circuits === needCirc).sort((a, b) => a.power - b.power);
+        const one = haier.find(x => x.power >= targetPower);
+        if (one) return { boiler: one, qty: 1 };
+        // Открытая камера сгорания (atmo) в подбор не идёт: обвязка калькулятора
+        // считает коаксиальный дымоход 60/100, а такому котлу нужна дымовая труба.
+        const pool = this.gasBoilerPool().filter(x => x && x.power > 0 && x.circuits === needCirc && !x.atmo);
+        if (!pool.length) return null;
+        // При равной цене выигрывает тот, что в наличии.
+        const byPrice = (a, b) => (a.price - b.price) +
+            ((a.availability === 'in_stock' ? 0 : 1) - (b.availability === 'in_stock' ? 0 : 1)) * 0.001;
+        let best = null, single = null;
+        for (let n = 1; n <= 4; n++) {
+            const cand = pool.filter(x => x.power >= targetPower / n).sort(byPrice)[0];
+            if (!cand) continue;
+            const cost = (cand.price + this.gasRigCost(cand, n > 1)) * n;
+            if (n === 1) single = { boiler: cand, cost: cost };
+            if (!best || cost < best.cost) best = { boiler: cand, qty: n, cost: cost };
+        }
+        if (best) {
+            // Каскад вышел дешевле, но дом закрывается и одним котлом — держим этот
+            // вариант при себе: смета покажет его подсказкой с заменой в один клик.
+            // Так бывает, когда одиночный котёл нужной мощности есть только
+            // конденсационный: два обычных по 24 кВт стоят меньше него даже с
+            // двумя обвязками, а монтажнику всё равно может быть важнее один прибор.
+            const alt = (best.qty > 1 && single) ? { boiler: single.boiler, extra: single.cost - best.cost } : null;
+            return { boiler: best.boiler, qty: best.qty, alt: alt };
+        }
+        // Не закрыли даже вчетвером — каскад из самых мощных, что есть в каталоге.
+        const top = pool.slice().sort((a, b) => (b.power - a.power) || byPrice(a, b))[0];
+        return { boiler: top, qty: Math.max(2, Math.ceil(targetPower / top.power)) };
+    },
     openSwapModal: function (lookupId) {
         // Полотенцесушители (SHQ-) заменяются собственным пикером с фильтрами по высоте/ширине/цвету (#5).
         if (lookupId && String(lookupId).startsWith('SHQ-')) { this.openTowelWarmerPicker(); return; }
@@ -47761,6 +47821,16 @@ const app = {
                     : '';
                 let condLine = (gb && gb.cond) ? `• Конденсационный: дымоход — пластиковый (PP) комплект для конденсационных котлов.<br>` : '';
 
+                // val5 — подбор ушёл за линейку Haier. Смена бренда в смете иначе
+                // читается как случайность, поэтому объясняем её прямо в позиции.
+                let beyondHaierLine = val5
+                    ? `• <b>Почему не Haier:</b> его линейка заканчивается на 24 кВт. ` +
+                      `Под ${targetPwr.toFixed(1)} кВт подобран самый дешёвый котёл каталога, ` +
+                      `закрывающий дом ${qty > 1 ? `каскадом из ${qty} шт.` : 'одним прибором'} — вместе с обвязкой ` +
+                      `(дымоход, стабилизатор, фильтр, краны) это дешевле, чем каскад из двух котлов послабее. ` +
+                      `Другую модель можно выбрать кнопкой замены.<br>`
+                    : '';
+
                 let sumPwrLine = qty > 1
                     ? `• Суммарная мощность каскада: ${totalPwrLimit} кВт.<br>`
                     : '';
@@ -47791,6 +47861,7 @@ const app = {
                     `${gvsValLine}` +
                     builtInValveLine +
                     condLine +
+                    beyondHaierLine +
                     sumPwrLine +
                     cascadeWarn +
                     `</span>`;
@@ -49334,7 +49405,24 @@ const app = {
 
                 let descText = i.qtyTip ? i.qtyTip : (i.desc || '');
                 let availStatusLine = availText ? `<div style="margin-top: 8px; font-weight: 700; color: ${i.availability === 'in_stock' ? '#22c55e' : '#eab308'};">${availText.trim()}</div>` : '';
-                let finalTooltipContent = `${descText}${availStatusLine}`;
+                // Каскад газовых котлов, который можно заменить одним прибором
+                // (см. pickGasBoiler). Предложение живёт здесь, а не в описании
+                // позиции: описание уходит в клиентскую ссылку и в счёт, а кнопка
+                // там нерабочая — обработчик есть только в смете.
+                let singleAltLine = '';
+                if (i.gasSingleAlt && i.gasSingleAlt.id) {
+                    const _sa = i.gasSingleAlt;
+                    const _saDiff = _sa.extra > 0
+                        ? `дороже на ${this.formatPriceHtml(_sa.extra, true)}`
+                        : 'без переплаты';
+                    singleAltLine = `<div style="margin-top:10px; padding-top:9px; border-top:1px solid rgba(255,255,255,0.15);">` +
+                        `<b>Можно одним котлом:</b> ${_sa.name} (${_sa.power} кВт) — ${_saDiff}, ` +
+                        `зато один дымоход, одна обвязка и одна газовая подводка вместо ${i.q}.` +
+                        `<div style="margin-top:8px;"><span onclick="event.stopPropagation(); app.selectSwapAlternative('gas_boiler_auto', '${_sa.id}')" ` +
+                        `style="display:inline-block; cursor:pointer; background:var(--primary); color:#fff; font-weight:700; padding:5px 10px; border-radius:5px;">` +
+                        `Поставить один котёл</span></div></div>`;
+                }
+                let finalTooltipContent = `${descText}${availStatusLine}${singleAltLine}`;
 
                 let tipHtml = finalTooltipContent ? `
                     <div class="tooltip-wrapper">
@@ -49903,7 +49991,7 @@ const app = {
                         selBoilers.push(t);
                     }
                 } else if (ft === 'gas') {
-                    // === ПОДБОР ГАЗОВОГО КОТЛА HAIER ===
+                    // === ПОДБОР ГАЗОВОГО КОТЛА ===
                     // Расчетная мощность (без запаса)
                     let targetPower = parseFloat(pwrBoiler);
 
@@ -49912,42 +50000,69 @@ const app = {
                     let powerPerBoiler = targetPower / qty;
 
                     let _gasSwapId = this.state.swaps && this.state.swaps['gas_boiler_auto'];
-                    let haierBoiler;
+                    let gasBoiler;
                     if (_gasSwapId) {
-                        haierBoiler = this.gasBoilerPool().find(x => x.id === _gasSwapId);
+                        gasBoiler = this.gasBoilerPool().find(x => x.id === _gasSwapId);
                         // Выбранная руками модель задаёт и число котлов: каскад считаем
                         // по её мощности, а не по 24 кВт Haier. Иначе дом на 30 кВт с
                         // выбранным котлом на 32 кВт получал два котла по 32.
-                        if (haierBoiler && haierBoiler.power > 0) {
-                            qty = Math.max(1, Math.ceil(targetPower / haierBoiler.power));
+                        if (gasBoiler && gasBoiler.power > 0) {
+                            qty = Math.max(1, Math.ceil(targetPower / gasBoiler.power));
                             powerPerBoiler = targetPower / qty;
                         }
                     }
-                    if (!haierBoiler) {
+                    // Модель руками не выбрана — подбираем: Haier, пока хватает его
+                    // линейки, дальше самое дешёвое решение из остальных газовых
+                    // котлов каталога (см. pickGasBoiler).
+                    let _gbBeyondHaier = false;
+                    let _gbSingleAlt = null;
+                    if (!gasBoiler) {
+                        const _pick = this.pickGasBoiler(targetPower, this.state.hotWater ? 1 : 2);
+                        if (_pick && _pick.boiler) {
+                            gasBoiler = _pick.boiler;
+                            qty = _pick.qty;
+                            powerPerBoiler = targetPower / qty;
+                            _gbBeyondHaier = gasBoiler.brand !== 'Haier';
+                            _gbSingleAlt = _pick.alt;
+                        }
+                    }
+                    if (!gasBoiler) {
+                        // Страховка на случай пустого пула (урезанный каталог): старое
+                        // правило — Haier по мощности одного котла каскада.
                         if (!this.state.hotWater) {
                             // Бойлер ВЫКЛЮЧЕН → двухконтурный котёл (ГВС встроен)
-                            haierBoiler = powerPerBoiler <= 18
+                            gasBoiler = powerPerBoiler <= 18
                                 ? catalog.boilers_gas.find(x => x.id === 'GE0Q6NE0CRU')
                                 : catalog.boilers_gas.find(x => x.id === 'GE0Q6PE0CRU');
                         } else {
                             // Бойлер ВКЛЮЧЕН → одноконтурный котёл (ГВС через бойлер)
-                            haierBoiler = powerPerBoiler <= 18
+                            gasBoiler = powerPerBoiler <= 18
                                 ? catalog.boilers_gas.find(x => x.id === 'GE0Q6QE0CRU')
                                 : catalog.boilers_gas.find(x => x.id === 'GE0Q6RE0CRU');
                         }
                     }
-                    if (haierBoiler) {
-                        const _gbCircStr = haierBoiler.circuits === 1 ? 'одноконтурный' : 'двухконтурный';
+                    if (gasBoiler) {
+                        const _gbCircStr = gasBoiler.circuits === 1 ? 'одноконтурный' : 'двухконтурный';
                         // Исходная позиция каталога — подсказке нужны бренд и модель до переименования.
-                        const _gbSrc = haierBoiler;
+                        const _gbSrc = gasBoiler;
                         // sortRank: -1 — газовый котёл открывает раздел независимо от суммы.
                         // Он основной источник тепла, электрический при нём стоит резервом,
                         // а по цене бывает и дороже (STATUS 27 кВт против Haier 24 кВт) —
                         // без ранга резервный котёл вставал в смете выше основного.
-                        haierBoiler = { ...haierBoiler, sortRank: -1, name: `Котёл газовый, ${_gbCircStr} (${haierBoiler.power} кВт)`, originalId: 'gas_boiler_auto', alts: this.gasBoilerPool() };
-                        addToBill(haierBoiler, qty, this.getDesc('boiler_gas', parseFloat(pwrBoiler), haierBoiler.power, qty, _gbSrc));
+                        // gasSingleAlt — предложение закрыть дом одним котлом вместо
+                        // каскада. Кладём на позицию, а не в её описание: описание
+                        // уезжает в клиентскую ссылку и в счёт, а кнопка замены
+                        // работает только в смете (см. отрисовку подсказки).
+                        const _gbAlt = _gbSingleAlt && _gbSingleAlt.boiler ? {
+                            id: _gbSingleAlt.boiler.id,
+                            name: `${_gbSingleAlt.boiler.brand || ''} ${_gbSingleAlt.boiler.name}`.trim(),
+                            power: _gbSingleAlt.boiler.power,
+                            extra: Math.round(_gbSingleAlt.extra || 0)
+                        } : null;
+                        gasBoiler = { ...gasBoiler, sortRank: -1, name: `Котёл газовый, ${_gbCircStr} (${gasBoiler.power} кВт)`, originalId: 'gas_boiler_auto', alts: this.gasBoilerPool(), ...(_gbAlt ? { gasSingleAlt: _gbAlt } : {}) };
+                        addToBill(gasBoiler, qty, this.getDesc('boiler_gas', parseFloat(pwrBoiler), gasBoiler.power, qty, _gbSrc, _gbBeyondHaier));
                         markRigAnchor('gas', 'gas_boiler_auto');
-                        for (let k = 0; k < qty; k++) selBoilers.push(haierBoiler);
+                        for (let k = 0; k < qty; k++) selBoilers.push(gasBoiler);
                     }
                 }
             }
