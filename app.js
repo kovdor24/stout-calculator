@@ -10007,19 +10007,24 @@ const app = {
     saveRailLayout: function (patch) {
         if (!this.installerSettings) this.loadInstallerSettingsLocal();
         const now = this.railLayout();
-        this.installerSettings[this.railLayoutSlot()] = Object.assign({ dock: 'left', groups: null, params: 'left' }, now, patch || {});
+        this.installerSettings[this.railLayoutSlot()] = Object.assign({ dock: 'left', groups: null, params: 'left', collapsed: true }, now, patch || {});
         // Пишет и в localStorage, и (для вошедших) в облако
         this.pushInstallerSettingsToCloud();
     },
 
     // ── Свёрнутая панель разделов ──────────────────────────────────────────────
     // Свёрнутая панель показывает одни значки. На компьютере она разворачивается
-    // наведением мыши (правило в style.css, поверх сметы и без сдвига вёрстки), на
-    // планшете наведения нет — там разворачивают той же кнопкой. Состояние лежит в
-    // общей раскладке меню, поэтому у мыши и у сенсора оно своё: за компьютером
-    // места по ширине много и панель обычно развёрнута, на планшете — наоборот.
+    // наведением мыши (правило в style.css: раздвигает вёрстку, а не ложится
+    // поверх), на планшете наведения нет — там разворачивают той же кнопкой.
+    // Состояние лежит в общей раскладке меню, поэтому у мыши и у сенсора оно своё.
+    //
+    // Свёрнуто по умолчанию: развёрнутая колонка отъедала ширину у сметы, а
+    // подписи нужны редко — разделы узнаются по значкам, и подпись всё равно
+    // выезжает под мышью. Сравнение именно с false, а не с true: у тех, кто уже
+    // разворачивал панель, в настройках лежит collapsed: false, и их выбор должен
+    // пережить смену умолчания. Пустое поле (никогда не трогали) — свёрнуто.
     railCollapsed: function () {
-        return this.railLayout().collapsed === true;
+        return this.railLayout().collapsed !== false;
     },
 
     toggleRailCollapsed: function () {
