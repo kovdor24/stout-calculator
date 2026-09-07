@@ -109,6 +109,30 @@ function limitsPath() { return __DIR__ . '/archive/limits.json'; }
 function accessPath() { return __DIR__ . '/archive/access.json'; }
 
 /**
+ * Ключ для еженедельного разбора промахов подбора.
+ *
+ * Сводку читает не человек в браузере, а задача по расписанию: сессии
+ * Supabase у неё нет и быть не может. Отдавать сводку всем подряд нельзя —
+ * в ней строки чужих смет, — поэтому отдельный ключ, и только на чтение
+ * сводки: ни архива, ни файлов, ни удаления он не открывает.
+ *
+ * Заводит его администратор кнопкой в админке; здесь он только хранится.
+ */
+function reportKeyPath() { return __DIR__ . '/archive/report_key.txt'; }
+
+function readReportKey() {
+    $k = @file_get_contents(reportKeyPath());
+    return is_string($k) ? trim($k) : '';
+}
+
+/** Сравнение постоянного времени: чтобы ключ нельзя было подобрать по задержке. */
+function reportKeyValid($given) {
+    $key = readReportKey();
+    if ($key === '' || !is_string($given) || $given === '') return false;
+    return hash_equals($key, trim($given));
+}
+
+/**
  * Кому открыты платные инструменты.
  *
  * Распознавание — двумя списками: поимённо (логин или email монтажника) и по
@@ -335,10 +359,13 @@ function archiveSummary($archiveDir, $days, $force = false) {
 
     $totals = ['records' => 0, 'plans' => 0, 'estimates' => 0, 'lines' => 0,
         'unmatched' => 0, 'manual' => 0, 'fromMemory' => 0, 'repeats' => 0,
-        'calls' => 0, 'fromCache' => 0, 'broken' => 0, 'noQty' => 0];
+        'calls' => 0, 'fromCache' => 0, 'broken' => 0, 'noQty' => 0,
+        // Строки, про которые подбор знает точно: своего такого нет вовсе.
+        'sysMiss' => 0];
     $months = []; $regions = []; $regionUsers = []; $users = [];
     $brandHits = []; $picked = ['STOUT' => 0, 'ROMMER' => 0, 'прайс' => 0];
-    $types = []; $missRaw = []; $manualRaw = []; $brokenRaw = []; $seen = [];
+    $types = []; $missRaw = ['unparsed' => [], 'nomatch' => []];
+    $manualRaw = []; $brokenRaw = []; $seen = [];
 
     $dirs = is_dir($archiveDir) ? scandir($archiveDir, SCANDIR_SORT_DESCENDING) : [];
     foreach ($dirs as $day) {
@@ -411,10 +438,33 @@ function archiveSummary($archiveDir, $days, $force = false) {
                     $totals['unmatched']++; $months[$month]['unmatched']++;
                     $regions[$region]['unmatched']++; $types[$type]['miss']++;
                     if ($norm !== '') {
+                        /**
+                         * Две разные беды, и лечатся они по-разному.
+                         *
+                         * «Не разобрали» — модель не поняла, ЧТО это: тип
+                         * остался общим («прочее») или его нет вовсе. Каталог
+                         * тут ни при чём, чинится словарём типов и правилами
+                         * разбора.
+                         *
+                         * «Разобрали, но не нашли» — предмет опознан, а
+                         * артикула нет. Это прямой запрос на пополнение
+                         * каталога, и самый ценный его случай — когда подбор
+                         * знает, что своего такого нет вовсе (sysMiss).
+                         */
+                        $sysMiss = (string)($line['sysMiss'] ?? '');
+                        $generic = ($type === 'прочее' || $type === 'без типа');
+                        $bucket = $generic ? 'unparsed' : 'nomatch';
                         $key = uSub($norm, 0, 70);
-                        if (!isset($missRaw[$key])) $missRaw[$key] = ['raw' => $key, 'n' => 0, 'type' => $type, 'regions' => []];
-                        $missRaw[$key]['n']++;
-                        $missRaw[$key]['regions'][$region] = 1;
+                        if (!isset($missRaw[$bucket][$key])) {
+                            $missRaw[$bucket][$key] = ['raw' => $key, 'n' => 0, 'type' => $type,
+                                'sysMiss' => $sysMiss ?: null, 'regions' => []];
+                        }
+                        $missRaw[$bucket][$key]['n']++;
+                        $missRaw[$bucket][$key]['regions'][$region] = 1;
+                        if ($sysMiss) {
+                            $missRaw[$bucket][$key]['sysMiss'] = $sysMiss;
+                            $totals['sysMiss']++;
+                        }
                     }
                 } else {
                     $owner = articleOwner($id);
@@ -465,8 +515,18 @@ function archiveSummary($archiveDir, $days, $force = false) {
     // единичных строк.
     $byN = function ($a, $b) { return $b['n'] - $a['n']; };
     $brands = array_values($brandHits); usort($brands, $byN);
-    $miss = array_values($missRaw); usort($miss, $byN); $miss = array_slice($miss, 0, 60);
-    foreach ($miss as $i => $m) $miss[$i]['regions'] = array_keys($m['regions']);
+    $cut = function ($bag, $limit) use ($byN) {
+        $rows = array_values($bag);
+        usort($rows, $byN);
+        $rows = array_slice($rows, 0, $limit);
+        foreach ($rows as $i => $r) $rows[$i]['regions'] = array_keys($r['regions']);
+        return $rows;
+    };
+    $noMatch = $cut($missRaw['nomatch'], 80);
+    $unparsed = $cut($missRaw['unparsed'], 80);
+    // Общий список остаётся для тех, кто читал сводку до разделения: старая
+    // вкладка админки ждёт topMissing и без него показала бы пустоту.
+    $miss = $cut($missRaw['nomatch'] + $missRaw['unparsed'], 60);
     $manual = array_values($manualRaw); usort($manual, $byN); $manual = array_slice($manual, 0, 40);
     foreach ($manual as $i => $m) $manual[$i]['regions'] = array_keys($m['regions']);
     $broken = array_values($brokenRaw); usort($broken, $byN); $broken = array_slice($broken, 0, 30);
@@ -485,6 +545,8 @@ function archiveSummary($archiveDir, $days, $force = false) {
         'totals' => $totals, 'months' => $months, 'regions' => $regions,
         'brands' => $brands, 'picked' => $picked, 'types' => $typeList,
         'topMissing' => $miss, 'topManual' => $manual, 'brokenArticles' => $broken,
+        // Раздельно: что не разобрали и что разобрали, но не нашли.
+        'topNoMatch' => $noMatch, 'topUnparsed' => $unparsed,
     ];
     @file_put_contents($cachePath, json_encode($out, JSON_UNESCAPED_UNICODE), LOCK_EX);
     return $out;
@@ -510,6 +572,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && !empty($_GET['quota'])) {
  * Списки доступа. Без авторизации: калькулятор спрашивает их при запуске,
  * чтобы понять, показывать ли монтажнику вкладку распознавания.
  */
+/**
+ * Сводка по ключу — для еженедельного разбора промахов подбора.
+ *
+ * Стоит выше проверки администратора намеренно: у задачи по расписанию нет
+ * сессии Supabase. Ключ открывает ровно одно — эту сводку.
+ */
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && !empty($_GET['summary']) && !empty($_GET['key'])) {
+    if (!reportKeyValid($_GET['key'])) {
+        http_response_code(403);
+        echo json_encode(['error' => 'Неверный ключ отчёта']);
+        exit;
+    }
+    $days = max(1, min(730, (int)($_GET['days'] ?? 365)));
+    echo json_encode(archiveSummary($ARCHIVE_DIR, $days, !empty($_GET['force'])), JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && !empty($_GET['access'])) {
     echo json_encode(array_merge(['ok' => true], readAccess()), JSON_UNESCAPED_UNICODE);
     exit;
@@ -767,6 +846,30 @@ if (is_array($req) && !empty($req['action'])) {
     }
 
     // Все лимиты разом — для таблицы в админке.
+    /**
+     * Ключ для еженедельного разбора: показать существующий или завести новый.
+     *
+     * Заводится один раз и живёт дальше: перевыпуск нужен, только если ключ
+     * куда-то утёк. Поэтому новый выдаётся лишь по явному renew — иначе
+     * повторное открытие вкладки ломало бы уже настроенную задачу.
+     */
+    if ($req['action'] === 'reportKey') {
+        $key = readReportKey();
+        if ($key === '' || !empty($req['renew'])) {
+            $key = bin2hex(random_bytes(24));
+            // Папка архива появляется с первой присланной сметой, а ключ могут
+            // завести раньше — тогда её ещё нет.
+            if (!is_dir($ARCHIVE_DIR)) {
+                @mkdir($ARCHIVE_DIR, 0755, true);
+                @file_put_contents($ARCHIVE_DIR . '/.htaccess', "Deny from all\n");
+            }
+            @file_put_contents(reportKeyPath(), $key, LOCK_EX);
+            @chmod(reportKeyPath(), 0600);
+        }
+        echo json_encode(['ok' => true, 'key' => $key], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
     if ($req['action'] === 'limits') {
         echo json_encode(['ok' => true, 'default' => LIMIT_DEFAULT, 'limits' => readLimits()], JSON_UNESCAPED_UNICODE);
         exit;

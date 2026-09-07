@@ -19296,7 +19296,7 @@ const app = {
             }
             this._recSummary = out;
             this._loadingRecSummary = false;
-            if (this._adminTab === 'dashboard' || this._adminTab === 'analytics') this.renderAdminMain();
+            if (['dashboard', 'analytics', 'recognition'].includes(this._adminTab)) this.renderAdminMain();
         })();
         return false;
     },
@@ -24350,6 +24350,43 @@ const app = {
         this.renderAdminRecognitionBody();
     },
 
+    /** Свернуть/развернуть копилку промахов подбора. */
+    toggleRecognitionGaps: function () {
+        this._recogGapsOpen = !this._recogGapsOpen;
+        // Сводку считает сервер, и до первого открытия её могло не быть.
+        this.ensureRecognitionSummary();
+        this.renderAdminRecognitionBody();
+    },
+
+    /**
+     * Ключ, по которому еженедельный разбор забирает сводку.
+     *
+     * У задачи по расписанию нет сессии Supabase, а отдавать строки чужих
+     * смет всем подряд нельзя. Ключ заводится один раз и живёт дальше:
+     * перевыпуск ломает уже настроенную задачу, поэтому он только по
+     * отдельному подтверждению.
+     */
+    showRecognitionReportKey: async function (renew) {
+        try {
+            const headers = await this.recognitionAuthHeaders();
+            if (!headers) { this.alert('Не удалось подтвердить вход — обновите страницу.'); return; }
+            const r = await fetch(this.RECOGNIZE_ARCHIVE, {
+                method: 'POST',
+                headers: Object.assign({ 'Content-Type': 'application/json' }, headers),
+                body: JSON.stringify({ action: 'reportKey', renew: !!renew }),
+            });
+            const data = await r.json();
+            if (!data.ok || !data.key) {
+                this.alert('Сервер не выдал ключ: ' + (data.error || 'старая версия recognize_archive.php'));
+                return;
+            }
+            await this.prompt('Ключ для еженедельного отчёта. Он открывает только сводку промахов подбора — '
+                + 'ни архива, ни файлов, ни удаления. Скопируйте его один раз:', data.key);
+        } catch (e) {
+            this.alert('Ключ не получен: ' + (e.message || e));
+        }
+    },
+
     /** Срез сводки по региону монтажника. Пусто — все регионы. */
     setRecognitionRegionFilter: function (v) {
         this._recogRegionFilter = v || '';
@@ -24707,6 +24744,77 @@ const app = {
                 </div>`)}
             </div>`;
 
+        /**
+         * Копилка промахов подбора.
+         *
+         * Две беды лечатся по-разному, поэтому и списка два. «Не разобрали» —
+         * модель не поняла, ЧТО это: чинится словарём типов и правилами
+         * разбора. «Разобрали, но не нашли» — предмет опознан, а артикула нет:
+         * это прямой запрос на пополнение каталога.
+         *
+         * Копится всё само, в архиве: сводку считает сервер по всем записям за
+         * год. Здесь она только показана — и рядом ключ, по которому её
+         * забирает еженедельный разбор (сессии Supabase у задачи нет).
+         */
+        const gapsOpen = !!this._recogGapsOpen;
+        const recSum = this._recSummary;
+        const S = recSum && recSum.data;
+        const gapRows = (list, limit) => (list || []).slice(0, limit).map(g => `<tr>
+                <td style="${tdStyle}">${esc(g.raw)}${
+                    g.sysMiss ? `<div style="color:#B45309; font-size:11px;">такого материала у нас нет — прямой запрос на каталог</div>` : ''}</td>
+                <td style="${tdStyle} color:var(--text-sec); font-size:11.5px;">${esc(g.type || '')}</td>
+                <td style="${tdStyle} text-align:center;"><b>${g.n}</b></td>
+                <td style="${tdStyle} color:var(--text-sec); font-size:11.5px;">${esc((g.regions || []).join(', '))}</td>
+            </tr>`).join('');
+        const gapTable = (title, hint, list, limit) => `
+            <div style="padding:10px 12px;">
+              <div style="font-size:12.5px; font-weight:700; color:var(--text-main);">${title}</div>
+              <div style="font-size:11.5px; color:var(--text-sec); margin:2px 0 6px;">${hint}</div>
+              ${(list || []).length ? `<div style="overflow-x:auto;"><table style="width:100%; border-collapse:collapse;">
+                <thead><tr>
+                  <th style="${thStyle}">Строка сметы</th>
+                  <th style="${thStyle} width:150px;">Тип</th>
+                  <th style="${thStyle} text-align:center; width:60px;">Раз</th>
+                  <th style="${thStyle} width:200px;">Регионы</th>
+                </tr></thead><tbody>${gapRows(list, limit)}</tbody></table>
+                ${list.length > limit ? `<div style="padding:6px 2px; color:var(--text-sec); font-size:11.5px;">
+                    Показаны ${limit} самых частых из ${list.length}.</div>` : ''}</div>`
+                : '<div style="color:var(--text-sec); font-size:12.5px;">Пусто.</div>'}
+            </div>`;
+        const GAP_TOP = 25;
+
+        const gapsHtml = `
+            <div style="margin-bottom:14px; border:1px solid var(--border); border-radius:10px; overflow:hidden;">
+              <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap; padding:10px 12px;
+                          background:var(--surface-light); cursor:pointer; font-size:12.5px;"
+                   onclick="app.toggleRecognitionGaps()">
+                <b>${gapsOpen ? '▾' : '▸'} 🕳 Чего не хватает подбору</b>
+                ${S ? `<span style="color:var(--text-sec);">не разобрали: ${(S.topUnparsed || []).length} ·
+                        не нашли: ${(S.topNoMatch || []).length}${
+                        S.totals && S.totals.sysMiss ? ` · «своего нет»: ${S.totals.sysMiss}` : ''}</span>`
+                    : '<span style="color:var(--text-sec);">считаем…</span>'}
+                <span style="margin-left:auto; display:flex; gap:8px;" onclick="event.stopPropagation();">
+                  <button class="admin-btn" title="Ключ, по которому еженедельный разбор забирает эту сводку без входа в админку"
+                          onclick="app.showRecognitionReportKey()">Ключ для еженедельного отчёта</button>
+                </span>
+              </div>
+              ${!gapsOpen ? '' : (!recSum
+                ? '<div style="padding:16px 12px; color:var(--text-sec); font-size:12.5px;">Считаем сводку по архиву…</div>'
+                : recSum.serverOld
+                ? `<div style="padding:16px 12px; color:#D97706; font-size:12.5px; line-height:1.5;">
+                     На сервере старая версия <b>recognize_archive.php</b> — она не умеет считать сводку.
+                     Выложите обновлённый файл на Beget.</div>`
+                : !S
+                ? `<div style="padding:16px 12px; color:var(--text-sec); font-size:12.5px;">
+                     Архив не ответил: ${esc(recSum.error || 'причина неизвестна')}.</div>`
+                : gapTable('Разобрали, но не нашли',
+                    'предмет опознан, артикула нет — это про каталог: чего в нём не хватает',
+                    S.topNoMatch, GAP_TOP)
+                  + gapTable('Не разобрали',
+                    'модель не поняла, что это за предмет — это про словарь типов и правила разбора, а не про каталог',
+                    S.topUnparsed, GAP_TOP))}
+            </div>`;
+
         // Панель диска. Размер архива считается по файлам, диск хостинга —
         // общий раздел сервера Beget, поэтому подписаны они по-разному.
         const st = this._adminRecognitionStats;
@@ -24753,6 +24861,7 @@ const app = {
             </div>
             ${diskHtml}
             ${manualHtml}
+            ${gapsHtml}
             ${pickedHtml}
             <div style="overflow-x:auto;">
                 <table style="width:100%; border-collapse:collapse;">

@@ -6270,6 +6270,11 @@ const RecognizeUI = {
                     // не хватает.
                     manual: !!(r._locked && !r._fromMem),
                     fromMem: !!r._fromMem,
+                    // «Своего такого нет»: подбор нашёл подходящее только в
+                    // чужом материале и отказался его ставить. Самый прямой
+                    // запрос на пополнение каталога, какой вообще бывает, —
+                    // поэтому едет в архив вместе со строкой.
+                    sysMiss: r._sysMiss || null,
                     matched: r._m ? { id: r._m.item.id, name: r._m.item.name, price: r._m.item.price } : null,
                 })),
             };
