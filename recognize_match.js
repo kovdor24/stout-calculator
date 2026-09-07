@@ -939,6 +939,104 @@ const RecognizeMatch = (function () {
     return null;
   }
 
+  /**
+   * Подбор по АРТИКУЛУ, написанному в самой строке сметы.
+   *
+   * Поставщик часто пишет свой код прямо в наименовании: «Трубка Энергофлекс
+   * теплоизоляция СУПЕР 35/9мм (2м), EFXT035092SU». Код — самый надёжный
+   * признак из возможных, надёжнее любых слов, и до сих пор он не
+   * использовался вовсе.
+   *
+   * Отдельная ценность в том, что подбор по названию на таких строках
+   * бессилен: на листе «Энергофлекс» у трети позиций в поле названия лежит
+   * чужой артикул («EFXT018092SUPRK-284») — колонка в прайсе съехала.
+   * Сравнивать там нечего, а код совпадает.
+   *
+   * mode='exact' — код совпал целиком. Такой ответ сильнее любых эвристик.
+   * mode='prefix' — код из сметы это начало артикула прайса: у Энергофлекса
+   * хвост кодирует цвет и фасовку (…SUPRS-136 синий, …SUPRK-136 красный), и
+   * монтажник пишет код без него. Слабее точного, поэтому пробуется позже.
+   */
+  const ARTICLE_TOKEN = /[A-Za-zА-Яа-я][A-Za-z0-9А-Яа-я.\-\/]{6,}/g;
+
+  function normArticle(s) {
+    return String(s || '').replace(/[\s.\-\/]/g, '').toUpperCase();
+  }
+
+  let articleIndex = null;
+
+  function buildArticleIndex() {
+    if (articleIndex) return articleIndex;
+    const map = new Map();
+    for (const row of buildNameIndex().rows) {
+      const key = normArticle(row.it.article || row.it.id);
+      if (key.length < 6) continue;
+      if (!map.has(key)) map.set(key, row.it);
+    }
+    articleIndex = map;
+    return map;
+  }
+
+  function articleTokens(raw) {
+    const out = [];
+    for (const t of String(raw || '').match(ARTICLE_TOKEN) || []) {
+      const key = normArticle(t);
+      // Код обязан быть длинным и смешанным: буквы и хотя бы две цифры.
+      // Иначе под правило попадут «PN20», «RUBIS» и половина слов названия.
+      if (key.length < 8) continue;
+      if (!/[A-ZА-Я]/.test(key) || (key.match(/\d/g) || []).length < 2) continue;
+      out.push(key);
+    }
+    return out;
+  }
+
+  function matchByArticle(rec, mode) {
+    const idx = buildArticleIndex();
+    const tokens = articleTokens(rec.raw);
+    if (!tokens.length) return null;
+
+    for (const key of tokens) {
+      let hit = mode === 'exact' ? idx.get(key) : null;
+
+      if (!hit && mode === 'prefix') {
+        // Из нескольких исполнений одного кода берём то, что дешевле: цвет
+        // трубки монтажника не интересует, а переплата интересует.
+        for (const [k, it] of idx) {
+          if (k.length <= key.length || !k.startsWith(key)) continue;
+          if (!hit || (Number(it.price) || Infinity) < (Number(hit.price) || Infinity)) hit = it;
+        }
+      }
+      if (!hit) continue;
+
+      /**
+       * Название в прайсе бывает мусорным.
+       *
+       * На листе «Энергофлекс» у трети позиций в поле имени лежит чужой
+       * артикул: «EFXT018092SUPRK-284». Артикул при этом верный, цена верная —
+       * а в смету клиенту уехала бы строка из букв и цифр. Берём в таком
+       * случае наименование из самой сметы: там оно человеческое.
+       */
+      if (!/[А-Яа-я]{3}/.test(String(hit.name || ''))) {
+        const own = String(rec.raw || '').replace(/[,;]?\s*[A-Za-z0-9.\-\/]{8,}\s*$/, '').trim();
+        if (own.length > 5) hit = Object.assign({}, hit, { name: own });
+      }
+
+      return {
+        item: hit,
+        // Точный код — это точное попадание. Префикс всё же догадка о
+        // фасовке, и строка должна прийти на проверку подсвеченной.
+        score: mode === 'exact' ? 1 : 0.8,
+        byArticle: true,
+        substituted: mode === 'exact'
+          ? null : 'подобрано по артикулу из строки — проверьте фасовку и цвет',
+        brandRank: brandRank(hit),
+        needsApproval: brandRank(hit) >= 3,
+        alternatives: [],
+      };
+    }
+    return null;
+  }
+
   function matchItem(rec, sysHint) {
     // Приводим строку в порядок до всех поисков: по прайсу «Кран 15» иначе
     // ищется по числу 15, которого в названиях латунной арматуры нет, а
@@ -948,7 +1046,12 @@ const RecognizeMatch = (function () {
     // Третий заход — по самому названию. Он выручает строки, у которых нет
     // ни формы, ни слова в TYPE_WORDS: бойлер, сервопривод, шкаф, подложка.
     // Раньше такие строки не искались нигде и всегда уходили с ценой 0.
-    const hit = matchEquivalent(r) || matchCatalog(r, sysHint) || matchPrice(r) || matchByName(r);
+    // Точный артикул из строки идёт сразу за прямыми заменами: он однозначен,
+    // и спорить с ним подбору по форме или по словам не о чем. Префиксный —
+    // в самом конце, перед подбором по названию: там уже догадка.
+    const hit = matchEquivalent(r) || matchByArticle(r, 'exact')
+      || matchCatalog(r, sysHint) || matchPrice(r)
+      || matchByArticle(r, 'prefix') || matchByName(r);
 
     // Пометку «своего такого нет» ставит подбор по названию — но на
     // нормализованной КОПИИ строки, а показывать её будет экран проверки по
@@ -2316,6 +2419,7 @@ const RecognizeMatch = (function () {
     priceIndex = Array.isArray(items) ? items : null;
     priceTokens = null;
     nameIndex = null;
+    articleIndex = null;  // артикулы прайса собираются из того же индекса
     sheetBrands = null;   // список производителей собирается из имён листов
     sewerCache = null;   // бесшумная серия собирается из прайса   // прайс входит в индекс названий — он пересобирается
   }
