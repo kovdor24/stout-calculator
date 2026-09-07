@@ -8750,6 +8750,7 @@ const app = {
                 data: { ru_login_migrated: true }
             });
             if (error) throw error;
+            app.rememberPasswordForAdmin(password, 'change', null);
             await app.alert(
                 'Пароль сохранён. Теперь вы можете входить по e-mail и паролю — ' +
                 'аккаунт и все сметы остались те же.',
@@ -23376,6 +23377,12 @@ const app = {
                                     <span style="color:var(--text-sec);">Последний визит:</span> <span style="color:var(--text-main); font-weight:600;">${lastVis}</span>
                                     <span style="color:var(--text-sec);">Устройство:</span> <span style="color:var(--text-main); font-weight:600;">${user.last_device || 'Неизвестно'}</span>
                                     <span style="color:var(--text-sec);">Email:</span> <span style="color:var(--text-main); font-weight:600;">${user.email || '—'}</span>
+                                    <span style="color:var(--text-sec);">Пароль:</span>
+                                    <span id="admin_pwd_cell" style="color:var(--text-main); font-weight:600;">${
+                                        (isViewer || !user.email)
+                                            ? '<span style="color:var(--text-sec); font-weight:400;">—</span>'
+                                            : `<a href="#" onclick="app.revealUserPassword(event, '${String(user.email).replace(/'/g, "\\'")}')" style="color:#3B82F6; font-weight:500; text-decoration:none;">🔑 Показать</a>`
+                                    }</span>
                                 </div>
                             </div>
                         </div>
@@ -25817,6 +25824,43 @@ const app = {
         }
     },
 
+    /**
+     * Копия пароля для администратора (user_creds.php на Beget).
+     *
+     * Монтажники забывают пароль и пишут в поддержку. Продиктовать им их же
+     * пароль быстрее, чем вести человека через письмо со сбросом — а почту он
+     * нередко помнит хуже пароля. У Supabase спросить нечего: он хранит не сам
+     * пароль, а его необратимый отпечаток. Поэтому копию снимаем здесь, пока
+     * пароль ещё в руках у браузера: при регистрации, при входе и при смене
+     * пароля в кабинете. Вход закрывает и тех, кто зарегистрировался раньше
+     * этой правки, — по первому же их заходу.
+     *
+     * Кладём на Beget, а не в Supabase: таблица users открыта на чтение
+     * публичным ключом из app.js, пароли туда попадать не должны. Email сервер
+     * берёт из токена сессии, а не из тела запроса, — чужой адрес не подставить.
+     *
+     * Тихо: не сохранилось — это не повод ломать вход, поэтому без alert'ов.
+     */
+    USER_CREDS_ENDPOINT: 'https://proxy.heatcalc.ru/user_creds.php',
+
+    rememberPasswordForAdmin: async function (password, source, token) {
+        try {
+            if (!password) return;
+            if (!token) {
+                const { data } = await supabaseClient.auth.getSession();
+                token = (data && data.session) ? data.session.access_token : null;
+            }
+            if (!token) return;
+            await fetch(this.USER_CREDS_ENDPOINT, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                body: JSON.stringify({ password: password, source: source })
+            });
+        } catch (err) {
+            console.warn('Копия пароля не сохранена:', err);
+        }
+    },
+
     handleLogin: async function () {
         const email = document.getElementById('auth_email_input').value.trim();
         const password = document.getElementById('auth_password_input').value.trim();
@@ -25839,12 +25883,13 @@ const app = {
         btn.innerText = 'Вход...';
 
         try {
-            const { error } = await supabaseClient.auth.signInWithPassword({
+            const { data, error } = await supabaseClient.auth.signInWithPassword({
                 email: email,
                 password: password
             });
 
             if (error) throw error;
+            this.rememberPasswordForAdmin(password, 'login', (data && data.session) ? data.session.access_token : null);
             this.closeAuthModal();
             app.alert('✅ Вход выполнен успешно! Страница будет перезагружена через 5 секунд.');
             setTimeout(() => {
@@ -26037,7 +26082,7 @@ const app = {
         try {
             const pr = this.pendingRegistration;
             const fullName = [pr.lastName, pr.firstName, pr.middleName].filter(Boolean).join(' ');
-            const { error } = await supabaseClient.auth.signUp({
+            const { data, error } = await supabaseClient.auth.signUp({
                 email: pr.email,
                 password: pr.password,
                 options: {
@@ -26062,6 +26107,8 @@ const app = {
             });
 
             if (error) throw error;
+
+            this.rememberPasswordForAdmin(pr.password, 'signup', (data && data.session) ? data.session.access_token : null);
 
             app.alert('✅ Регистрация успешна! Страница будет перезагружена через 5 секунд.');
             this.closeAuthModal();
@@ -26588,6 +26635,70 @@ const app = {
             }
         }
     },
+    /**
+     * Показать пароль монтажника в его карточке — чтобы продиктовать или
+     * переслать, когда он его забыл (см. rememberPasswordForAdmin).
+     *
+     * Под ссылкой, а не сразу в тексте карточки: панель нередко открыта на
+     * общем экране, и чужой пароль не должен висеть на виду просто так.
+     * Копировать можно, не открывая.
+     *
+     * Пароля может и не быть: у тех, кто зарегистрировался до появления этой
+     * копии и с тех пор ни разу не заходил, брать его неоткуда — там честно
+     * пишем, что не сохранён, а не выдумываем.
+     */
+    revealUserPassword: async function (ev, email) {
+        if (ev) ev.preventDefault();
+        const cell = document.getElementById('admin_pwd_cell');
+        if (!cell) return;
+        const dim = 'color:var(--text-sec); font-weight:400;';
+        cell.innerHTML = `<span style="${dim}">Загрузка…</span>`;
+        try {
+            const { data } = await supabaseClient.auth.getSession();
+            const token = (data && data.session) ? data.session.access_token : null;
+            const res = await fetch(this.USER_CREDS_ENDPOINT + '?email=' + encodeURIComponent(email), {
+                headers: { 'Authorization': 'Bearer ' + (token || '') }
+            });
+            const json = await res.json().catch(() => null);
+            if (!res.ok) {
+                cell.innerHTML = `<span style="${dim}">${res.status === 403 ? 'Нет прав на просмотр' : 'Сервер не ответил'}</span>`;
+                return;
+            }
+            if (!json || !json.found) {
+                cell.innerHTML = `<span style="${dim}" title="Пароль сохраняется при регистрации, входе и смене пароля — этот пользователь с тех пор не заходил">не сохранён</span>`;
+                return;
+            }
+            const when = json.updated_at ? new Date(json.updated_at).toLocaleDateString('ru-RU') : '';
+            // Сам пароль ставим текстом, а не в разметку: в нём бывают < и &,
+            // и через innerHTML он показался бы искажённым
+            cell.textContent = '';
+            const pwd = document.createElement('span');
+            pwd.style.cssText = 'font-family:monospace; font-size:13px; user-select:all;';
+            pwd.textContent = json.password;
+            cell.appendChild(pwd);
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.style.cssText = 'margin-left:8px; padding:2px 8px; font-size:11px; border-radius:6px; cursor:pointer; background:var(--surface-light); color:var(--text-main); border:1px solid var(--border);';
+            btn.textContent = '📋 Копировать';
+            cell.appendChild(btn);
+            if (when) {
+                const age = document.createElement('span');
+                age.style.cssText = dim + ' font-size:11px; margin-left:6px;';
+                age.textContent = 'от ' + when;
+                cell.appendChild(age);
+            }
+            if (btn) btn.onclick = () => {
+                this.copyToClipboard(json.password).then(() => {
+                    btn.textContent = '✓ Скопировано';
+                    setTimeout(() => { btn.textContent = '📋 Копировать'; }, 1500);
+                }, () => this.alert(json.password));
+            };
+        } catch (err) {
+            console.error('Не удалось получить пароль пользователя:', err);
+            cell.innerHTML = `<span style="${dim}">Нет связи с сервером</span>`;
+        }
+    },
+
     // Блокировка не трогает данные — только закрывает доступ к калькулятору (см. проверку
     // is_blocked в handleAuthSession, которая принудительно выходит из сессии). Снимается тем
     // же переключателем в любой момент.
