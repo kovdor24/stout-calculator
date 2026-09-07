@@ -532,12 +532,14 @@
                 aria-label="Переместить панель разделов"></div>
 
             <!-- Свернуть панель до одних значков. На компьютере свёрнутая панель
-                 разворачивается наведением мыши (поверх сметы, ничего не сдвигая),
-                 на планшете наведения нет — там разворачивают этой же кнопкой.
-                 Выбор запоминается отдельно для мыши и для сенсора: app.railLayoutSlot. -->
+                 разворачивается наведением мыши (раздвигая вёрстку), на планшете
+                 наведения нет — там разворачивают этой же кнопкой. Выбор
+                 запоминается отдельно для мыши и для сенсора: app.railLayoutSlot.
+                 Подпись и aria здесь — исходные для умолчания (свёрнуто); дальше их
+                 ведёт app.applyRailCollapsed по сохранённому выбору. -->
             <button type="button" class="lk-rail-toggle" id="lk_rail_toggle"
-                onclick="app.toggleRailCollapsed()" title="Свернуть панель до значков"
-                aria-label="Свернуть панель разделов" aria-expanded="true">
+                onclick="app.toggleRailCollapsed()" title="Развернуть панель с подписями"
+                aria-label="Развернуть панель разделов" aria-expanded="false">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><polyline points="15 18 9 12 15 6"></polyline></svg>
             </button>
 
