@@ -211,6 +211,17 @@ th {
     white-space: nowrap;
 }
 
+/* Подзаголовок группы внутри длинной таблицы — прайс на монтаж разбит на
+   группы работ. Отличается от шапки цветом: иначе на середине таблицы
+   кажется, что началась новая таблица со своими колонками. */
+tr.group th {
+    background: var(--primary-light);
+    color: var(--text-main);
+    white-space: normal;
+    padding-top: 14px;
+    padding-bottom: 14px;
+}
+
 td { color: var(--text-main); }
 td.num { white-space: nowrap; font-variant-numeric: tabular-nums; }
 td.minus { color: #DC2626; font-weight: 700; }
