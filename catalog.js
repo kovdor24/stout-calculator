@@ -3991,7 +3991,15 @@ const catalog = {
         { id: "PA22018P", article: "PA22018P", price: 258, brand: "ProAqua", availability: "in_stock", name: "Муфта комбинированная ВР PP-R 32х1", unit: "шт",
   price_date: '2026-08-20' },
         { id: "PA22020", article: "PA22020", price: 322, brand: "ProAqua", availability: "in_stock", name: "Муфта комбинированная ВР PP-R 40х1", unit: "шт",
-  price_date: '2026-08-20' }
+  price_date: '2026-08-20' },
+        // Крупные размеры — серия «под ключ»: обычной комбинированной муфты
+        // больше дюйма у Pro Aqua нет. Без них магистраль 40–63 мм оставалась
+        // без артикула, а подбор по названию уводил её в фитинги ПНД.
+        { id: "PA22520P", article: "PA22520P", price: 666.5, brand: "ProAqua", availability: "in_stock", name: "Муфта комбинированная ВР PP-R 40х1 1/4", unit: "шт", price_date: "2026-09-07" },
+        { id: "PA22521P", article: "PA22521P", price: 877.34, brand: "ProAqua", availability: "in_stock", name: "Муфта комбинированная ВР PP-R 40х1 1/2", unit: "шт", price_date: "2026-09-07" },
+        { id: "PA22522P", article: "PA22522P", price: 890.99, brand: "ProAqua", availability: "in_stock", name: "Муфта комбинированная ВР PP-R 50х1 1/2", unit: "шт", price_date: "2026-09-07" },
+        { id: "PA22523P", article: "PA22523P", price: 1283.09, brand: "ProAqua", availability: "in_stock", name: "Муфта комбинированная ВР PP-R 50х2", unit: "шт", price_date: "2026-09-07" },
+        { id: "PA22524P", article: "PA22524P", price: 1285.14, brand: "ProAqua", availability: "in_stock", name: "Муфта комбинированная ВР PP-R 63х2", unit: "шт", price_date: "2026-09-07" }
     ],
     ppr_proaqua_adapter_mi: [
         { id: "PA23008P", article: "PA23008P", price: 130, brand: "ProAqua", availability: "in_stock", name: "Муфта комбинированная НР PP-R 20х1/2", unit: "шт",
@@ -4011,7 +4019,13 @@ const catalog = {
         { id: "PA23018P", article: "PA23018P", price: 358, brand: "ProAqua", availability: "in_stock", name: "Муфта комбинированная НР PP-R 32х1", unit: "шт",
   price_date: '2026-08-20' },
         { id: "PA23020", article: "PA23020", price: 436, brand: "ProAqua", availability: "in_stock", name: "Муфта комбинированная НР PP-R 40х1", unit: "шт",
-  price_date: '2026-08-20' }
+  price_date: '2026-08-20' },
+        // То же для наружной резьбы, см. соседнюю группу.
+        { id: "PA23520P", article: "PA23520P", price: 915.72, brand: "ProAqua", availability: "in_stock", name: "Муфта комбинированная НР PP-R 40х1 1/4", unit: "шт", price_date: "2026-09-07" },
+        { id: "PA23521P", article: "PA23521P", price: 1272.18, brand: "ProAqua", availability: "in_stock", name: "Муфта комбинированная НР PP-R 40х1 1/2", unit: "шт", price_date: "2026-09-07" },
+        { id: "PA23522P", article: "PA23522P", price: 1274.74, brand: "ProAqua", availability: "in_stock", name: "Муфта комбинированная НР PP-R 50х1 1/2", unit: "шт", price_date: "2026-09-07" },
+        { id: "PA23523P", article: "PA23523P", price: 2064.76, brand: "ProAqua", availability: "in_stock", name: "Муфта комбинированная НР PP-R 50х2", unit: "шт", price_date: "2026-09-07" },
+        { id: "PA23524P", article: "PA23524P", price: 2104.21, brand: "ProAqua", availability: "in_stock", name: "Муфта комбинированная НР PP-R 63х2", unit: "шт", price_date: "2026-09-07" }
     ],
     ppr_proaqua_coupling: [
         { id: "PA12008P", article: "PA12008P", price: 6, brand: "ProAqua", availability: "in_stock", name: "Муфта соединительная PP-R 20 мм", unit: "шт",
@@ -4189,6 +4203,20 @@ const catalog = {
     ppr_proaqua_valve_rad_angle: [
         { id: "PA42108", article: "PA42108", price: 587, brand: "ProAqua", availability: "in_stock", name: "Шаровой кран для радиатора угловой PP-R 20х1/2", unit: "шт", price_date: "2026-08-20" },
         { id: "PA42110", article: "PA42110", price: 873, brand: "ProAqua", availability: "in_stock", name: "Шаровой кран для радиатора угловой PP-R 25х3/4", unit: "шт", price_date: "2026-08-20" }
+    ],
+    /**
+     * Водорозетка — настенный угольник с креплением, в него вкручивают
+     * смеситель. У Pro Aqua она подписана «Угольник с креплением
+     * комбинированный», поэтому в названии оставлены оба имени: по первому её
+     * ищет подбор, по второму — человек глазами.
+     *
+     * Внутренняя резьба: наружную водорозетку в разводке не ставят, а держать
+     * в одной группе обе значило бы выбирать между ними наугад — резьбу
+     * ВР/НР подбор внутри группы не различает.
+     */
+    ppr_proaqua_wall_elbow: [
+        { id: "PA28008P", article: "PA28008P", price: 100.3, brand: "ProAqua", availability: "in_stock", name: "Водорозетка (угольник настенный с креплением) ВР PP-R 20х1/2", unit: "шт", price_date: "2026-09-07" },
+        { id: "PA28012P", article: "PA28012P", price: 119.21, brand: "ProAqua", availability: "in_stock", name: "Водорозетка (угольник настенный с креплением) ВР PP-R 25х1/2", unit: "шт", price_date: "2026-09-07" }
     ],
 
     mounting_system: [

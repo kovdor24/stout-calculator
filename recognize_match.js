@@ -87,6 +87,9 @@ const RecognizeMatch = (function () {
       valve: 'ppr_proaqua_valve',
       valve_rad: 'ppr_proaqua_valve_rad',
       valve_rad_angle: 'ppr_proaqua_valve_rad_angle',
+      // Водорозетка. До этого её у полипропилена не было вовсе, и строка
+      // уходила к металлопластиковому Multi-Fit — фитингу другой системы.
+      wall_elbow: 'ppr_proaqua_wall_elbow',
     },
     ss: {
       pipe: 'ss_pipe_4m',
@@ -1263,9 +1266,31 @@ const RecognizeMatch = (function () {
    * изделия нет, и строка оставалась без артикула. Флаг ставим на копии,
    * чтобы не пачкать строку, которую правит монтажник.
    */
+  /**
+   * Дюймовая резьба к одному виду: «1 1/4».
+   *
+   * Полтора дюйма в сметах пишут как придётся: «1/1/4», «1.1/4», «1-1/4»,
+   * «1 ¼». Каталог знает одну запись, а сравнение резьбы строгое — и муфта
+   * 40×1¼ не находилась ни при какой из этих форм, хотя лежит в каталоге.
+   * Так было и в смете «Вода здание ЗЗУ»: там весь ряд написан через
+   * «1/1/4», и строки уходили в фитинги ПНД.
+   */
+  const VULGAR = { '¼': '1/4', '½': '1/2', '¾': '3/4' };
+
+  function normalizeThread(rec) {
+    if (!rec.thread) return rec;
+    let t = String(rec.thread).trim();
+    for (const ch in VULGAR) t = t.replace(ch, ' ' + VULGAR[ch]);
+    // Целая часть, слипшаяся с дробью через любой разделитель: 1/1/4, 1.1/4,
+    // 1-1/4 — всё это «один и одна четверть».
+    t = t.replace(/^(\d)\s*[\/.\-]\s*(\d\/\d)$/, '$1 $2');
+    t = t.replace(/\s+/g, ' ').trim();
+    return t === rec.thread ? rec : { ...rec, thread: t };
+  }
+
   function normalize(rec) {
     if (rec._norm) return rec;
-    const out = normalizeDn(normalizeD(normalizeType(rec)));
+    const out = normalizeDn(normalizeD(normalizeThread(normalizeType(rec))));
     return out === rec ? { ...rec, _norm: true } : Object.assign(out, { _norm: true });
   }
 
