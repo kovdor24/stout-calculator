@@ -12066,7 +12066,10 @@ body.guest-mode .lk-rail {
     text-align: center;
     text-decoration: none;
     cursor: pointer;
-    transition: background var(--dur-fast) ease, color var(--dur-fast) ease;
+    /* Возврат после отпускания — длиннее нажатия и по той же пружинной кривой,
+       что раскрытие панели: палец отпустили, и раздел мягко встаёт на место. */
+    transition: background var(--dur-fast) ease, color var(--dur-fast) ease,
+                transform 260ms var(--ease-ios);
 }
 
 .lk-rail-item svg {
@@ -12076,6 +12079,22 @@ body.guest-mode .lk-rail {
 .lk-rail-item:hover {
     background: var(--surface-light);
     color: var(--text-main);
+}
+
+/* Отклик на нажатие. По правилам Apple он обязан появляться в момент нажатия, а
+   не после отпускания: ожидание отклика до отпускания читается как «интерфейс не
+   услышал». :active срабатывает как раз по нажатию — и мышью, и пальцем.
+   Просадка небольшая (4%): раздел должен ощутимо поддаться под нажатием, но не
+   отпрыгивать. Масштаб меняем трансформацией — она считается видеокартой и не
+   пересобирает вёрстку соседей. 90ms — то есть практически сразу. */
+.lk-rail-item:active {
+    transform: scale(0.96);
+    transition-duration: var(--dur-fast), var(--dur-fast), 90ms;
+}
+
+.lk-rail-toggle:active {
+    transform: scale(0.9);
+    transition-duration: var(--dur-fast), var(--dur-fast), 90ms;
 }
 
 .lk-rail-item.active {
@@ -12272,6 +12291,132 @@ body.lk-docked #profile_modal_overlay .lk-pane {
    верху панели — там, где хват и лежит, — либо щёлкнул по свободному месту
    внутри неё. Второе нужно для тачпада и сенсорного экрана, где наведения нет
    вовсе: класс grip-shown вешает app.revealGrip. */
+/* ── Свёрнутая панель: одни значки ──────────────────────────────────────────
+   Ширину в свёрнутом виде задаём числом, а не max-content: подписи спрятаны,
+   и содержимое ужалось бы до ширины значка, отчего колонка прыгала бы при
+   каждом наведении. Лентой сверху (.dock-top) сворачивать нечего — там место
+   занимает ширина, а не высота, поэтому все правила ниже её не касаются. */
+.lk-rail.is-collapsed:not(.dock-top) {
+    width: 52px;
+    min-width: 52px;
+}
+
+/* Моторика раскрытия — по правилам Apple (WWDC «Designing Fluid Interfaces»).
+   Кривая --ease-ios описывает пружину без перелёта: разгон есть, но у цели
+   движение гасится досуха. Перелёт (пружинистый отскок) уместен там, где жест
+   принёс инерцию — рывок пальцем, бросок карточки; наведение мыши инерции не
+   несёт, и отскок на меню читался бы как дребезг.
+   0.4с — «отклик» из таблицы Apple для перемещения; ощущается неспешно, но не
+   вяло. Закрытие той же кривой, но короче: уводя мышь, человек уже переключился
+   на другое, и ждать возврата ему незачем. Зеркальную кривую (обратные опорные
+   точки) намеренно не берём: у пружины профиль в обе стороны один — разгон и
+   мягкое гашение, — а обращённая кривая дала бы задержку в начале и щелчок в
+   конце, чего на iOS не бывает. */
+:root {
+    --ease-ios: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+/* Во время перетаскивания панели переходы выключены: там положение ведёт
+   указатель, и плавность превратилась бы в запаздывание за курсором — то самое,
+   что Apple называет разрывом прямого управления. Общий блок
+   prefers-reduced-motion выше сам снимет переходы тем, кто просил у системы
+   меньше движения. */
+.lk-rail:not(.is-dragging) {
+    transition: width 260ms var(--ease-ios),
+                min-width 260ms var(--ease-ios);
+}
+
+/* Браузер заранее готовит слой под движение: без подсказки первый кадр
+   раскрытия подрагивал на длинной смете */
+.lk-rail.is-collapsed:not(.dock-top) {
+    will-change: width;
+}
+
+/* Подпись не убираем из разметки (display: none появлялся бы рывком), а
+   схлопываем по высоте: так она уезжает и возвращается вместе с шириной
+   панели одним движением. */
+.lk-rail-label {
+    max-height: 3em;
+    overflow: hidden;
+    transition: max-height 260ms var(--ease-ios),
+                opacity 120ms linear;
+}
+
+.lk-rail.is-collapsed:not(.dock-top) .lk-rail-label {
+    max-height: 0;
+    opacity: 0;
+}
+
+/* Разворот наведением — только там, где мышь есть на самом деле. На планшете
+   (hover: none) браузер отдаёт наведение по первому касанию, и панель
+   разворачивалась бы от попытки нажать раздел; там разворачивают кнопкой. */
+@media (hover: hover) and (pointer: fine) {
+    /* Ширина ровно та же, что у развёрнутой панели (min-width: 84px выше), а не
+       предельные 150px: развёрнутая по наведению панель должна выглядеть как
+       обычная. Отрицательным полем ширину не гасим — панель раздвигает вёрстку,
+       а не ложится поверх параметров: перекрытие закрывало поля, с которыми
+       человек работает. Сдвиг едет той же плавностью, что и сама ширина. */
+    .lk-rail.is-collapsed:not(.dock-top):hover {
+        width: 84px;
+        min-width: 84px;
+        transition: width 400ms var(--ease-ios),
+                    min-width 400ms var(--ease-ios);
+    }
+
+    /* Подписи идут за панелью, а не вместе с ней: пока колонка разъезжается,
+       текст ещё прозрачен, и проявляется на последней трети хода — иначе он
+       возникает в щели, которая под него ещё не открылась. Задержки на уход
+       нет: закрываясь, подпись гаснет первой и не выезжает за край. */
+    .lk-rail.is-collapsed:not(.dock-top):hover .lk-rail-label {
+        max-height: 3em;
+        opacity: 1;
+        transition: max-height 400ms var(--ease-ios),
+                    opacity 200ms linear 160ms;
+    }
+}
+
+/* Кнопка «свернуть». Видна всегда, а не по наведению, как хват: на планшете
+   это единственный способ развернуть панель обратно, и прятать её нельзя. */
+.lk-rail-toggle {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 18px;
+    margin: 0 4px 4px;
+    padding: 0;
+    border: none;
+    border-radius: 5px;
+    background: transparent;
+    color: var(--text-sec);
+    opacity: 0.5;
+    cursor: pointer;
+    transition: opacity var(--dur-fast) ease, background-color var(--dur-fast) ease,
+                transform 260ms var(--ease-ios);
+}
+
+.lk-rail-toggle:hover {
+    opacity: 1;
+    background-color: var(--surface-light);
+}
+
+.lk-rail-toggle:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+    opacity: 1;
+}
+
+/* Стрелка смотрит влево, пока панель развёрнута («свернуть»), и вправо, когда
+   свёрнута («развернуть») */
+.lk-rail.is-collapsed .lk-rail-toggle svg {
+    transform: rotate(180deg);
+}
+
+/* Лентой сверху сворачивать нечего — кнопка там только сбивала бы с толку */
+.lk-rail.dock-top .lk-rail-toggle {
+    display: none;
+}
+
 .lk-rail-grip {
     flex-shrink: 0;
     height: 12px;
