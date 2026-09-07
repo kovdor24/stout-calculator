@@ -15662,6 +15662,67 @@ const app = {
             }
         }
 
+        // ── Чем собирают: марки из чужих смет ───────────────────────────────
+        //
+        // Вся остальная вкладка — про спрос: сколько раз марку СПРОСИЛИ в
+        // поиске. Здесь другое и более честное: сколько раз марку ВЫПИСАЛИ
+        // себе в закупку. Профессиональные позиции берут у дистрибьютора, не
+        // заходя в поиск, и в Wordstat их не видно совсем — а в смете видно.
+        //
+        // Данные те же, что у блока дашборда: одна сводка на сервере.
+        const recReady = this.ensureRecognitionSummary();
+        const recRes = recReady ? this._recSummary : null;
+        h += `<h4 style="margin:26px 0 4px; color:var(--text-main);">🏷️ Чем собирают: марки из распознанных смет</h4>
+            <div style="font-size:12px; color:var(--text-sec); margin-bottom:10px;">
+                Не спрос, а закупка: марка засчитывается один раз на смету, где её назвали. Считается по архиву распознаваний за год.
+            </div>`;
+        if (!recRes) {
+            h += `<div style="font-size:12.5px; color:var(--text-sec);">Считаем архив распознаваний…</div>`;
+        } else if (recRes.serverOld) {
+            h += `<div style="font-size:12.5px; color:#D97706;">На сервере старая версия <b>recognize_archive.php</b>: сводку по маркам она не считает. Выложите обновлённый файл на Beget.</div>`;
+        } else if (!recRes.data) {
+            h += `<div style="font-size:12.5px; color:var(--text-sec);">Архив распознаваний не ответил: ${esc(recRes.error || 'причина неизвестна')}.</div>`;
+        } else {
+            const S = recRes.data;
+            const all = (S.brands || []).map(b => Object.assign({}, b, {
+                n: region ? ((b.regions || {})[region] || 0) : b.n
+            })).filter(b => b.n > 0).sort((a, b) => b.n - a.n);
+            const foreign = all.filter(b => !b.own);
+            const own = all.filter(b => b.own);
+            const T = S.totals || {};
+            // Знаменатель — сметы, а не строки: марка считается по сметам.
+            const base = region ? ((S.regions || {})[region] || {}).records || 0 : (T.estimates || 0);
+            if (!foreign.length) {
+                h += `<div style="font-size:12.5px; color:var(--text-sec);">${region
+                    ? 'В этом регионе чужих марок в сметах пока не встречалось.'
+                    : 'Чужих марок в сметах пока не встречалось.'}</div>`;
+            } else {
+                h += `<div style="overflow-x:auto;"><table class="inv-table"><thead><tr>
+                        <th>Марка</th>
+                        <th style="text-align:center; width:90px;" title="В скольких сметах названа">Смет</th>
+                        <th style="text-align:center; width:90px;" title="Доля от всех разобранных смет">Доля</th>
+                        <th>Где встречается</th>
+                    </tr></thead><tbody>`;
+                foreign.slice(0, 25).forEach(b => {
+                    const where = Object.keys(b.regions || {})
+                        .sort((x, y) => b.regions[y] - b.regions[x]).slice(0, 3)
+                        .map(r => `${esc(r)} (${b.regions[r]})`).join(', ');
+                    h += `<tr>
+                        <td><b>${esc(b.name)}</b></td>
+                        <td style="text-align:center;">${num(b.n)}</td>
+                        <td style="text-align:center; color:var(--text-sec);">${base ? Math.round(b.n / base * 100) + '%' : '—'}</td>
+                        <td style="color:var(--text-sec); font-size:12px;">${where}</td>
+                    </tr>`;
+                });
+                h += `</tbody></table></div>
+                    <div style="font-size:12px; color:var(--text-sec); margin-top:8px; line-height:1.5;">
+                        Наши марки названы в ${num(own.reduce((a, b) => a + b.n, 0))} сметах из ${num(base)}.
+                        Марка в строке — это то, что монтажник уже купил или собирается купить, поэтому список читается как перечень тех, кого предстоит вытеснять.
+                        Пока смет мало, он говорит больше о том, кто пробует инструмент, чем о рынке.
+                    </div>`;
+            }
+        }
+
         // ── Догазификация ───────────────────────────────────────────────────
         // Единственный блок вкладки, полезный не владельцу, а монтажнику:
         // куда в ближайшие годы приходит газ. Собирает AutoGasPlans.py.
@@ -16537,6 +16598,12 @@ const app = {
         own_users:     { t: 'Новых монтажников',                  icon: '👷', sec: 'us' },
         own_projects:  { t: 'Проектов выпущено',                  icon: '📁', sec: 'us' },
         own_rec:       { t: 'Распознано смет',                    icon: '🔍', sec: 'us' },
+        // Три блока по архиву распознаваний. Данные у них общие (одна сводка с
+        // сервера), но вопросы разные, поэтому и блоки разные: где считают,
+        // чем собирают, чего не хватает нам.
+        rec_regions:   { t: 'Распознавание по регионам',          icon: '🗺️', sec: 'us' },
+        rec_brands:    { t: 'Чем собирают на самом деле',         icon: '🏷️', sec: 'market' },
+        rec_gaps:      { t: 'Чего не хватает каталогу',           icon: '🕳️', sec: 'us' },
         own_invoices:  { t: 'Счетов выставлено',                  icon: '💳', sec: 'us' },
         pro_active:    { t: 'Профи',                              icon: '👑', sec: 'us' },
         est_vs_demand: { t: 'Наши сметы против спроса',           icon: '📈', sec: 'us' },
@@ -16590,7 +16657,8 @@ const app = {
                 ] },
                 { id: 'market', title: 'Обзор рынка', items: [
                     { id: 'own_places', span: 2 }, { id: 'demand_works', span: 1 },
-                    { id: 'demand_calc', span: 1 }, { id: 'sources', span: 4 }
+                    { id: 'demand_calc', span: 1 }, { id: 'rec_brands', span: 2 },
+                    { id: 'sources', span: 4 }
                 ] },
                 { id: 'us', title: 'Мы', items: [
                     { id: 'own_ests', span: 1 }, { id: 'own_active', span: 1 },
@@ -16600,6 +16668,7 @@ const app = {
                     { id: 'inv_funnel', span: 2 }, { id: 'inv_speed', span: 2 },
                     { id: 'inv_waiting', span: 4 },
                     { id: 'own_projects', span: 1 }, { id: 'own_rec', span: 1 },
+                    { id: 'rec_regions', span: 2 }, { id: 'rec_gaps', span: 2 },
                     { id: 'est_vs_demand', span: 4 },
                     { id: 'funnel', span: 2 }, { id: 'chek', span: 2 },
                     { id: 'group_usage', span: 2 }, { id: 'dist_money', span: 2 }
@@ -18093,6 +18162,137 @@ const app = {
             }
         }
 
+        // ── Распознавание: регионы, марки, дыры каталога ─────────────────────
+        //
+        // Три блока на одной сводке с сервера. Она отвечает на вопрос, которого
+        // нет больше нигде: Wordstat показывает, что ЛЮДИ ИЩУТ, отчётность
+        // дистрибьютора — что ОН ПРОДАЛ, а строка чужой сметы — чем монтажник
+        // РЕАЛЬНО собирает систему. Это и есть список тех, кого мы вытесняем.
+        const recIds = ['rec_regions', 'rec_brands', 'rec_gaps'];
+        const recReady = this.ensureRecognitionSummary();
+        const recRes = recReady ? this._recSummary : null;
+        const recNote = (text, color) => recIds.forEach(id => {
+            B[id] = card(head(this.DASH_WIDGETS[id].t, 'по архиву распознанных смет')
+                + `<div style="padding:16px 0; font-size:12.5px; line-height:1.5; color:${color || 'var(--text-sec)'};">${text}</div>`);
+        });
+
+        if (!recRes) {
+            recNote('Считаем архив распознаваний…');
+        } else if (recRes.serverOld) {
+            recNote('На сервере старая версия <b>recognize_archive.php</b> — она не умеет считать сводку по архиву. '
+                + 'Выложите обновлённый файл на Beget, и блоки наполнятся с первого же открытия.', '#D97706');
+        } else if (!recRes.data) {
+            recNote('Архив распознаваний не ответил: ' + esc(recRes.error || 'причина неизвестна'));
+        } else {
+            const S = recRes.data;
+            const T = S.totals || {};
+            // Часы: сводка живёт час, и по времени сборки видно, свежая ли она.
+            const builtAgo = (() => {
+                const t = S.builtAt ? new Date(S.builtAt) : null;
+                if (!t || isNaN(t)) return '';
+                const mins = Math.max(0, Math.round((Date.now() - t) / 60000));
+                return mins < 60 ? `сводка ${mins} мин назад` : `сводка ${Math.round(mins / 60)} ч назад`;
+            })();
+            // Доля промахов — главный показатель здоровья подбора. Считаем от
+            // строк смет: планы этажей материалов не содержат и сюда не идут.
+            const missPct = T.lines ? Math.round(T.unmatched / T.lines * 100) : 0;
+
+            // 1. По регионам. Сортировка по числу смет: первым идёт тот, кто
+            // инструментом реально пользуется, а не тот, кто выше по алфавиту.
+            const regRows = Object.keys(S.regions || {})
+                .map(r => Object.assign({ name: r }, S.regions[r]))
+                .sort((a, b) => (b.records - a.records) || (b.lines - a.lines));
+            const regTop = regRows.slice(0, rows('rec_regions', 5, 8, 12));
+            const regLine = (r) => {
+                const pct = r.lines ? Math.round(r.unmatched / r.lines * 100) : null;
+                const hot = r.name === region;
+                return `<tr style="${hot ? 'background:var(--primary-light);' : ''}">
+                    <td style="padding:4px 6px; font-size:12.5px; color:var(--text-main); max-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${esc(r.name)}</td>
+                    <td style="padding:4px 6px; text-align:right; font-weight:700; font-size:12.5px;">${num(r.records)}</td>
+                    <td style="padding:4px 6px; text-align:right; font-size:12px; color:var(--text-sec);">${num(r.lines)}</td>
+                    <td style="padding:4px 6px; text-align:right; font-size:12px; color:var(--text-sec);">${num(r.users)}</td>
+                    <td style="padding:4px 6px; text-align:right; font-size:12px; color:${pct === null ? 'var(--text-sec)' : (pct > 20 ? '#EF4444' : (pct > 10 ? '#F59E0B' : '#10B981'))};">${pct === null ? '—' : pct + '%'}</td>
+                </tr>`;
+            };
+            B.rec_regions = card(head('Распознавание по регионам',
+                    `${num(T.estimates)} ${this.plural(T.estimates, 'смета', 'сметы', 'смет')} и ${num(T.plans)} ${this.plural(T.plans, 'план', 'плана', 'планов')} этажей · ${builtAgo}`)
+                + `<div style="overflow-x:auto; margin-top:10px;"><table style="width:100%; border-collapse:collapse; table-layout:fixed;">
+                    <thead><tr style="font-size:11px; color:var(--text-sec);">
+                        <th style="text-align:left; padding:0 6px 6px;">Регион</th>
+                        <th style="text-align:right; padding:0 6px 6px; width:56px;">Смет</th>
+                        <th style="text-align:right; padding:0 6px 6px; width:64px;">Строк</th>
+                        <th style="text-align:right; padding:0 6px 6px; width:56px;" title="Сколько монтажников присылали сметы">Люди</th>
+                        <th style="text-align:right; padding:0 6px 6px; width:64px;" title="Доля строк, которым подбор не нашёл артикул">Мимо</th>
+                    </tr></thead><tbody>${regTop.map(regLine).join('') || '<tr><td colspan="5" style="padding:10px 6px; color:var(--text-sec); font-size:12.5px;">Распознаваний пока нет.</td></tr>'}</tbody></table></div>`
+                + `<div style="font-size:11.5px; color:var(--text-sec); margin-top:8px;">
+                        Всего мимо каталога ${missPct}% строк. «Без региона» — записи, сделанные до того, как регион стал попадать в архив.
+                   </div>`);
+
+            // 2. Чем собирают. Марка считается один раз на смету: закупка труб
+            // на сто позиций иначе перевесила бы десять смет других людей.
+            const brandsAll = (S.brands || []).map(b => Object.assign({}, b, {
+                n: region ? ((b.regions || {})[region] || 0) : b.n
+            })).filter(b => b.n > 0);
+            const foreign = brandsAll.filter(b => !b.own).sort((a, b) => b.n - a.n);
+            const ours = brandsAll.filter(b => b.own).sort((a, b) => b.n - a.n);
+            const maxN = foreign.length ? foreign[0].n : 1;
+            const bTop = foreign.slice(0, rows('rec_brands', 6, 10, 14));
+            const bLine = (b) => {
+                const w = Math.max(4, Math.round(b.n / maxN * 100));
+                const where = Object.keys(b.regions || {})
+                    .sort((x, y) => b.regions[y] - b.regions[x]).slice(0, 2).join(', ');
+                return `<div style="display:flex; align-items:center; gap:8px; padding:3px 0;">
+                        <span style="width:104px; flex:none; font-size:12.5px; color:var(--text-main); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"
+                              title="${esc(where)}">${esc(b.name)}</span>
+                        <span style="flex:1; min-width:0; height:8px; background:var(--surface-light); border-radius:999px; overflow:hidden;">
+                            <span style="display:block; width:${w}%; height:100%; background:linear-gradient(90deg,#60A5FA,#818CF8);"></span>
+                        </span>
+                        <b style="width:34px; text-align:right; font-size:12px;">${num(b.n)}</b>
+                    </div>`;
+            };
+            const picked = S.picked || {};
+            const pickedTotal = (picked.STOUT || 0) + (picked.ROMMER || 0) + (picked['прайс'] || 0);
+            const pickedPct = k => pickedTotal ? Math.round((picked[k] || 0) / pickedTotal * 100) : 0;
+            B.rec_brands = card(head(`Чем собирают на самом деле${region ? ' — ' + esc(region) : ''}`,
+                    'марки из чужих смет · одна смета считается за одну встречу марки')
+                + `<div style="margin-top:10px;">${bTop.map(bLine).join('')
+                    || '<div style="color:var(--text-sec); font-size:12.5px;">Чужих марок в сметах пока не встречалось.</div>'}</div>`
+                + `<div style="font-size:11.5px; color:var(--text-sec); margin-top:10px; line-height:1.5;">
+                        Наши марки названы в ${num(ours.reduce((a, b) => a + b.n, 0))} сметах.
+                        Подбор увёл строки в STOUT ${pickedPct('STOUT')}%, в ROMMER ${pickedPct('ROMMER')}%,
+                        в прайс поставщика ${pickedPct('прайс')}%.
+                   </div>`);
+
+            // 3. Чего не хватает каталогу. Две разные жалобы рядом: подбор не
+            // нашёл ничего — и подбор нашёл, но монтажник переделал руками.
+            // Вторая дороже: это прямое указание, каким артикулом закрывать.
+            const inRegion = (x) => !region || (x.regions || []).indexOf(region) >= 0;
+            const miss = (S.topMissing || []).filter(inRegion).slice(0, rows('rec_gaps', 5, 8, 10));
+            const man = (S.topManual || []).filter(inRegion).slice(0, rows('rec_gaps', 3, 5, 7));
+            const gapLine = (x, right) => `<div style="display:flex; gap:8px; align-items:baseline; padding:3px 0;">
+                    <span style="flex:1; min-width:0; font-size:12.5px; color:var(--text-main); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"
+                          title="${esc(x.raw)}">${esc(x.raw)}</span>
+                    <b style="font-size:12px; color:var(--text-sec);">${right}</b>
+                </div>`;
+            const brokenN = T.broken || 0;
+            B.rec_gaps = card(head('Чего не хватает каталогу',
+                    `${num(T.unmatched)} ${this.plural(T.unmatched, 'строка', 'строки', 'строк')} мимо каталога · ${num(T.manual)} ${this.plural(T.manual, 'замена', 'замены', 'замен')} руками`)
+                + `<div style="display:grid; ${sp('rec_gaps') >= 2 ? gHalf : 'grid-template-columns:1fr;'} gap:18px; margin-top:12px;">
+                    <div>
+                        <div style="font-size:12px; color:var(--text-sec); margin-bottom:4px;" title="Подбор не нашёл ничего похожего">Не нашли ничего</div>
+                        ${miss.map(m => gapLine(m, m.n + '×')).join('') || '<small style="color:var(--text-sec);">пусто</small>'}
+                    </div>
+                    <div>
+                        <div style="font-size:12px; color:var(--text-sec); margin-bottom:4px;" title="Монтажник выбрал артикул сам — значит подбор промахнулся именно здесь">Переделали руками</div>
+                        ${man.map(m => gapLine(m, esc(m.id || '—'))).join('') || '<small style="color:var(--text-sec);">пусто</small>'}
+                    </div>
+                   </div>`
+                + (brokenN ? `<div style="font-size:11.5px; color:#D97706; margin-top:10px;">
+                        Ещё ${num(brokenN)} ${this.plural(brokenN, 'строка получила', 'строки получили', 'строк получили')} вместо артикула цену или слово
+                        (${(S.brokenArticles || []).slice(0, 2).map(b => esc(b.id)).join(', ')}) — это съехавшая колонка в прайс-индексе, а не ошибка подбора.
+                   </div>` : ''));
+        }
+
         // ── Цены прайса ─────────────────────────────────────────────────────
         // Отвечает на вопрос, который средний чек сам по себе не решает: чек
         // вырос — это больше работы или просто подорожало железо. Индекс
@@ -19021,6 +19221,46 @@ const app = {
             this._dashStats = null;
             this._loadingDashOwn = false;
             if (this._adminTab === 'dashboard') this.renderAdminMain();
+        })();
+        return false;
+    },
+
+    /**
+     * Сводка по архиву распознаваний: регионы, марки, промахи подбора.
+     *
+     * Считает её сервер (recognize_archive.php?summary=1) и держит час в файле
+     * рядом с архивом. Из браузера то же самое собрать нельзя: бренды и типы
+     * лежат внутри разборов, по файлу на смету, и ради двух десятков чисел
+     * пришлось бы выкачать весь архив целиком.
+     *
+     * Старый recognize_archive.php ключа summary не знает и отвечает списком
+     * записей. Отличаем по отсутствию totals — блоки тогда честно говорят, что
+     * файл на сервере не обновлён, а не показывают нули как факт.
+     */
+    ensureRecognitionSummary: function () {
+        if (this._recSummary) return true;
+        if (this._loadingRecSummary) return false;
+        this._loadingRecSummary = true;
+        (async () => {
+            const out = { data: null, error: null, serverOld: false };
+            try {
+                const headers = await this.recognitionAuthHeaders();
+                if (!headers) throw new Error('нет сессии для доступа к архиву');
+                const r = await fetch(`${this.RECOGNIZE_ARCHIVE}?summary=1&days=365`, { headers });
+                const data = await r.json();
+                // Менеджеру дистрибьютора архив закрыт: сервер пускает туда
+                // владельца, админа и наблюдателя. Это не поломка, и говорить
+                // о ней надо словами про доступ, а не про сбой.
+                if (r.status === 403) out.error = 'архив открыт владельцу, администраторам и наблюдателям';
+                else if (data && data.totals) out.data = data;
+                else if (data && data.rows) out.serverOld = true;
+                else out.error = (data && data.error) || 'архив ответил непонятным';
+            } catch (e) {
+                out.error = e.message || String(e);
+            }
+            this._recSummary = out;
+            this._loadingRecSummary = false;
+            if (this._adminTab === 'dashboard' || this._adminTab === 'analytics') this.renderAdminMain();
         })();
         return false;
     },
@@ -24208,7 +24448,7 @@ const app = {
         const groups = new Map();
         rows.forEach(r => {
             const key = r.user || 'без имени';
-            if (!groups.has(key)) groups.set(key, { key, rows: [], month: 0, last: null, bytes: 0, region: '' });
+            if (!groups.has(key)) groups.set(key, { key, rows: [], month: 0, monthRecs: 0, last: null, bytes: 0, region: '' });
             const g = groups.get(key);
             g.rows.push(r);
             g.bytes += (r.bytes || 0);
@@ -24217,7 +24457,15 @@ const app = {
             if (!g.region && r.region) g.region = r.region;
             const when = r.savedAt ? new Date(r.savedAt) : null;
             if (when && !isNaN(when)) {
-                if (when >= monthStart) g.month++;
+                // Лимит сервер считает ЗАПРОСАМИ к модели, а не загрузками:
+                // смета на четыре листа стоит четырёх. Считаем здесь так же,
+                // иначе таблица показывала бы «10 из 50» там, где у человека
+                // на деле израсходовано сорок. У записей до этой правки поля
+                // calls нет — они, как и на сервере, идут за один запрос.
+                if (when >= monthStart) {
+                    g.month += Math.max(1, Number(r.calls) || 1);
+                    g.monthRecs++;
+                }
                 if (!g.last || when > g.last) g.last = when;
             }
         });
@@ -24254,7 +24502,9 @@ const app = {
                             onclick="event.stopPropagation(); app.setRecognitionLimit('${keyEsc}')">✏️</button></td>
                 <td style="${tdStyle} white-space:nowrap;">${g.bytes ? mb(g.bytes) : '—'}</td>
                 <td style="${tdStyle} text-align:center;" colspan="3">
-                    за месяц: <b>${g.month}</b> из ${limit}${personal !== undefined ? ' (свой)' : ''} ·
+                    за месяц: <b title="Запросов к модели: многолистная смета стоит нескольких">${g.month}</b> из ${limit}${personal !== undefined ? ' (свой)' : ''}${
+                        g.monthRecs && g.monthRecs !== g.month
+                            ? ` <span style="color:var(--text-sec);">за ${g.monthRecs} ${this.plural(g.monthRecs, 'загрузку', 'загрузки', 'загрузок')}</span>` : ''} ·
                     <span style="color:${leftColor};">осталось ${left}</span></td>
                 <td style="${tdStyle} white-space:nowrap;">${fmtDate(g.last)}</td>
                 <td style="${tdStyle}"></td>

@@ -184,6 +184,313 @@ function usedThisMonth($archiveDir, $user) {
 }
 
 /**
+ * Обрезка и понижение регистра, не режущие кириллицу пополам.
+ *
+ * Обычные substr/strtolower считают байты и русский текст ломают, а mbstring
+ * есть не на всяком хостинге. Поэтому одна точка входа: где расширение есть —
+ * работает оно, где нет — регулярка по символам Юникода.
+ */
+function uSub($s, $start, $len) {
+    if (function_exists('mb_substr')) return mb_substr((string)$s, $start, $len, 'UTF-8');
+    $chars = preg_split('//u', (string)$s, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+    return implode('', array_slice($chars, $start, $len));
+}
+
+function uLower($s) {
+    if (function_exists('mb_strtolower')) return mb_strtolower((string)$s, 'UTF-8');
+    // Латиница средствами ядра, кириллица — таблицей: strtolower её не знает.
+    $s = strtolower((string)$s);
+    $up = ['А','Б','В','Г','Д','Е','Ё','Ж','З','И','Й','К','Л','М','Н','О','П','Р','С','Т','У','Ф','Х','Ц','Ч','Ш','Щ','Ъ','Ы','Ь','Э','Ю','Я'];
+    $lo = ['а','б','в','г','д','е','ё','ж','з','и','й','к','л','м','н','о','п','р','с','т','у','ф','х','ц','ч','ш','щ','ъ','ы','ь','э','ю','я'];
+    return str_replace($up, $lo, $s);
+}
+
+/**
+ * Производители, которых умеем узнавать в строках чужих смет.
+ *
+ * Зачем. Строка сметы — единственное место, где видно, ЧЕМ монтажник собирает
+ * систему на самом деле. Wordstat показывает, что люди ищут; отгрузки
+ * дистрибьютора — что он продал; а здесь лежит то, что монтажник выписал себе
+ * в закупку, своим почерком. Это и есть ответ на вопрос, кого мы вытесняем.
+ *
+ * Слева — как марку пишут в смете (включая кириллицу и слитные написания),
+ * справа — общее имя, под которым она попадёт в сводку. Свои марки помечены
+ * отдельно: в отчёте они нужны не рядом с чужими, а против них.
+ *
+ * Двухбуквенные и слишком общие сокращения сюда не берём: «LD», «RM» и
+ * подобные ловят половину словаря. Лучше не увидеть марку, чем насчитать её
+ * там, где её нет.
+ */
+function brandDictionary() {
+    $own = ['stout' => 'STOUT', 'rommer' => 'ROMMER'];
+    $foreign = [
+        'valtec' => 'Valtec', 'rehau' => 'Rehau', 'рехау' => 'Rehau', 'ре-ха' => 'Rehau',
+        'royal thermo' => 'Royal Thermo', 'royalthermo' => 'Royal Thermo',
+        'baxi' => 'Baxi', 'бакси' => 'Baxi', 'henco' => 'Henco', 'giacomini' => 'Giacomini',
+        'tiemme' => 'Tiemme', 'ostendorf' => 'Ostendorf', 'остендорф' => 'Ostendorf',
+        'grohe' => 'Grohe', 'tecofi' => 'Tecofi', 'zota' => 'Zota', 'зота' => 'Zota',
+        'thermex' => 'Thermex', 'термекс' => 'Thermex',
+        'herz' => 'Herz', 'герц' => 'Herz',
+        'energoflex' => 'Energoflex', 'энергофлекс' => 'Energoflex',
+        'energofloor' => 'Energoflex', 'energoprof' => 'Energoprof',
+        'pro aqua' => 'Pro Aqua', 'proaqua' => 'Pro Aqua', 'про аква' => 'Pro Aqua',
+        'fv-plast' => 'FV-Plast', 'fv plast' => 'FV-Plast', 'wavin' => 'Wavin',
+        'uponor' => 'Uponor', 'oventrop' => 'Oventrop', 'danfoss' => 'Danfoss', 'данфосс' => 'Danfoss',
+        'luxor' => 'Luxor', 'itap' => 'Itap', 'icma' => 'Icma', 'caleffi' => 'Caleffi',
+        'watts' => 'Watts', 'emmeti' => 'Emmeti', 'bugatti' => 'Bugatti',
+        'vaillant' => 'Vaillant', 'вайлант' => 'Vaillant', 'navien' => 'Navien', 'навьен' => 'Navien',
+        'protherm' => 'Protherm', 'buderus' => 'Buderus', 'viessmann' => 'Viessmann',
+        'ariston' => 'Ariston', 'ferroli' => 'Ferroli', 'rinnai' => 'Rinnai',
+        'sinikon' => 'Sinikon', 'синикон' => 'Sinikon', 'политэк' => 'Политэк', 'политек' => 'Политэк',
+        'ростерм' => 'Ростерм', 'rosterm' => 'Ростерм', 'pipelife' => 'Pipelife',
+        'flexcon' => 'Flexcon', 'airfix' => 'Airfix', 'reflex' => 'Reflex',
+        'wilo' => 'Wilo', 'вило' => 'Wilo', 'grundfos' => 'Grundfos', 'грундфос' => 'Grundfos',
+        'stenoflex' => 'Стенофлекс', 'стенофлекс' => 'Стенофлекс',
+        'k-flex' => 'K-Flex', 'kflex' => 'K-Flex', 'thermaflex' => 'Thermaflex',
+        'gappo' => 'Gappo', 'neptun' => 'Neptun', 'нептун' => 'Neptun',
+        'gidrolock' => 'Gidrolock', 'гидролок' => 'Gidrolock',
+        'elsen' => 'Elsen', 'эльзен' => 'Elsen',
+        'uni-fitt' => 'Uni-Fitt', 'unifitt' => 'Uni-Fitt', 'profactor' => 'Profactor',
+        'viega' => 'Viega', 'sanha' => 'Sanha', 'tece' => 'TECE',
+        'honeywell' => 'Honeywell', 'esbe' => 'Esbe', 'meibes' => 'Meibes',
+        'rosma' => 'Росма', 'росма' => 'Росма', 'unipak' => 'Unipak',
+        'ekoplastik' => 'Ekoplastik', 'pilsa' => 'Pilsa', 'tebo' => 'Tebo',
+        'walraven' => 'Walraven', 'sanext' => 'Sanext', 'alterplast' => 'Alterplast',
+        'aquatech' => 'Aquatech', 'maincor' => 'Maincor', 'sti' => 'STI',
+        'tim' => 'TIM', 'vieir' => 'Vieir', 'far' => 'FAR', 'mvi' => 'MVI',
+        'aquaflax' => 'Aquaflax', 'сантехмастер' => 'Сантехмастер',
+    ];
+    return ['own' => $own, 'foreign' => $foreign];
+}
+
+/**
+ * Марка названа в строке, а не примерещилась внутри слова.
+ *
+ * Простой strpos ловит «far» в «фарфор» и «tim» в «optimal», а таких строк в
+ * сметах хватает. Поэтому найденное слово ещё проверяется на границы: слева и
+ * справа от него не должно быть буквы или цифры.
+ */
+function brandMentioned($haystack, $alias) {
+    if (strpos($haystack, $alias) === false) return false;   // дешёвая отсечка
+    $re = '/(?<![\p{L}\p{N}])' . preg_quote($alias, '/') . '(?![\p{L}\p{N}])/u';
+    return (bool)preg_match($re, $haystack);
+}
+
+/** Строка сметы, приведённая к виду, в котором одинаковые склеиваются. */
+function normalizeRawLine($raw) {
+    $s = uLower($raw);
+    $s = str_replace('ё', 'е', $s);
+    $s = preg_replace('/^\s*\d+\s*[.)]\s*/u', '', $s);                     // «12. » в начале
+    $s = preg_replace('/[-–—]?\s*\d+(?:[.,]\d+)?\s*(?:шт|штук\w*|компл\w*|пар\w*|м2|м\.?п\.?|мп|м)\.?\s*$/u', '', $s);
+    $s = preg_replace('/\s+/u', ' ', $s);
+    return trim($s);
+}
+
+/** Чей артикул подобрался: свой каталог, второй бренд или строка прайса. */
+function articleOwner($id) {
+    $s = (string)$id;
+    if ($s === '') return null;
+    if (preg_match('/^S[A-Z]{2}[- ]/', $s)) return 'STOUT';
+    if (preg_match('/^R[A-Z]{2}[- ]/', $s)) return 'ROMMER';
+    return 'прайс';
+}
+
+/**
+ * Артикул, которым он быть не может.
+ *
+ * Два случая, оба из разбора живого архива: вместо артикула подставилась цена
+ * («2131.5», «13085.67») и вместо артикула подставилось слово («Италия»).
+ * Причина не здесь, а в сборке прайс-индекса, где у части листов колонка
+ * артикула съезжает. Но заметить это можно только отсюда, поэтому считаем.
+ */
+function looksBrokenArticle($id) {
+    $s = trim((string)$id);
+    if ($s === '') return false;
+    if (preg_match('/^\d+[.,]\d+$/', $s)) return true;          // цена
+    if (preg_match('/[\p{Cyrillic}]/u', $s)) return true;       // слово по-русски
+    return false;
+}
+
+/**
+ * Сводка по всему архиву: регионы, марки, промахи подбора.
+ *
+ * Пересчитывается не чаще раза в час и кладётся рядом с архивом: обход
+ * пятисот разборов — это полминуты работы диска, а вкладку админки открывают
+ * подряд по десять раз. ?force=1 пересобирает немедленно.
+ */
+function archiveSummary($archiveDir, $days, $force = false) {
+    $cachePath = $archiveDir . '/summary.json';
+    $ttl = 3600;
+    if (!$force && is_file($cachePath)) {
+        $cached = json_decode(@file_get_contents($cachePath), true);
+        if (is_array($cached) && ($cached['days'] ?? null) === $days
+            && (time() - (int)($cached['builtTs'] ?? 0)) < $ttl) {
+            $cached['cached'] = true;
+            return $cached;
+        }
+    }
+
+    $dict = brandDictionary();
+    $edge = date('Y-m-d', time() - $days * 86400);
+
+    $totals = ['records' => 0, 'plans' => 0, 'estimates' => 0, 'lines' => 0,
+        'unmatched' => 0, 'manual' => 0, 'fromMemory' => 0, 'repeats' => 0,
+        'calls' => 0, 'fromCache' => 0, 'broken' => 0, 'noQty' => 0];
+    $months = []; $regions = []; $regionUsers = []; $users = [];
+    $brandHits = []; $picked = ['STOUT' => 0, 'ROMMER' => 0, 'прайс' => 0];
+    $types = []; $missRaw = []; $manualRaw = []; $brokenRaw = []; $seen = [];
+
+    $dirs = is_dir($archiveDir) ? scandir($archiveDir, SCANDIR_SORT_DESCENDING) : [];
+    foreach ($dirs as $day) {
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $day) || $day < $edge) continue;
+        foreach (scandir("$archiveDir/$day") ?: [] as $f) {
+            if (substr($f, -5) !== '.json') continue;
+            $meta = json_decode(@file_get_contents("$archiveDir/$day/$f"), true);
+            if (!is_array($meta)) continue;
+
+            $totals['records']++;
+            $user = (string)($meta['user'] ?? '');
+            $region = trim((string)($meta['region'] ?? ''));
+            if ($region === '') $region = 'без региона';
+            $month = substr((string)($meta['saved_at'] ?? $day), 0, 7);
+            if ($user !== '') $users[$user] = 1;
+
+            $totals['calls'] += (int)($meta['calls'] ?? 0);
+            $totals['fromCache'] += (int)($meta['fromCache'] ?? 0);
+
+            if (!isset($months[$month])) $months[$month] = ['records' => 0, 'lines' => 0, 'unmatched' => 0, 'calls' => 0, 'plans' => 0];
+            if (!isset($regions[$region])) $regions[$region] = ['records' => 0, 'lines' => 0, 'unmatched' => 0, 'plans' => 0, 'users' => 0];
+            $months[$month]['records']++;
+            $months[$month]['calls'] += (int)($meta['calls'] ?? 0);
+            $regions[$region]['records']++;
+            if ($user !== '') $regionUsers[$region][$user] = 1;
+
+            // План этажа — не смета: строк материалов в нём нет, и мешать его
+            // с закупкой нельзя. Считаем отдельной цифрой.
+            if (($meta['source'] ?? '') === 'floor_plan' || strpos((string)($meta['mode'] ?? ''), 'plan') === 0) {
+                $totals['plans']++; $months[$month]['plans']++; $regions[$region]['plans']++;
+                continue;
+            }
+            $totals['estimates']++;
+
+            $result = is_array($meta['result'] ?? null) ? $meta['result'] : [];
+
+            // Та же смета, загруженная второй раз. Считаем по первым строкам:
+            // повтор сжигает лимит и задваивает статистику, а в архиве таких
+            // пар заметно больше, чем можно было ожидать.
+            $sig = $user . '|' . count($result);
+            foreach (array_slice($result, 0, 5) as $l) $sig .= '|' . uSub((string)($l['raw'] ?? ''), 0, 40);
+            $sig = md5($sig);
+            if (isset($seen[$sig])) $totals['repeats']++;
+            $seen[$sig] = 1;
+
+            // Марку засчитываем один раз на смету, а не на каждую строку:
+            // иначе одна закупка труб Ostendorf на сто позиций перевесит
+            // десять смет других монтажников.
+            $inThis = [];
+
+            foreach ($result as $line) {
+                if (!is_array($line)) continue;
+                $totals['lines']++; $months[$month]['lines']++; $regions[$region]['lines']++;
+
+                $raw = (string)($line['raw'] ?? '');
+                $type = (string)($line['type'] ?? '');
+                if ($type === '') $type = 'без типа';
+                $matched = is_array($line['matched'] ?? null) ? $line['matched'] : null;
+                $id = $matched ? (string)($matched['id'] ?? '') : '';
+
+                if (!isset($types[$type])) $types[$type] = ['n' => 0, 'miss' => 0];
+                $types[$type]['n']++;
+
+                $qty = $line['qty'] ?? null;
+                if ($qty === null || $qty === '') $totals['noQty']++;
+
+                $norm = normalizeRawLine($raw);
+
+                if ($id === '') {
+                    $totals['unmatched']++; $months[$month]['unmatched']++;
+                    $regions[$region]['unmatched']++; $types[$type]['miss']++;
+                    if ($norm !== '') {
+                        $key = uSub($norm, 0, 70);
+                        if (!isset($missRaw[$key])) $missRaw[$key] = ['raw' => $key, 'n' => 0, 'type' => $type, 'regions' => []];
+                        $missRaw[$key]['n']++;
+                        $missRaw[$key]['regions'][$region] = 1;
+                    }
+                } else {
+                    $owner = articleOwner($id);
+                    if ($owner !== null) $picked[$owner] = ($picked[$owner] ?? 0) + 1;
+                    if (looksBrokenArticle($id)) {
+                        $totals['broken']++;
+                        $key = uSub($norm, 0, 50) . ' → ' . $id;
+                        if (!isset($brokenRaw[$key])) $brokenRaw[$key] = ['raw' => uSub($norm, 0, 50), 'id' => $id, 'n' => 0];
+                        $brokenRaw[$key]['n']++;
+                    }
+                }
+
+                if (!empty($line['manual'])) {
+                    $totals['manual']++;
+                    $key = uSub($norm, 0, 60) . ' → ' . $id;
+                    if (!isset($manualRaw[$key])) $manualRaw[$key] = [
+                        'raw' => uSub($norm, 0, 60), 'id' => $id,
+                        'name' => uSub((string)($matched['name'] ?? ''), 0, 70),
+                        'n' => 0, 'regions' => [],
+                    ];
+                    $manualRaw[$key]['n']++;
+                    $manualRaw[$key]['regions'][$region] = 1;
+                }
+                if (!empty($line['fromMem'])) $totals['fromMemory']++;
+
+                // Поиск марок идёт по той же нормализованной строке.
+                $hay = ' ' . $norm . ' ';
+                foreach (['own', 'foreign'] as $kind) {
+                    foreach ($dict[$kind] as $alias => $name) {
+                        if (isset($inThis[$name])) continue;
+                        if (brandMentioned($hay, $alias)) $inThis[$name] = $kind;
+                    }
+                }
+            }
+
+            foreach ($inThis as $name => $kind) {
+                if (!isset($brandHits[$name])) $brandHits[$name] = ['name' => $name, 'own' => $kind === 'own', 'n' => 0, 'regions' => []];
+                $brandHits[$name]['n']++;
+                $brandHits[$name]['regions'][$region] = ($brandHits[$name]['regions'][$region] ?? 0) + 1;
+            }
+        }
+    }
+
+    foreach ($regions as $r => $_) $regions[$r]['users'] = count($regionUsers[$r] ?? []);
+
+    // Сортировки и обрезка: в браузер уезжает верхушка каждого списка, а не
+    // весь архив. Полностью он всё равно не нужен — там длинный хвост из
+    // единичных строк.
+    $byN = function ($a, $b) { return $b['n'] - $a['n']; };
+    $brands = array_values($brandHits); usort($brands, $byN);
+    $miss = array_values($missRaw); usort($miss, $byN); $miss = array_slice($miss, 0, 60);
+    foreach ($miss as $i => $m) $miss[$i]['regions'] = array_keys($m['regions']);
+    $manual = array_values($manualRaw); usort($manual, $byN); $manual = array_slice($manual, 0, 40);
+    foreach ($manual as $i => $m) $manual[$i]['regions'] = array_keys($m['regions']);
+    $broken = array_values($brokenRaw); usort($broken, $byN); $broken = array_slice($broken, 0, 30);
+
+    $typeList = [];
+    foreach ($types as $t => $v) $typeList[] = ['type' => $t, 'n' => $v['n'], 'miss' => $v['miss']];
+    usort($typeList, function ($a, $b) { return $b['miss'] - $a['miss'] ?: $b['n'] - $a['n']; });
+    $typeList = array_slice($typeList, 0, 30);
+
+    ksort($months);
+    $totals['users'] = count($users);
+
+    $out = [
+        'ok' => true, 'cached' => false, 'days' => $days,
+        'builtAt' => date('c'), 'builtTs' => time(),
+        'totals' => $totals, 'months' => $months, 'regions' => $regions,
+        'brands' => $brands, 'picked' => $picked, 'types' => $typeList,
+        'topMissing' => $miss, 'topManual' => $manual, 'brokenArticles' => $broken,
+    ];
+    @file_put_contents($cachePath, json_encode($out, JSON_UNESCAPED_UNICODE), LOCK_EX);
+    return $out;
+}
+
+/**
  * Остаток распознаваний. Отвечает без авторизации: это нужно самому
  * монтажнику перед отправкой сметы, и секрета в числе нет.
  */
@@ -278,6 +585,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         exit;
     }
 
+    // --- Сводка по архиву ---------------------------------------------------
+    // Списком этого не собрать. В ответе ?list=1 от каждой записи приезжают
+    // только счётчики и ручные замены, а бренды, типы и промахи лежат внутри
+    // разборов — по файлу на запись. Пятьдесят восемь браузер ещё прочитает,
+    // пятьсот уже нет: это полсотни мегабайт по сети ради двух десятков чисел.
+    //
+    // Поэтому считает сервер, здесь же, рядом с файлами, и отдаёт готовое.
+    if (!empty($_GET['summary'])) {
+        $days = max(1, min(730, (int)($_GET['days'] ?? 365)));
+        echo json_encode(archiveSummary($ARCHIVE_DIR, $days, !empty($_GET['force'])), JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
     // --- Список распознаваний ---------------------------------------------
     $days = max(1, min(365, (int)($_GET['days'] ?? 90)));
     $limit = max(1, min(500, (int)($_GET['limit'] ?? 200)));
@@ -324,9 +644,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 if (!is_array($line) || empty($line['manual'])) continue;
                 $matched = is_array($line['matched'] ?? null) ? $line['matched'] : [];
                 $manual[] = [
-                    'raw'  => mb_substr((string)($line['raw'] ?? ''), 0, 120),
+                    'raw'  => uSub((string)($line['raw'] ?? ''), 0, 120),
                     'id'   => $matched['id'] ?? null,
-                    'name' => mb_substr((string)($matched['name'] ?? ''), 0, 120),
+                    'name' => uSub((string)($matched['name'] ?? ''), 0, 120),
                 ];
                 if (count($manual) >= 40) break;
             }
@@ -343,6 +663,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 'mode'        => $meta['mode'] ?? null,
                 'calcId'      => $meta['calcId'] ?? null,
                 'projectName' => $meta['projectName'] ?? null,
+                // Запросов к модели: по ним считается лимит, и в таблице
+                // админки видно, почему у монтажника «10 распознаваний» съели
+                // сорок единиц — многолистные сметы.
+                'calls'       => isset($meta['calls']) ? (int)$meta['calls'] : null,
+                'fromCache'   => isset($meta['fromCache']) ? (int)$meta['fromCache'] : null,
                 'recognized'  => $counts['recognized'] ?? count($result),
                 'applied'     => $counts['applied'] ?? null,
                 'replaced'    => $counts['replaced'] ?? null,
@@ -490,6 +815,10 @@ if (is_array($req) && !empty($req['action'])) {
         @rmdir("$ARCHIVE_DIR/$day");
     }
 
+    // Сводка посчитана по тому, чего уже нет. Сносим её здесь же: иначе час
+    // после чистки дашборд показывал бы удалённые записи как живые.
+    @unlink($ARCHIVE_DIR . '/summary.json');
+
     echo json_encode(['ok' => true, 'removed' => $removed, 'freedBytes' => $freed], JSON_UNESCAPED_UNICODE);
     exit;
 }
@@ -541,6 +870,18 @@ $meta = [
     // Счётчики для вкладки «Распознавание» в админке: сколько строк
     // распознано, сколько ушло в смету, сколько монтажник заменил вручную.
     'counts'      => $req['counts'] ?? null,
+    // Расход запросов к модели. Браузер присылает его с самого появления
+    // полистного разбора, а вот сюда, в запись, число не попадало — и
+    // usedThisMonth(), который специально научили считать запросы, у каждой
+    // записи видел пустоту и засчитывал единицу. Смета на четыре листа стоила
+    // столько же, сколько снятая на телефон одна страница, и лимит «50 в
+    // месяц» снова ничего не означал.
+    //
+    // fromCache рядом: сколько листов ответила не модель, а повторный разбор
+    // уже виденного файла. В лимит они не идут, но по ним видно, насколько
+    // кэш экономит запросы.
+    'calls'       => isset($req['calls']) ? (int)$req['calls'] : null,
+    'fromCache'   => isset($req['fromCache']) ? (int)$req['fromCache'] : null,
     'calcId'      => $req['calcId'] ?? null,    // по нему админка открывает расчёт
     'projectName' => $req['projectName'] ?? null,
     'result'      => $req['result'],            // распознанные и подобранные строки

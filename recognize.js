@@ -2870,6 +2870,7 @@ const RecognizeUI = {
         this._rows.forEach(r => { if (this.looksLikeWork(r)) r.kind = 'work'; });
         this.roundQty();
         this.inheritRepeats();
+        this.inheritDocSections();
 
         // Тип показываем в том виде, в каком его понял подбор. Модель нет-нет
         // да и напишет его латиницей («kran_ppr»), и в таблице это выглядело
@@ -3033,6 +3034,74 @@ const RecognizeUI = {
         });
         this.refreshSuggestions();
         this.renderReview();
+    },
+
+    /**
+     * Раздел документа протягивается вниз по строкам.
+     *
+     * Модель отмечает заголовком первую строку раздела и дальше про него
+     * молчит — так же, как молчит бумага: заголовок «Водоснабжение» написан
+     * один раз, а относится ко всему, что под ним. Дотягиваем его до
+     * следующего заголовка, иначе разделитель в таблице появился бы раз и
+     * потерялся.
+     *
+     * Отдельно приводим номер позиции к строке: в документе он бывает и «12»,
+     * и «2.7», и «А-4», а сравнивать его надо как текст.
+     */
+    inheritDocSections() {
+        let cur = null;
+        this._rows.forEach(r => {
+            const s = String(r.docSection == null ? '' : r.docSection).trim();
+            if (s) cur = s;
+            r.docSection = cur;
+            const no = String(r.docNo == null ? '' : r.docNo).trim();
+            r.docNo = no || null;
+        });
+    },
+
+    /**
+     * «Такого у нас нет» — словами, а не пустой строкой.
+     *
+     * Подбор ставит пометку _sysMiss, когда подходящее по словам и размеру
+     * нашлось только в ЧУЖОМ материале, а в своём такой позиции не оказалось:
+     * полипропиленовой муфты 40×1¼ у нас, например, нет вовсе. Про такую
+     * строку известно не «не нашли», а «не существует», и разница в том, что
+     * делать дальше: искать руками бесполезно, надо ставить свою цену.
+     */
+    sysMissText(sys) {
+        const label = (typeof RecognizeMatch !== 'undefined' && RecognizeMatch.systemLabel)
+            ? RecognizeMatch.systemLabel(sys) : '';
+        return label
+            ? `у нас нет ${label} в этом размере`
+            : 'такой позиции у нас нет';
+    },
+
+    /**
+     * Заголовок раздела документа отдельной строкой таблицы.
+     *
+     * Экран проверки читают рядом с исходной сметой, строка за строкой.
+     * Разделы на бумаге — главные ориентиры в этой сверке: без них список из
+     * полутора сотен позиций не с чем сопоставить.
+     */
+    docSectionRow(title, cols) {
+        const esc = s => String(s ?? '').replace(/[&<>"]/g,
+            c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+        return `<tr class="rec-docsec"><td colspan="${cols}">${esc(title)}</td></tr>`;
+    },
+
+    /**
+     * Заголовок перед строкой, если с прошлой строкой раздел сменился.
+     *
+     * Состояние держит вызывающий (state.last) — заголовок ставится перед
+     * первой ВИДИМОЙ строкой раздела, а не перед первой вообще: при фильтре
+     * «только проблемные» половина строк не рисуется, и заголовки висели бы
+     * над пустотой.
+     */
+    docSectionHead(r, cols, state) {
+        const sec = (r && r.docSection) ? String(r.docSection) : '';
+        if (!sec || sec === state.last) return '';
+        state.last = sec;
+        return this.docSectionRow(sec, cols);
     },
 
     /**
@@ -3234,8 +3303,12 @@ const RecognizeUI = {
         const miss = this._rows.filter(r => !r._m && r.kind !== 'work');
         if (!miss.length) return null;
 
-        const groups = { notInBase: [], weak: [], noWords: [], noType: [] };
+        const groups = { noHave: [], notInBase: [], weak: [], noWords: [], noType: [] };
         for (const r of miss) {
+            // Про строку с пометкой подбора известно точно: подходящее есть
+            // только в чужом материале, своего нет. Разбирать причину заново
+            // незачем — ответ уже получен на самом подборе.
+            if (r._sysMiss) { groups.noHave.push({ row: r, info: null }); continue; }
             let e;
             try { e = RecognizeMatch.explainMiss(r); } catch (err) { e = null; }
             const key = (e && groups[e.reason]) ? e.reason : 'noType';
@@ -3593,8 +3666,10 @@ const RecognizeUI = {
         // он уже сказал, чем эта строка является. Правила подбора о местных
         // сокращениях поставщика не знают и не узнают.
         if (this.memApply(row)) return;
+        row._sysMiss = null;   // пометку «у нас такого нет» ставит сам подбор
         row._m = (typeof RecognizeMatch !== 'undefined' && typeof catalog !== 'undefined')
             ? RecognizeMatch.matchItem(row, this._sys) : null;
+        if (row._m) row._sysMiss = null;
         this.priceGuard(row);
     },
 
@@ -3866,11 +3941,18 @@ const RecognizeUI = {
         const cell = v => (v === null || v === undefined || v === '') ? '' : v;
         const THREADS = ['ВР', 'НР', 'ВВ', 'ВН'];
 
+        // Разделы исходного документа. Заголовок ставится перед первой ВИДИМОЙ
+        // строкой раздела: при включённом фильтре «только проблемные» пустые
+        // заголовки висели бы над ничем.
+        const secState = { last: null };
+
         const rows = this._rows.map((r, n) => {
             // Отфильтрованную строку пропускаем, но номер n сохраняем: по нему
             // работают все кнопки строки, и пересчёт индексов после фильтра
             // отправил бы правку не туда.
             if (this._onlyBad && !this.isProblem(r)) return '';
+
+            const secHead = this.docSectionHead(r, 11, secState);
 
             const m = r._m;
             const qty = (r.qty || 0) + (r.qtyExtra || 0);
@@ -3917,14 +3999,22 @@ const RecognizeUI = {
                     ? `<span class="rec-work-tag">монтажная работа</span>
                        <span class="rec-art">уйдёт в раздел работ${
                         docP ? ' со своей ценой из документа' : ' без цены'}</span>`
-                    : docP
-                        ? `<span class="rec-art">нет в каталоге — уйдёт своей позицией с ценой из документа</span>`
-                        : `<span class="rec-art">нет в каталоге — уйдёт своей позицией с ценой 0</span>`);
+                    // Про эту строку известно больше, чем «не нашли»: подходящее
+                    // в базе есть, но в другом материале, а своего нет вовсе.
+                    // Так и пишем — иначе монтажник будет искать её руками
+                    // через 🔍 и не найдёт, потому что искать нечего.
+                    : r._sysMiss
+                        ? `<span class="rec-nohave">${esc(this.sysMissText(r._sysMiss))}</span>
+                           <span class="rec-art">уйдёт своей позицией ${
+                            docP ? 'с ценой из документа' : 'с ценой 0'} — поставьте свою или уберите строку</span>`
+                        : docP
+                            ? `<span class="rec-art">нет в каталоге — уйдёт своей позицией с ценой из документа</span>`
+                            : `<span class="rec-art">нет в каталоге — уйдёт своей позицией с ценой 0</span>`);
 
-            return `<tr class="${cls}">
+            return `${secHead}<tr class="${cls}">
               <td><input type="checkbox" ${r._sel ? 'checked' : ''}
                          onchange="RecognizeUI.sel(${n},this.checked)"></td>
-              <td class="rec-raw">${esc(r.raw)}
+              <td class="rec-raw">${r.docNo ? `<span class="rec-docno">${esc(r.docNo)}</span>` : ''}${esc(r.raw)}
                   ${r._inherited ? `<div class="rec-art">наименование от строки выше: ${esc(r._inherited)}</div>` : ''}</td>
               <td><input class="rec-f" value="${esc(cell(r.type))}"
                          onchange="RecognizeUI.set(${n},'type',this.value)"></td>
@@ -4977,7 +5067,13 @@ const RecognizeUI = {
         let workN = 0, workSum = 0;
         const eqTotal = this._rows.filter(r => !this.looksLikeWork(r)).length;
 
+        // Разделы документа — те же, что на экране проверки: сверяют здесь с
+        // тем же листом бумаги, и ориентиры должны совпадать.
+        const secState = { last: null };
+
         const rows = this._rows.map((r, n) => {
+            const secHead = this.docSectionHead(r, 9, secState);
+
             const isWork = this.looksLikeWork(r);
             const m = isWork ? null : r._m;
             const qty = this.docQty(r);
@@ -5035,8 +5131,8 @@ const RecognizeUI = {
                        <span class="rec-art">с прайсом не сравнивается</span>`
                     : `<span class="rec-art">аналог не подобран</span>`;
 
-            return `<tr${r._priceAlarm ? ' class="rec-pricebad"' : (isWork ? ' class="rec-workrow"' : '')}>
-              <td>${n + 1}</td>
+            return `${secHead}<tr${r._priceAlarm ? ' class="rec-pricebad"' : (isWork ? ' class="rec-workrow"' : '')}>
+              <td>${r.docNo ? esc(r.docNo) : n + 1}</td>
               <td class="rec-raw">${esc(r.raw)}</td>
               <td>${qty || '—'} ${esc(r.unit || 'шт')}</td>
               <td>${dp > 0 ? money(dp) : '—'}</td>
@@ -5405,6 +5501,13 @@ const RecognizeUI = {
         }).join('');
 
         const blocks = [];
+        if (a.groups.noHave.length) {
+            blocks.push(`<div class="rec-miss-b"><b>У нас такого нет (${a.groups.noHave.length})</b>
+              <div class="rec-art">подходящее по названию и размеру есть только в другом материале —
+                подставлять его нельзя, это другое изделие. Искать вручную нечего:
+                поставьте свою цену или уберите строку</div>
+              <ul>${line(a.groups.noHave)}</ul></div>`);
+        }
         if (a.groups.notInBase.length) {
             blocks.push(`<div class="rec-miss-b"><b>Нет у поставщика (${a.groups.notInBase.length})</b>
               <div class="rec-art">этих предметов нет ни в каталоге, ни в прайсе — расходники и чужой крепёж</div>
@@ -6268,6 +6371,8 @@ const RECOGNIZE_PROMPT = `Ты разбираешь рукописные сме�
 {
   "items": [{
     "raw": "строка как она написана в оригинале",
+    "docNo": "номер позиции, как проставлен в документе, или null",
+    "docSection": "заголовок раздела документа, под которым стоит строка, или null",
     "kind": "equipment" | "work",
     "type": "тип из словаря ниже",
     "d": число или null,
@@ -6442,6 +6547,31 @@ const RECOGNIZE_PROMPT = `Ты разбираешь рукописные сме�
     странице», «Перенос на след. лист» — НЕ бери: это части, а не итоги к
     оплате. Итог не читается или виден лишь частично -> не пиши его вовсе.
     Пустой список честнее выдуманного числа.
+
+20. ПОРЯДОК СТРОК — КАК В ДОКУМЕНТЕ. Читай сверху вниз и в том же порядке
+    возвращай: первая строка документа — первая в "items", последняя —
+    последняя. Не группируй по смыслу, не собирай одинаковые вместе, не
+    переставляй трубы к трубам, а краны к кранам. По этому списку монтажник
+    сверяется со своей бумагой строка за строкой, и любая перестановка сверку
+    ломает. Позиция повторяется в документе дважды — верни её дважды, там, где
+    она стоит.
+
+    Номер позиции, если он проставлен в документе, положи в "docNo" как есть:
+    «12», «2.7», «А-4». Своей нумерации не придумывай — нет номера, значит null.
+
+21. РАЗДЕЛЫ ДОКУМЕНТА. Сметы делят на части заголовками: «Отопление»,
+    «Водоснабжение», «Раздел 2. Котельная», «Материалы», «Монтажные работы».
+    Заголовок — НЕ ПОЗИЦИЯ: отдельной записью в "items" его не пиши, у него нет
+    ни количества, ни цены.
+
+    Вместо этого проставь его текст в "docSection" КАЖДОЙ строки, которая стоит
+    под ним, — и так до следующего заголовка. Пиши заголовок как он написан, без
+    своих пояснений. До первого заголовка (и если делений в документе нет вовсе)
+    docSection=null.
+
+    Заголовок узнаётся по тому, что у строки нет ни количества, ни цены, а под
+    ней идёт список позиций. «Итого по разделу» заголовком не считается — это
+    итог, его не бери (см. правило 19).
 
 СЛОВАРЬ ТИПОВ (значение поля "type" пиши КИРИЛЛИЦЕЙ, ровно как здесь —
 "kran_ppr" вместо "кран_ppr" калькулятор не понимает):
