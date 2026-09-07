@@ -491,6 +491,19 @@ const RecognizeMatch = (function () {
     return null;
   }
 
+  /** Название материала для сообщения монтажнику, в родительном падеже. */
+  const SYSTEM_LABELS = {
+    ppr: 'полипропилена',
+    mp: 'металлопластика',
+    pex: 'сшитого полиэтилена',
+    ss: 'нержавейки',
+    hdpe: 'ПНД',
+  };
+
+  function systemLabel(sys) {
+    return SYSTEM_LABELS[sys] || '';
+  }
+
   /**
    * Материал назван в строке — и не совпадает с материалом кандидата.
    *
@@ -906,7 +919,15 @@ const RecognizeMatch = (function () {
     // Третий заход — по самому названию. Он выручает строки, у которых нет
     // ни формы, ни слова в TYPE_WORDS: бойлер, сервопривод, шкаф, подложка.
     // Раньше такие строки не искались нигде и всегда уходили с ценой 0.
-    return matchEquivalent(r) || matchCatalog(r, sysHint) || matchPrice(r) || matchByName(r);
+    const hit = matchEquivalent(r) || matchCatalog(r, sysHint) || matchPrice(r) || matchByName(r);
+
+    // Пометку «своего такого нет» ставит подбор по названию — но на
+    // нормализованной КОПИИ строки, а показывать её будет экран проверки по
+    // исходной. Переносим. Нашлось что-то другим путём — пометка снимается:
+    // она про пустую строку, а не про эту.
+    if (rec && typeof rec === 'object') rec._sysMiss = hit ? null : (r._sysMiss || null);
+
+    return hit;
   }
 
   /**
@@ -3263,6 +3284,10 @@ const RecognizeMatch = (function () {
       return !qBrands.some((b) => hay.includes(b));
     };
 
+    // Отбрасывали ли кандидатов из-за чужого материала. Нужно для ответа
+    // монтажнику: «такого у нас нет» — это другое сообщение, чем «не нашли».
+    let sysBlocked = false;
+
     /**
      * Бренд — полноценное слагаемое оценки, а не решающий голос при ничьей.
      *
@@ -3330,7 +3355,10 @@ const RecognizeMatch = (function () {
       if (!nw.length) continue;
       if (classConflict(rawLc, row.it.name)) continue;
       if (plusModelConflict(rawLc, row.it.name)) continue;
-      if (systemConflict(rec, row.it.name)) continue;
+      // Кандидат подошёл бы, не будь он из другой системы. Это не «ничего не
+      // нашлось»: мы точно знаем, что такой позиции у нас нет, и монтажнику
+      // надо сказать это словами, а не оставить пустую строку (см. _sysMiss).
+      if (systemConflict(rec, row.it.name)) { sysBlocked = true; continue; }
       if (qBrands.length && brandMiss(row)) continue;
       /**
        * Модель против модели.
@@ -3505,6 +3533,19 @@ const RecognizeMatch = (function () {
       hit = { rel: Math.min(alt.rel, 0.7), row: alt.row };
       note = 'подобрано по названию, размер не совпал — сверьте позицию';
     }
+
+    /**
+     * Отметка «у нас этого нет» на самой строке.
+     *
+     * Ставится, только когда подходящее нашлось, но в ЧУЖОЙ системе, и своего
+     * не оказалось вовсе. Это редкий случай, когда про пустую строку известно
+     * не «не нашли», а «такой позиции у нас не существует» — и сказать это
+     * надо прямо: монтажник иначе будет искать её руками через 🔍 и не найдёт.
+     */
+    if (rec && typeof rec === 'object') {
+      rec._sysMiss = (!hit && sysBlocked) ? namedSystem(rec.raw) : null;
+    }
+
     if (!hit) return null;
     if (deep) note = 'найдено углублённым поиском — обязательно сверьте позицию';
     if (band) note = 'переподобрано по цене документа — обязательно сверьте позицию';
@@ -4605,6 +4646,9 @@ const RecognizeMatch = (function () {
     // строка-повтор наследовала предмет от той, что действительно назвала его.
     typeOf: (rec) => (normalizeType(rec).type || '').toLowerCase(),
     matchPrice, matchByName, explainMiss, rommerAlt, packSize, packArea, setPriceIndex, hasPriceIndex, convert, total,
+    // Материал, названный в строке, и его имя по-русски: экран проверки пишет
+    // им, чего именно у нас нет («полипропиленовой позиции такого размера»).
+    namedSystem, systemLabel,
     equivalentD, boreTable, parsePipeGeometry, setPprBrand,
   };
 })();

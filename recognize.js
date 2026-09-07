@@ -3060,6 +3060,23 @@ const RecognizeUI = {
     },
 
     /**
+     * «Такого у нас нет» — словами, а не пустой строкой.
+     *
+     * Подбор ставит пометку _sysMiss, когда подходящее по словам и размеру
+     * нашлось только в ЧУЖОМ материале, а в своём такой позиции не оказалось:
+     * полипропиленовой муфты 40×1¼ у нас, например, нет вовсе. Про такую
+     * строку известно не «не нашли», а «не существует», и разница в том, что
+     * делать дальше: искать руками бесполезно, надо ставить свою цену.
+     */
+    sysMissText(sys) {
+        const label = (typeof RecognizeMatch !== 'undefined' && RecognizeMatch.systemLabel)
+            ? RecognizeMatch.systemLabel(sys) : '';
+        return label
+            ? `у нас нет ${label} в этом размере`
+            : 'такой позиции у нас нет';
+    },
+
+    /**
      * Заголовок раздела документа отдельной строкой таблицы.
      *
      * Экран проверки читают рядом с исходной сметой, строка за строкой.
@@ -3286,8 +3303,12 @@ const RecognizeUI = {
         const miss = this._rows.filter(r => !r._m && r.kind !== 'work');
         if (!miss.length) return null;
 
-        const groups = { notInBase: [], weak: [], noWords: [], noType: [] };
+        const groups = { noHave: [], notInBase: [], weak: [], noWords: [], noType: [] };
         for (const r of miss) {
+            // Про строку с пометкой подбора известно точно: подходящее есть
+            // только в чужом материале, своего нет. Разбирать причину заново
+            // незачем — ответ уже получен на самом подборе.
+            if (r._sysMiss) { groups.noHave.push({ row: r, info: null }); continue; }
             let e;
             try { e = RecognizeMatch.explainMiss(r); } catch (err) { e = null; }
             const key = (e && groups[e.reason]) ? e.reason : 'noType';
@@ -3645,8 +3666,10 @@ const RecognizeUI = {
         // он уже сказал, чем эта строка является. Правила подбора о местных
         // сокращениях поставщика не знают и не узнают.
         if (this.memApply(row)) return;
+        row._sysMiss = null;   // пометку «у нас такого нет» ставит сам подбор
         row._m = (typeof RecognizeMatch !== 'undefined' && typeof catalog !== 'undefined')
             ? RecognizeMatch.matchItem(row, this._sys) : null;
+        if (row._m) row._sysMiss = null;
         this.priceGuard(row);
     },
 
@@ -3976,9 +3999,17 @@ const RecognizeUI = {
                     ? `<span class="rec-work-tag">монтажная работа</span>
                        <span class="rec-art">уйдёт в раздел работ${
                         docP ? ' со своей ценой из документа' : ' без цены'}</span>`
-                    : docP
-                        ? `<span class="rec-art">нет в каталоге — уйдёт своей позицией с ценой из документа</span>`
-                        : `<span class="rec-art">нет в каталоге — уйдёт своей позицией с ценой 0</span>`);
+                    // Про эту строку известно больше, чем «не нашли»: подходящее
+                    // в базе есть, но в другом материале, а своего нет вовсе.
+                    // Так и пишем — иначе монтажник будет искать её руками
+                    // через 🔍 и не найдёт, потому что искать нечего.
+                    : r._sysMiss
+                        ? `<span class="rec-nohave">${esc(this.sysMissText(r._sysMiss))}</span>
+                           <span class="rec-art">уйдёт своей позицией ${
+                            docP ? 'с ценой из документа' : 'с ценой 0'} — поставьте свою или уберите строку</span>`
+                        : docP
+                            ? `<span class="rec-art">нет в каталоге — уйдёт своей позицией с ценой из документа</span>`
+                            : `<span class="rec-art">нет в каталоге — уйдёт своей позицией с ценой 0</span>`);
 
             return `${secHead}<tr class="${cls}">
               <td><input type="checkbox" ${r._sel ? 'checked' : ''}
@@ -5470,6 +5501,13 @@ const RecognizeUI = {
         }).join('');
 
         const blocks = [];
+        if (a.groups.noHave.length) {
+            blocks.push(`<div class="rec-miss-b"><b>У нас такого нет (${a.groups.noHave.length})</b>
+              <div class="rec-art">подходящее по названию и размеру есть только в другом материале —
+                подставлять его нельзя, это другое изделие. Искать вручную нечего:
+                поставьте свою цену или уберите строку</div>
+              <ul>${line(a.groups.noHave)}</ul></div>`);
+        }
         if (a.groups.notInBase.length) {
             blocks.push(`<div class="rec-miss-b"><b>Нет у поставщика (${a.groups.notInBase.length})</b>
               <div class="rec-art">этих предметов нет ни в каталоге, ни в прайсе — расходники и чужой крепёж</div>

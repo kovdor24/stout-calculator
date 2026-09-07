@@ -11056,6 +11056,15 @@ select.rec-btn-g { padding-right: 8px; }
     padding: 7px 9px; border-left: 3px solid var(--primary, #0284c7);
     position: sticky; top: 27px; z-index: 1;
 }
+/* «У нас такого нет» — утверждение, а не отсутствие ответа. Пишется тем же
+   размером, что и подобранная позиция: это тоже результат подбора, только
+   отрицательный, и прятать его в мелкий серый текст неправильно. */
+.rec-nohave {
+    display: block; font-weight: 700; font-size: 12px;
+    color: #B45309;
+}
+body.dark-mode .rec-nohave { color: #FBBF24; }
+
 /* Номер позиции, как он проставлен в документе: по нему монтажник и ищет
    строку глазами в своей смете. */
 .rec-docno {
