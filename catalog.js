@@ -4354,6 +4354,32 @@ const catalog = {
         { id: "PA91100", article: "PA91100", price: 239.3, brand: "ProAqua", availability: "in_stock", name: "Установочная пластина PP-R 200 мм", unit: "шт", price_date: "2026-09-07" }
     ],
 
+    /**
+     * Уплотнение резьбы: лён, паста, нить.
+     *
+     * В чужих сметах это отдельные строки — «лен 200гр. коса», «паста уплотн.
+     * aquaflax nano 270 гр.», — и до сих пор они уходили в «нет в каталоге»,
+     * хотя у поставщика лежат. Расходником в расчёте калькулятора не
+     * участвуют: их пишет монтажник сам, когда переносит чужую смету.
+     *
+     * Цены — прайс ТЕРЕМ как есть: коэффициент 0,8 действует на свои марки
+     * (STOUT, ROMMER), у чужих цена каталога равна прайсовой.
+     */
+    sealants: [
+        { id: "MB5030300050", article: "MB5030300050", name: "Лён сантехнический Mr.Bond, 50 г", price: 274.5, brand: "Mr.Bond", unit: "шт", availability: "in_stock", price_date: "2026-09-07" },
+        { id: "MB5030300100", article: "MB5030300100", name: "Лён сантехнический Mr.Bond, 100 г", price: 462.58, brand: "Mr.Bond", unit: "шт", availability: "in_stock", price_date: "2026-09-07" },
+        { id: "MB5030300200", article: "MB5030300200", name: "Лён сантехнический Mr.Bond, 200 г", price: 808.25, brand: "Mr.Bond", unit: "шт", availability: "in_stock", price_date: "2026-09-07" },
+        { id: "MB5030500100", article: "MB5030500100", name: "Лён сантехнический коса Mr.Bond, 100 г", price: 462.58, brand: "Mr.Bond", unit: "шт", availability: "in_stock", price_date: "2026-09-07" },
+        { id: "MB5030500200", article: "MB5030500200", name: "Лён сантехнический коса Mr.Bond, 200 г", price: 808.25, brand: "Mr.Bond", unit: "шт", availability: "in_stock", price_date: "2026-09-07" },
+        { id: "MB5050500070", article: "MB5050500070", name: "Паста для пропитки льна Mr.Bond, 70 г", price: 277.55, brand: "Mr.Bond", unit: "шт", availability: "in_stock", price_date: "2026-09-07" },
+        { id: "MB5050500250", article: "MB5050500250", name: "Паста для пропитки льна Mr.Bond, 250 г", price: 444.28, brand: "Mr.Bond", unit: "шт", availability: "in_stock", price_date: "2026-09-07" },
+        { id: "4040", article: "4040", name: "Паста уплотнительная Aquaflax nano, 30 г", price: 94, brand: "Aquaflax", unit: "шт", availability: "in_stock", price_date: "2026-09-07" },
+        { id: "4041", article: "4041", name: "Паста уплотнительная Aquaflax nano, 80 г", price: 175, brand: "Aquaflax", unit: "шт", availability: "in_stock", price_date: "2026-09-07" },
+        { id: "4042", article: "4042", name: "Паста уплотнительная Aquaflax nano, 270 г", price: 464.5, brand: "Aquaflax", unit: "шт", availability: "in_stock", price_date: "2026-09-07" },
+        { id: "4062", article: "4062", name: "Нить сантехническая уплотнительная SPRINT", price: 266, brand: "SPRINT", unit: "шт", availability: "in_stock", price_date: "2026-09-07" },
+        { id: "MB402700650", article: "MB402700650", name: "Обезжириватель резьбы Mr.Bond, 650 мл", price: 808.25, brand: "Mr.Bond", unit: "шт", availability: "in_stock", price_date: "2026-09-07" }
+    ],
+
     mounting_system: [
         { id: "ASKON-83115", name: "Кронштейн для расширительного бака L-образный", price: 420, brand: "Askon", availability: "in_stock" },
         { id: "SAC-0020-000012", name: "Хомут для труб с гайкой 1/2\" (20–24 мм)", price: 39, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
@@ -4385,6 +4411,14 @@ const catalog = {
         { id: "SAC-0020-503120", name: "Шина сантехническая (монтажный профиль) 50x3x1200 мм", price: 1254, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
         { id: "SAC-0020-503200", name: "Шина сантехническая (монтажный профиль) 50x3x2000 мм", price: 1819, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
         { id: "SAC-0020-400100", name: "Шпилька сантехническая M8x100 в комплекте с дюбелем M10x50", price: 22, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
+        // Резьбовая шпилька метражом — «штанга М8 1000 мм» из чужих смет. Была
+        // только короткая, с дюбелем, и строка оставалась без артикула.
+        { id: "SAC-0020-400801", name: "Шпилька резьбовая М8х1000 мм", price: 170, brand: "STOUT", availability: "in_stock", price_date: "2026-09-07" },
+        { id: "SAC-0020-400802", name: "Шпилька резьбовая М8х2000 мм", price: 339, brand: "STOUT", availability: "in_stock", price_date: "2026-09-07" },
+        { id: "SAC-0020-400803", name: "Шпилька резьбовая М8х3000 мм", price: 508, brand: "STOUT", availability: "in_stock", price_date: "2026-09-07" },
+        { id: "SAC-0020-401001", name: "Шпилька резьбовая М10х1000 мм", price: 264, brand: "STOUT", availability: "in_stock", price_date: "2026-09-07" },
+        { id: "SAC-0020-401002", name: "Шпилька резьбовая М10х2000 мм", price: 527, brand: "STOUT", availability: "in_stock", price_date: "2026-09-07" },
+        { id: "SAC-0020-401003", name: "Шпилька резьбовая М10х3000 мм", price: 790, brand: "STOUT", availability: "in_stock", price_date: "2026-09-07" },
         { id: "SAC-0020-411040", name: "Анкер забивной стальной M10х12х40 мм", price: 23, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
         { id: "SAC-0020-421040", name: "Анкер забивной стальной M10х12х35 мм", price: 82, brand: "STOUT", availability: "in_stock", price_date: "2026-08-10" },
         { id: "SAC-0022-600001", name: "Монтажная планка одинарная", price: 141, brand: "STOUT", availability: "in_stock", price_date: "2026-07-12" },

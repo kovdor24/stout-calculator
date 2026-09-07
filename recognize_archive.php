@@ -361,7 +361,10 @@ function archiveSummary($archiveDir, $days, $force = false) {
         'unmatched' => 0, 'manual' => 0, 'fromMemory' => 0, 'repeats' => 0,
         'calls' => 0, 'fromCache' => 0, 'broken' => 0, 'noQty' => 0,
         // Строки, про которые подбор знает точно: своего такого нет вовсе.
-        'sysMiss' => 0];
+        'sysMiss' => 0,
+        // Чужие расходники: в копилку промахов не идут, но счёт им ведём —
+        // по нему видно, сколько в сметах вообще не нашего товара.
+        'notOur' => 0];
     $months = []; $regions = []; $regionUsers = []; $users = [];
     $brandHits = []; $picked = ['STOUT' => 0, 'ROMMER' => 0, 'прайс' => 0];
     $types = []; $missRaw = ['unparsed' => [], 'nomatch' => []];
@@ -451,6 +454,14 @@ function archiveSummary($archiveDir, $days, $force = false) {
                          * каталога, и самый ценный его случай — когда подбор
                          * знает, что своего такого нет вовсе (sysMiss).
                          */
+                        // Чужой расходник (пена, газ к пистолету, отрезной
+                        // круг) в копилку не идёт: у поставщика такого товара
+                        // нет, и в списке «чего не хватает» ему не место. До
+                        // этого 257 промахов из 354 были именно ими.
+                        if (!empty($line['notOur'])) {
+                            $totals['notOur']++;
+                            continue;
+                        }
                         $sysMiss = (string)($line['sysMiss'] ?? '');
                         $generic = ($type === 'прочее' || $type === 'без типа');
                         $bucket = $generic ? 'unparsed' : 'nomatch';

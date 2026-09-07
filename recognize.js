@@ -3871,8 +3871,22 @@ const RecognizeUI = {
      * Спорный раздел к тому же виден в самой строке и правится выпадающим
      * списком, а не поиском по каталогу.
      */
+    /**
+     * Чужой расходник: пена, газ к пистолету, отрезной круг.
+     *
+     * Его отсутствие в каталоге — не промах подбора, а факт: у поставщика
+     * такого товара нет. В смету строка уедет своей ценой из документа, и
+     * требовать по ней решения незачем.
+     */
+    notOurRange(r) {
+        return !!(typeof RecognizeMatch !== 'undefined' && RecognizeMatch.notOurRange
+            && RecognizeMatch.notOurRange(r && r.raw));
+    },
+
     isProblem(r) {
         if (!r) return false;
+        // Строка про чужой расходник проблемой не считается: искать нечего.
+        if (!r._m && this.notOurRange(r)) return false;
         if (!r._m && !this.looksLikeWork(r)) return true;     // нет в каталоге
         if (r._priceAlarm) return true;                       // цена не сходится
         if (!((r.qty || 0) + (r.qtyExtra || 0))) return true; // нет количества
@@ -3968,8 +3982,11 @@ const RecognizeUI = {
             // обходится, чем пустая строка, которую видно.
             // Работа без артикула — это норма, а не дыра в смете: красить её
             // наравне с неподобранным материалом значит пугать зря.
+            // Чужой расходник жёлтым не красим: жёлтый значит «нужно решение»,
+            // а решать тут нечего — такого товара у поставщика нет.
             const cls = m ? (r._priceAlarm ? 'rec-pricebad' : '')
-                : (this.looksLikeWork(r) ? 'rec-workrow' : 'rec-nomatch');
+                : (this.looksLikeWork(r) ? 'rec-workrow'
+                    : (this.notOurRange(r) ? '' : 'rec-nomatch'));
 
             const tbtns = THREADS.map(t =>
                 `<button class="rec-tbtn ${r.threadType === t ? 'on' : ''}"
@@ -4003,6 +4020,9 @@ const RecognizeUI = {
                     // в базе есть, но в другом материале, а своего нет вовсе.
                     // Так и пишем — иначе монтажник будет искать её руками
                     // через 🔍 и не найдёт, потому что искать нечего.
+                    : this.notOurRange(r)
+                        ? `<span class="rec-art">не наш ассортимент (расходник монтажника) — уйдёт своей позицией ${
+                            docP ? 'с ценой из документа' : 'с ценой 0'}</span>`
                     : r._sysMiss
                         ? `<span class="rec-nohave">${esc(this.sysMissText(r._sysMiss))}</span>
                            <span class="rec-art">уйдёт своей позицией ${
@@ -6275,6 +6295,10 @@ const RecognizeUI = {
                     // запрос на пополнение каталога, какой вообще бывает, —
                     // поэтому едет в архив вместе со строкой.
                     sysMiss: r._sysMiss || null,
+                    // Чужой расходник (пена, газ к пистолету, отрезной круг).
+                    // Сводка промахов такие строки не считает: их отсутствие в
+                    // каталоге — не пропуск, а факт об ассортименте.
+                    notOur: this.notOurRange(r) || undefined,
                     matched: r._m ? { id: r._m.item.id, name: r._m.item.name, price: r._m.item.price } : null,
                 })),
             };
