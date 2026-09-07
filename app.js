@@ -10012,6 +10012,37 @@ const app = {
         this.pushInstallerSettingsToCloud();
     },
 
+    // ── Свёрнутая панель разделов ──────────────────────────────────────────────
+    // Свёрнутая панель показывает одни значки. На компьютере она разворачивается
+    // наведением мыши (правило в style.css, поверх сметы и без сдвига вёрстки), на
+    // планшете наведения нет — там разворачивают той же кнопкой. Состояние лежит в
+    // общей раскладке меню, поэтому у мыши и у сенсора оно своё: за компьютером
+    // места по ширине много и панель обычно развёрнута, на планшете — наоборот.
+    railCollapsed: function () {
+        return this.railLayout().collapsed === true;
+    },
+
+    toggleRailCollapsed: function () {
+        const next = !this.railCollapsed();
+        this.saveRailLayout({ collapsed: next });
+        this.applyRailCollapsed();
+        // Спрятанные подписи меняют высоту колонки — посадку считаем заново
+        this.fitRailToViewport();
+    },
+
+    applyRailCollapsed: function () {
+        const rail = document.getElementById('lk_rail');
+        if (!rail) return;
+        const collapsed = this.railCollapsed();
+        rail.classList.toggle('is-collapsed', collapsed);
+        const btn = document.getElementById('lk_rail_toggle');
+        if (btn) {
+            btn.title = collapsed ? 'Развернуть панель с подписями' : 'Свернуть панель до значков';
+            btn.setAttribute('aria-label', btn.title);
+            btn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+        }
+    },
+
     // Применить раскладку к разметке. Зовётся при первой отрисовке и ещё раз, когда
     // настройки доедут из облака: на новом устройстве они приходят с задержкой.
     applyRailLayout: function () {
@@ -10019,6 +10050,7 @@ const app = {
         this.applyRailGroupOrder();
         this.setRailDock(this.railDock(), false);
         this.setParamsDock(this.paramsDock(), false);
+        this.applyRailCollapsed();
         this.fitRailToViewport();
     },
 
@@ -10032,10 +10064,14 @@ const app = {
     // дистрибьютора на один больше, у не-админа на один меньше). Считать надо по
     // факту, а не по предположению.
     // Нижняя граница — чтобы подписи оставались читаемыми на невысоком ноутбуке.
-    // Верхней почти нет: на большом мониторе меню должно занимать высоту первого
-    // экрана, а не жаться маленькой колонкой в углу с пустотой снизу.
+    // Верхняя равна единице: меню только ужимается, когда не помещается, но никогда
+    // не растёт выше размеров, заданных в CSS. Раньше здесь стояло 2 — «пусть на
+    // большом мониторе занимает высоту первого экрана», — и на широкоформатном
+    // мониторе множитель доходил до 1.4: значки 22px превращались в 31px, подписи
+    // 11.5px в 16px, колонка выглядела раздутой, и размер меню разъезжался от
+    // монитора к монитору. Пустота под коротким меню лучше этого.
     RAIL_SCALE_MIN: 0.72,
-    RAIL_SCALE_MAX: 2,
+    RAIL_SCALE_MAX: 1,
 
     fitRailToViewport: function () {
         const rail = document.getElementById('lk_rail');
